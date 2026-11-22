@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Épuration extrarénale</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinique, calme, précis : la salle de réanimation, côté rein
+   IDEA l'écran d'une machine d'EER : le circuit sang, les poches, les pressions, et le patient à côté
+   PICTURE le circuit animé (accès, pompe, filtre, retour, effluent) dont les flux suivent la prescription
+   COLOUR boîtier bleu nuit ; sang rouge, réinjection cyan, dialysat lilas, effluent ambre, citrate vert d'eau, calcium blanc
+   TYPE Barlow Condensed pour chiffres et titres, Barlow pour le texte, comme les autres simulateurs
+   LAYOUT cinq onglets ; dans chacun, l'objet de travail en haut (circuit, grille, machine, dossier), réglages et résultats à côté ; empilé sous 900px */
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--red:#ff5a4e;--ok:#5fe0a6;--li:#b4a0ff;--cit:#7ee2c8}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1320px;margin:0 auto;padding:clamp(14px,2.4vw,30px) max(2.4vw,16px)}
+h1{font:600 clamp(30px,3.6vw,44px)/1.05 "Barlow Condensed",Barlow,sans-serif;margin:0;text-wrap:balance}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 10px}
+h3{font:600 18px/1.25 Barlow,sans-serif;margin:0 0 8px}
+p{margin:0 0 10px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}
+.top p{color:var(--mut);margin:4px 0 0}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.tab[aria-selected=true]{background:var(--ink);color:#0b1215;border-color:var(--ink)}
+.tab small{display:block;font-weight:500;font-size:13px;opacity:.75}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.mut{color:var(--mut)}
+.small{font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{min-height:42px;padding:6px 12px;background:var(--panel2);border:0;border-right:1px solid var(--line);font-weight:500}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.btn{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:500}
+.btn:hover{border-color:#3b5862}
+.go{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;border:0}
+.go::after{content:"→"}
+select{min-height:42px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:16px}
+label.f{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+label.f span{color:var(--mut)}
+label.f output{font:600 18px "Barlow Condensed",sans-serif;white-space:nowrap;text-align:right;min-width:7ch}
+label.f input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--cy);height:28px}
+label.f.off{opacity:.35}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:8px;margin:12px 0}
+.m{background:var(--panel2);border-radius:10px;padding:8px 12px;border-left:3px solid var(--line)}
+.m small{display:block;color:var(--mut);font-size:13px}
+.m b{font:600 24px/1.1 "Barlow Condensed",sans-serif;white-space:nowrap}
+.m i{font-style:normal;font-size:13px;color:var(--mut);margin-left:4px}
+.m.ok{border-left-color:var(--ok)}.m.warn{border-left-color:var(--amb)}.m.bad{border-left-color:var(--red)}
+.flags{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.flags li{padding:6px 10px;border-radius:8px;font-size:15px;background:var(--panel2);border-left:3px solid var(--line)}
+.flags li.warn{border-left-color:var(--amb)}.flags li.bad{border-left-color:var(--red)}.flags li.ok{border-left-color:var(--ok)}
+.circuit{position:relative;background:#04090b;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.circuit svg{display:block;width:100%;height:auto}
+@keyframes flow{to{stroke-dashoffset:-40}}
+.fl{fill:none;stroke-width:5;stroke-linecap:round;stroke-dasharray:10 10;animation:flow linear infinite}
+.fl.off{opacity:.12;animation:none}
+@media(prefers-reduced-motion:reduce){.fl{animation:none}}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ch{background:var(--panel2);border-radius:10px;padding:8px 10px}
+.ch h3{font-size:15px;margin:0;color:var(--mut);font-weight:500}
+.ch svg{display:block;width:100%;height:120px}
+.gl{stroke:rgba(147,168,175,.12)}.ref{stroke:rgba(147,168,175,.5);stroke-dasharray:4 4}
+.ax{fill:var(--mut);font:12px Barlow,sans-serif}
+.note{font-size:15px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
+.note b{color:var(--ink)}
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+table.t th,table.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+td.okv{color:var(--ok)}td.hi{color:var(--amb)}td.lo{color:var(--cy)}td.badv{color:var(--red)}
+.scroll{overflow-x:auto}
+.grade{display:inline-block;font:600 14px Barlow,sans-serif;padding:2px 10px;border-radius:6px;margin:0 6px 6px 0}
+.g-ok{color:#06251a;background:var(--ok)}.g-mid{color:#2a1d00;background:var(--amb)}.g-bad{color:#fff;background:#c9362c}
+.fb{background:var(--panel2);border-radius:12px;padding:12px 14px;margin-top:10px}
+.fb p{margin:0 0 6px}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;min-height:50px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.choice:hover:not(:disabled){border-color:var(--ink)}
+.choice b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-weight:700}
+.choice.right{border-color:var(--ok)}.choice.wrong{border-color:var(--red)}
+.choice:disabled{cursor:default}
+.opts{display:grid;gap:8px;margin:8px 0}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:15px}
+.opt input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--cy)}
+fieldset{border:0;padding:0;margin:0 0 10px}
+legend{font-weight:600;margin-bottom:6px}
+/* grille citrate */
+.gridfig{position:relative;background:#04090b;border:1px solid var(--line);border-radius:14px}
+.gridfig svg{display:block;width:100%;height:auto}
+/* machine dépannage */
+.machine{background:#070d10;border:2px solid #2c4650;border-radius:16px;padding:12px}
+.alarm{border-radius:10px;padding:10px 12px;font-weight:600;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.alarm.red{background:#3a1210;color:#ffb3ab;border:1px solid #7a2a24}
+.alarm.yel{background:#3a2c08;color:#ffe08a;border:1px solid #7a5d14}
+.alarm::before{content:"";width:12px;height:12px;border-radius:50%;background:currentColor;flex:none;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+@media(prefers-reduced-motion:reduce){.alarm::before{animation:none}}
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pv{background:#0d171b;border-radius:10px;padding:8px 10px;border:1px solid var(--line)}
+.pv small{display:block;color:var(--mut);font-size:13px}
+.pv b{font:600 26px/1.1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.pv.al{border-color:var(--red)}.pv.al b{color:#ff8a7a}
+.score{font:600 18px "Barlow Condensed",sans-serif;color:var(--amb)}
+/* décisions */
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pan{background:var(--panel2);border-radius:12px;padding:10px 12px}
+.pan h3{font-size:15px;color:var(--mut);margin:0 0 6px;font-weight:600}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;font-size:15px}
+.kv span:nth-child(even){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.kv .a{color:var(--red)}.kv .w{color:var(--amb)}
+.caselist{display:grid;gap:8px}
+.casebtn{text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);min-height:56px}
+.casebtn[aria-pressed=true]{border-color:var(--ink);background:#1d2f36}
+.casebtn b{display:block}
+.casebtn span{font-size:14px;color:var(--mut)}
+.day{font:600 20px "Barlow Condensed",sans-serif;color:var(--amb);margin-right:8px}
+.refs{font-size:14px;color:var(--mut);padding-left:18px;margin:6px 0 0}
+.tstep{display:flex;align-items:center;gap:10px;margin-top:10px}
+.tstep span{flex:1;text-align:center}
+.tstep .btn{min-width:52px;font-size:20px}
+.tstep .btn:disabled{opacity:.3;cursor:default}
+.eyebrow{font:600 13px Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--amb);margin:0 0 4px}
+dl.st{margin:0}
+dl.st dt{font-weight:600;color:var(--cy);margin-top:10px;font-size:15px}
+dl.st dd{margin:2px 0 0}
+.mk{cursor:pointer}
+.mk:focus{outline:none}.mk:focus-visible circle{stroke:var(--cy);stroke-width:4}
+.mk.on circle{filter:drop-shadow(0 0 6px rgba(233,241,243,.7))}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rot{animation:spin 1.4s linear infinite}
+@media(prefers-reduced-motion:reduce){.rot{animation:none}}
+.pm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:6px}
+.pm ul{margin:0;padding-left:18px;font-size:15px}
+ol.proc{list-style:none;counter-reset:p;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr));gap:10px}
+ol.proc li{counter-increment:p;display:flex;gap:12px;background:var(--panel2);border-radius:12px;padding:12px 14px}
+ol.proc li::before{content:counter(p);flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--amb);color:#1a1300;font-weight:700}
+ol.proc h3{margin:2px 0 4px}
+ol.proc p{margin:0 0 6px;font-size:15px}
+ol.proc .why{color:var(--mut)}
+#tCircuit{overflow-x:auto}
+@media(max-width:700px){#tCircuit svg{min-width:660px}}
+@media(max-width:600px){.pm{grid-template-columns:minmax(0,1fr)}}
+footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.charts,.panels{grid-template-columns:minmax(0,1fr)}.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tab small{display:none}}
+</style>
+</head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Épuration extrarénale</h1>
+      <p>Prescrire, anticoaguler, dépanner, décider. Pour interne de DES de médecine intensive-réanimation.</p>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Modules">
+    <button class="tab" role="tab" id="t-modalites" data-t="modalites">Modalités<small>le circuit pas à pas</small></button>
+    <button class="tab" role="tab" id="t-reglages" data-t="reglages">Réglages<small>paramètres et situations</small></button>
+    <button class="tab" role="tab" id="t-citrate" data-t="citrate">Citrate<small>protocole du service</small></button>
+    <button class="tab" role="tab" id="t-depannage" data-t="depannage">Dépannage<small>l'alarme sonne</small></button>
+    <button class="tab" role="tab" id="t-decisions" data-t="decisions">Décisions<small>démarrer, arrêter</small></button>
+  </nav>
+
+  <!-- ============ MODALITÉS ============ -->
+  <section id="p-modalites" role="tabpanel">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <div class="seg" id="tMode" role="group" aria-label="Technique"></div>
+      <p class="mut" id="tFull" style="margin:0"></p>
+    </div>
+    <div class="grid">
+      <div>
+        <div class="circuit" id="tCircuit"></div>
+        <div class="tstep" id="tStep"></div>
+        <p class="small mut" style="margin:6px 0 0">Touchez un numéro du schéma (faites-le défiler sur téléphone), ou suivez le sang avec les flèches. Rouge : sang ; cyan : réinjection ; lilas : dialysat ; ambre : effluent ; vert d'eau : citrate.</p>
+      </div>
+      <div class="card" id="tStation" aria-live="polite"></div>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <div class="card" id="tPrin"></div>
+      <div class="card" id="tFiche"></div>
+    </div>
+    <div class="card" id="tProc" style="margin-top:14px"></div>
+  </section>
+
+  <!-- ============ RÉGLAGES ============ -->
+  <section id="p-reglages" role="tabpanel" hidden>
+    <div class="grid">
+      <div>
+        <div class="circuit" id="circuit"></div>
+        <div class="metrics" id="mMetrics"></div>
+        <ul class="flags" id="mFlags"></ul>
+        <h2 style="margin-top:16px">Ce que devient le patient sur 48 h</h2>
+        <div class="charts" id="mCharts"></div>
+        <p class="note" id="mNote"></p>
+      </div>
+      <div class="card">
+        <label class="f" style="border:0"><span>Patient</span><select id="mPreset"></select></label>
+        <p class="small mut" id="mPatient"></p>
+        <p class="small" style="margin:8px 0 4px;font-weight:600">Modalité</p>
+        <div class="seg" id="mMode" role="group" aria-label="Modalité"></div>
+        <div id="mInputs"></div>
+        <label class="f"><span>Solution</span><select id="mSol">
+          <option value="bic">Bicarbonate 32, K⁺ 4 mmol/L</option>
+          <option value="k0">Bicarbonate 32, K⁺ 0 (hyperkaliémie sévère)</option>
+          <option value="phox">Avec phosphate (Phoxilium : bicarbonate 30, K⁺ 4)</option>
+        </select></label>
+        <div class="note" id="mHelp"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CITRATE ============ -->
+  <section id="p-citrate" role="tabpanel" hidden>
+    <div class="grid">
+      <div>
+        <div class="gridfig" id="cGrid"></div>
+        <p class="small mut" style="margin-top:6px">Grille d'adaptation du protocole : calcium ionisé du patient en ordonnée, calcium ionisé post-filtre en abscisse. Chaque point est un contrôle.</p>
+        <div class="card" style="margin-top:10px">
+          <h2>Évolution</h2>
+          <div class="charts" id="cCharts"></div>
+        </div>
+      </div>
+      <div class="card" id="cPanel"></div>
+    </div>
+  </section>
+
+  <!-- ============ DÉPANNAGE ============ -->
+  <section id="p-depannage" role="tabpanel" hidden>
+    <div class="grid">
+      <div>
+        <div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="score" id="dScore"></span><span class="mut small" id="dCount"></span></div>
+        <div class="machine" id="dMachine"></div>
+      </div>
+      <div class="card" id="dPanel"></div>
+    </div>
+  </section>
+
+  <!-- ============ DÉCISIONS ============ -->
+  <section id="p-decisions" role="tabpanel" hidden>
+    <div class="grid">
+      <div class="card">
+        <div id="kHead"></div>
+        <div class="panels" id="kPanels"></div>
+        <div id="kBody" style="margin-top:12px"></div>
+      </div>
+      <div>
+        <div class="card">
+          <h2>Les cas</h2>
+          <div class="caselist" id="kList"></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h2>Repères</h2>
+          <ul class="small mut" style="padding-left:18px;margin:0">
+            <li>Indications impératives (critères AKIKI) : K⁺ &gt; 6 mmol/L, ou &gt; 5,5 persistant malgré le traitement ; pH &lt; 7,15 en acidose métabolique ; OAP de surcharge avec hypoxémie sévère.</li>
+            <li>Sans urgence vitale, attendre est sûr et évite des EER inutiles (AKIKI, IDEAL-ICU, STARRT-AKI).</li>
+            <li>Mais ne pas attendre au-delà : oligo-anurie &gt; 72 h ou urée &gt; 40 mmol/L, retarder encore n'apporte rien et pourrait nuire (AKIKI 2).</li>
+            <li>Sevrage : une diurèse spontanée d'au moins 400 à 500 mL/24 h sans diurétique prédit le succès.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Les patients et les valeurs sont simulés par des modèles simplifiés. L'onglet Citrate suit le protocole de CVVH au citrate du service (Médecine intensive et réanimation, 2019).</p>
+    <ol class="refs">
+      <li>KDIGO Clinical Practice Guideline for Acute Kidney Injury, 2012.</li>
+      <li>RENAL Replacement Therapy Study Investigators, N Engl J Med 2009 ; VA/NIH ATN Study, N Engl J Med 2008.</li>
+      <li>Gaudry S et al. AKIKI, N Engl J Med 2016 ; AKIKI 2, Lancet 2021. Barbar SD et al. IDEAL-ICU, N Engl J Med 2018. STARRT-AKI Investigators, N Engl J Med 2020.</li>
+      <li>Zarbock A et al. RICH (citrate contre héparine), JAMA 2020.</li>
+    </ol>
+  </footer>
+</div>
+<script>
+{
+/* ===== Outils ===== */
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const nf=(x,d=1)=>Number(x).toFixed(d).replace(".",",");
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* petits graphiques : séries sur un axe temps */
+function lineChart(svg,{xs,series,yr,refs=[],xmax,xlab="h",bands=[]}){
+  const W=svg.clientWidth||300,H=svg.clientHeight||120,ml=34,mr=8,mt=8,mb=20;
+  const X=t=>ml+(W-ml-mr)*t/xmax,Y=v=>mt+(H-mt-mb)*(1-(clamp(v,yr[0],yr[1])-yr[0])/(yr[1]-yr[0]));
+  let s="";
+  for(const b of bands)s+=`<rect x="${X(b[0])}" y="${mt}" width="${Math.max(1,X(b[1])-X(b[0]))}" height="${H-mt-mb}" fill="rgba(79,216,234,.08)"/>`;
+  const step=xmax>30?12:xmax>12?6:2;
+  for(let t=0;t<=xmax+1e-9;t+=step)s+=`<line class="gl" x1="${X(t)}" x2="${X(t)}" y1="${mt}" y2="${H-mb}"/><text class="ax" x="${X(t)}" y="${H-5}" text-anchor="middle">${xlab==="h"?"H"+t:t}</text>`;
+  for(const r of refs)s+=`<line class="ref" x1="${ml}" x2="${W-mr}" y1="${Y(r)}" y2="${Y(r)}"/><text class="ax" x="${ml-4}" y="${Y(r)+4}" text-anchor="end">${String(r).replace(".",",")}</text>`;
+  for(const se of series){s+=`<path d="${se.v.map((v,i)=>`${i?"L":"M"}${X(xs[i]).toFixed(1)},${Y(v).toFixed(1)}`).join("")}" fill="none" stroke="${se.c}" stroke-width="2.2"/>`;
+    const i=se.v.length-1;s+=`<circle cx="${X(xs[i])}" cy="${Y(se.v[i])}" r="3.5" fill="${se.c}"/>`;}
+  svg.innerHTML=s;
+}
+
+/* ===== Onglets ===== */
+const TABS=["modalites","reglages","citrate","depannage","decisions"];
+function showTab(t){
+  if(!TABS.includes(t))t="modalites";
+  for(const x of TABS){$("p-"+x).hidden=x!==t;$("t-"+x).setAttribute("aria-selected",x===t?"true":"false");}
+  try{if(location.hash!=="#"+t)history.replaceState(null,"","#"+t);}catch(e){}
+  if(t==="modalites")tRender();if(t==="reglages")mRender();if(t==="citrate")cRender();if(t==="depannage")dRender();if(t==="decisions")kRender();
+}
+document.querySelector(".tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.dataset.t);});
+addEventListener("hashchange",()=>showTab(location.hash.slice(1)));
+
+/* ===== MODALITÉS ===== */
+const PRESETS={
+  hyperk:{name:"Anurie et hyperkaliémie (80 kg)",w:80,ht:.30,urea:38,k:6.6,hco3:15,na:136,phos:2.2,G:12,kG:0.35,acid:4,txt:"IRA anurique sur rhabdomyolyse. Urée 38 mmol/L, K⁺ 6,6, bicarbonates 15. Hémodynamique stable."},
+  sepsis:{name:"Choc septique, IRA KDIGO 3 (72 kg)",w:72,ht:.28,urea:24,k:5.4,hco3:17,na:138,phos:1.9,G:14,kG:0.25,acid:6,txt:"Choc septique sous noradrénaline, oligo-anurie depuis 72 h. Urée 24, K⁺ 5,4, bicarbonates 17."},
+  metf:{name:"Acidose lactique à la metformine (70 kg)",w:70,ht:.34,urea:30,k:5.9,hco3:6,na:139,phos:2.0,G:9,kG:0.3,acid:22,txt:"pH 6,95, lactate 18 mmol/L. La metformine est dialysable. Le citrate est à éviter (acidose lactique sévère)."},
+  surcharge:{name:"Surcharge hydrique (90 kg)",w:90,ht:.30,urea:28,k:5.0,hco3:20,na:132,phos:1.8,G:10,kG:0.2,acid:3,txt:"Bilan cumulé + 9 L, OAP, FiO₂ 60 %, échec du furosémide. Noradrénaline 0,15 µg/kg/min."}
+};
+const MODES={
+  CVVH:{lab:"CVVH",cont:true,help:"Hémofiltration continue : épuration par convection. La prédilution protège le filtre mais dilue le sang : la dose réelle est plus faible que la dose prescrite."},
+  CVVHD:{lab:"CVVHD",cont:true,help:"Hémodialyse continue : épuration par diffusion. Faible fraction de filtration, donc peu de coagulation du filtre ; moins efficace sur les moyennes molécules."},
+  CVVHDF:{lab:"CVVHDF",cont:true,help:"Hémodiafiltration continue : convection et diffusion associées. Souple : la diffusion apporte la dose sans augmenter la fraction de filtration."},
+  HDI:{lab:"HDI",cont:false,help:"Hémodialyse intermittente : clairance élevée sur une séance courte. La plus rapide pour corriger une hyperkaliémie ou une intoxication, mais l'ultrafiltration horaire est mal tolérée en cas d'instabilité, et le rebond est la règle."}
+};
+const DEF={CVVH:{qb:150,pre:1000,post:800,dial:0,uf:100,down:2},CVVHD:{qb:150,pre:0,post:0,dial:2000,uf:100,down:2},CVVHDF:{qb:150,pre:600,post:400,dial:1000,uf:100,down:2},HDI:{qb:300,qd:500,dur:4,uft:2000}};
+let M={preset:"hyperk",mode:"CVVHDF",sol:"bic",...structuredClone(DEF.CVVHDF)};
+const FIELDS={
+  qb:["Débit sang",50,400,10,"mL/min"],pre:["Prédilution",0,3000,100,"mL/h"],post:["Post-dilution",0,3000,100,"mL/h"],
+  dial:["Dialysat",0,3000,100,"mL/h"],uf:["Perte patient (UF nette)",0,400,10,"mL/h"],down:["Arrêts par 24 h",0,8,0.5,"h"],
+  qd:["Débit dialysat",100,800,50,"mL/min"],dur:["Durée de séance",2,12,1,"h"],uft:["UF totale de la séance",0,4000,250,"mL"]
+};
+function mFieldsFor(mode){return MODES[mode].cont?["qb","pre","post","dial","uf","down"]:["qb","qd","dur","uft"];}
+function mCompute(){
+  const P=PRESETS[M.preset],w=P.w,cont=MODES[M.mode].cont;
+  const qp=M.qb*(1-P.ht)*60; // mL/h
+  const r={cont,w,qp};
+  if(cont){
+    const pre=M.mode==="CVVHD"?0:M.pre,post=M.mode==="CVVHD"?0:M.post,dial=M.mode==="CVVH"?0:M.dial;
+    r.pre=pre;r.post=post;r.dial=dial;
+    r.eff=pre+post+dial+M.uf;
+    r.doseP=r.eff/w;
+    r.fd=qp/(qp+pre);
+    r.doseC=r.doseP*r.fd;
+    r.doseD=r.doseC*(24-M.down)/24;
+    r.ff=(pre+post+M.uf)/(qp+pre);
+    r.K=r.eff*r.fd*(24-M.down)/24/1000; // L/h moyenne
+    r.kml=r.K*1000/60;
+  }else{
+    r.kml=Math.min(0.75*M.qb,0.85*M.qd);
+    r.K=r.kml*60/1000;
+    const V=0.55*w;r.ktv=r.K*M.dur/V;r.urr=1-Math.exp(-r.ktv);
+    r.ufh=M.uft/M.dur/w;
+  }
+  return r;
+}
+function mSimulate(r){
+  const P=PRESETS[M.preset],w=P.w,dt=0.1,T=48;
+  const sol={bic:{b:32,k:4,ph:0},k0:{b:32,k:0,ph:0},phox:{b:30,k:4,ph:1.0}}[M.sol];
+  const Vu=0.55*w,Ve=0.2*w,Vb=0.45*w;
+  let u=P.urea,ke=P.k,ki=P.k,b=P.hco3,ph=P.phos,t=0;
+  const xs=[],U=[],KK=[],B=[],PH=[],bands=[];
+  for(let n=0;t<=T+1e-9;n++){
+    let on=r.cont||(t%24)<M.dur;let K=r.cont?r.K:(on?r.K:0);
+    if(!r.cont&&n===0)bands.push([0,M.dur],[24,24+M.dur]);
+    if(n%2===0){xs.push(+t.toFixed(1));U.push(u);KK.push(ke);B.push(b);PH.push(ph);}
+    u+=(P.G-K*u)/Vu*dt;
+    ke+=(P.kG+0.35*Ve*(ki-ke)-K*(ke-sol.k))/Ve*dt; ki+=(0.3*(ke-ki))*dt;
+    b+=(K*(sol.b-b)-P.acid*(r.cont?0.6:1))/Vb*dt;
+    ph+=(0.6-K*(ph-sol.ph)*0.8)/(0.3*w)*dt;
+    u=Math.max(1,u);ke=clamp(ke,1.5,9);b=clamp(b,3,40);ph=clamp(ph,0.1,4);
+    t+=dt;
+  }
+  return {xs,U,KK,B,PH,bands};
+}
+function mCircuit(r){
+  const has=k=>r.cont?(k==="pre"?r.pre>0:k==="post"?r.post>0:k==="dial"?r.dial>0:true):(k==="dial");
+  const sp=v=>v>0?Math.max(0.4,2.4-v/1500):0;
+  const qbS=Math.max(0.35,2.2-M.qb/220);
+  const L=(d,col,on,dur)=>`<path class="fl${on?"":" off"}" d="${d}" stroke="${col}" style="animation-duration:${dur||1.5}s"/>`;
+  const effV=r.cont?r.eff:M.qd*60;
+  const lab=(x,y,t,c)=>`<text x="${x}" y="${y}" fill="${c||"#e9f1f3"}" font-size="15" font-family="Barlow Condensed,sans-serif" font-weight="600">${t}</text>`;
+  const fmtF=v=>`${Math.round(v)} mL/h`;
+  return `<svg viewBox="0 0 640 330" role="img" aria-label="Circuit d'épuration extrarénale">
+  <rect x="0" y="0" width="640" height="330" fill="#04090b"/>
+  <g>
+   <circle cx="70" cy="190" r="34" fill="#16242a" stroke="#3b5862"/><text x="70" y="186" fill="#e9f1f3" font-size="14" text-anchor="middle" font-family="Barlow,sans-serif">Patient</text><text x="70" y="204" fill="#93a8af" font-size="13" text-anchor="middle" font-family="Barlow,sans-serif">${PRESETS[M.preset].w} kg</text>
+   ${L("M100 175 L170 175 L170 70 L250 70","#ff5a4e",1,qbS)}
+   <circle cx="250" cy="70" r="18" fill="#16242a" stroke="#ff5a4e"/><text x="250" y="75" text-anchor="middle" fill="#ff5a4e" font-size="13" font-family="Barlow,sans-serif" font-weight="600">P</text>
+   ${L("M268 70 L380 70 L380 95","#ff5a4e",1,qbS)}
+   <rect x="355" y="95" width="50" height="150" rx="14" fill="#16242a" stroke="#93a8af"/>
+   ${[0,1,2,3,4,5].map(i=>`<line x1="${362+i*7}" y1="105" x2="${362+i*7}" y2="235" stroke="#3b5862"/>`).join("")}
+   <text x="414" y="174" fill="#93a8af" font-size="13" font-family="Barlow,sans-serif">filtre</text>
+   ${L("M380 245 L380 285 L170 285 L170 205 L104 205","#ff5a4e",1,qbS)}
+   ${L("M300 20 L300 70","#4fd8ea",has("pre"),sp(r.pre||0))}
+   ${L("M300 330 L300 285","#4fd8ea",has("post"),sp(r.post||0))}
+   ${L("M520 230 L405 230","#b4a0ff",has("dial"),sp(r.cont?r.dial:M.qd*60))}
+   ${L("M405 110 L560 110","#ffc53d",1,sp(effV))}
+  </g>
+  ${lab(120,60,`Débit sang ${M.qb} mL/min`,"#ff8a7a")}
+  ${r.cont?lab(308,34,`Prédilution ${fmtF(r.pre)}`,has("pre")?"#4fd8ea":"#3b5862"):""}
+  ${r.cont?lab(308,318,`Post-dilution ${fmtF(r.post)}`,has("post")?"#4fd8ea":"#3b5862"):""}
+  ${lab(430,254,r.cont?`Dialysat ${fmtF(r.dial)}`:`Dialysat ${M.qd} mL/min`,has("dial")?"#b4a0ff":"#3b5862")}
+  ${lab(430,100,r.cont?`Effluent ${fmtF(r.eff)}`:`Effluent`,"#ffc53d")}
+  ${lab(14,30,MODES[M.mode].lab,"#e9f1f3")}
+  </svg>`;
+}
+function mRender(){
+  const P=PRESETS[M.preset];
+  $("mPatient").textContent=P.txt;
+  $("mMode").innerHTML=Object.keys(MODES).map(k=>`<button type="button" data-mode="${k}" aria-pressed="${k===M.mode}">${MODES[k].lab}</button>`).join("");
+  $("mInputs").innerHTML=mFieldsFor(M.mode).map(k=>{const f=FIELDS[k];const off=(M.mode==="CVVHD"&&(k==="pre"||k==="post"))||(M.mode==="CVVH"&&k==="dial");
+    return `<label class="f${off?" off":""}"><span>${f[0]}</span><output id="o-${k}">${String(M[k]).replace(".",",")} ${f[4]}</output><input type="range" id="i-${k}" data-k="${k}" min="${f[1]}" max="${f[2]}" step="${f[3]}" value="${M[k]}" ${off?"disabled":""}></label>`}).join("");
+  $("mSol").value=M.sol;
+  $("mHelp").innerHTML=`<b>${MODES[M.mode].lab}.</b> ${MODES[M.mode].help}`;
+  mUpdate();
+}
+function mUpdate(){
+  const r=mCompute(),P=PRESETS[M.preset];
+  $("circuit").innerHTML=mCircuit(r);
+  const m=[];const fl=[];
+  if(r.cont){
+    const cls=v=>v<20?"bad":v>35?"warn":"ok";
+    m.push(["Débit plasmatique",nf(r.qp/1000,1),"L/h",""],["Effluent",Math.round(r.eff),"mL/h",""],["Dose prescrite",nf(r.doseP,1),"mL/kg/h",""],
+      ["Facteur de prédilution",nf(r.fd,2),"",""],["Dose corrigée",nf(r.doseC,1),"mL/kg/h",""],["Dose délivrée estimée",nf(r.doseD,1),"mL/kg/h",cls(r.doseD)],
+      ["Fraction de filtration",Math.round(r.ff*100),"%",r.ff>0.25?"bad":r.ff>0.2?"warn":"ok"],["Clairance de l'urée",Math.round(r.kml),"mL/min",""]);
+    if(r.doseD<20)fl.push(["bad",`Dose délivrée ${nf(r.doseD)} mL/kg/h : sous l'objectif de 20 à 25 mL/kg/h (KDIGO). Pour l'atteindre malgré les arrêts et la prédilution, prescrire 25 à 30 mL/kg/h.`]);
+    else if(r.doseD>35)fl.push(["warn",`Dose délivrée ${nf(r.doseD)} mL/kg/h : les fortes doses n'améliorent pas la survie (RENAL, ATN) et augmentent les pertes en phosphate, potassium, acides aminés et antibiotiques.`]);
+    else fl.push(["ok",`Dose délivrée dans la cible de 20 à 25 mL/kg/h${r.doseD>25?" (un peu au-dessus, acceptable)":""}.`]);
+    if(r.ff>0.25)fl.push(["bad",`Fraction de filtration ${Math.round(r.ff*100)} % : hémoconcentration dans le filtre, coagulation rapide. Augmenter le débit sang, passer une partie de la post-dilution en prédilution, ou convertir en diffusion (CVVHDF).`]);
+    else if(r.ff>0.2)fl.push(["warn",`Fraction de filtration ${Math.round(r.ff*100)} % : à la limite haute (20 à 25 %).`]);
+    if(r.pre>0&&r.fd<0.8)fl.push(["warn",`Prédilution importante : facteur ${nf(r.fd,2)}. La dose réelle est ${Math.round((1-r.fd)*100)} % plus faible que la dose prescrite.`]);
+    if(M.down>=4)fl.push(["warn",`${nf(M.down)} h d'arrêt par jour (changements de poches, de filtre, examens) : ${Math.round(M.down/24*100)} % de dose perdue.`]);
+    if(M.qb>250)fl.push(["warn","Débit sang élevé pour une technique continue : pressions d'accès plus négatives, alarmes plus fréquentes."]);
+    if(M.uf/P.w>2.5)fl.push(["warn",`UF nette ${nf(M.uf/P.w)} mL/kg/h : risque d'hypotension chez un patient sous vasopresseur.`]);
+  }else{
+    m.push(["Clairance de l'urée",Math.round(r.kml),"mL/min",""],["Kt/V de la séance",nf(r.ktv,2),"",r.ktv<1?"warn":"ok"],["Réduction de l'urée",Math.round(r.urr*100),"%",""],["UF horaire",nf(r.ufh,1),"mL/kg/h",r.ufh>13?"bad":r.ufh>10?"warn":"ok"]);
+    if(r.ufh>13)fl.push(["bad",`UF horaire ${nf(r.ufh)} mL/kg/h : au-delà de 10 à 13 mL/kg/h, le risque d'hypotension per-dialytique est majeur. Allonger la séance ou réduire l'UF.`]);
+    if(P.urea>35&&r.urr>0.4)fl.push(["warn",`Urée initiale ${P.urea} mmol/L et réduction de ${Math.round(r.urr*100)} % : risque de syndrome de déséquilibre. Pour une première séance, viser une réduction d'environ 30 % (séance courte, débit sang modéré).`]);
+    if(M.mode==="HDI")fl.push(["ok","Clairance maximale : c'est la technique de choix pour une hyperkaliémie menaçante ou une intoxication dialysable, si l'hémodynamique le permet. Attendre un rebond du potassium après la séance."]);
+  }
+  if(M.sol==="k0")fl.push(["warn","Solution sans potassium : à réserver aux hyperkaliémies sévères, avec contrôles rapprochés. Le risque d'hypokaliémie arrive vite."]);
+  if(M.sol!=="phox"&&r.cont)fl.push(["ok","Pas de phosphate dans la solution : sur plusieurs jours d'EER continue, surveiller l'hypophosphatémie."]);
+  $("mMetrics").innerHTML=m.map(x=>`<div class="m ${x[3]}"><small>${x[0]}</small><b>${x[1]}</b><i>${x[2]}</i></div>`).join("");
+  $("mFlags").innerHTML=fl.map(x=>`<li class="${x[0]}">${x[1]}</li>`).join("");
+  const s=mSimulate(r);
+  $("mCharts").innerHTML=["Urée (mmol/L)","K⁺ (mmol/L)","Bicarbonates (mmol/L)","Phosphore (mmol/L)"].map((t,i)=>`<div class="ch"><h3>${t}</h3><svg id="mc${i}"></svg></div>`).join("");
+  const C=[[s.U,[0,50],[],"#ffc53d"],[s.KK,[2,8],[3.5,5.5],"#ff5a4e"],[s.B,[0,36],[22],"#4fd8ea"],[s.PH,[0,3],[0.8],"#b4a0ff"]];
+  C.forEach((c,i)=>lineChart($("mc"+i),{xs:s.xs,series:[{v:c[0],c:c[3]}],yr:c[1],refs:c[2],xmax:48,bands:s.bands}));
+  const last=a=>a[a.length-1];
+  $("mNote").innerHTML=r.cont?`À H48 : urée ${nf(last(s.U),0)} mmol/L, K⁺ ${nf(last(s.KK))}, bicarbonates ${nf(last(s.B),0)}, phosphore ${nf(last(s.PH),2)} mmol/L. Les plateaux dépendent de la dose délivrée et de la production du patient (catabolisme, acidose).`
+    :`Séances à H0 et H24 (zones bleutées). Notez le rebond du potassium et de l'urée entre les séances : la clairance est élevée, mais le temps d'épuration est court.`;
+}
+$("mPreset").innerHTML=Object.entries(PRESETS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join("");
+$("mPreset").addEventListener("change",e=>{M.preset=e.target.value;mRender();});
+$("mSol").addEventListener("change",e=>{M.sol=e.target.value;mUpdate();});
+$("mMode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;M={...M,mode:b.dataset.mode,...structuredClone(DEF[b.dataset.mode])};mRender();});
+$("mInputs").addEventListener("input",e=>{const k=e.target.dataset.k;if(!k)return;M[k]=+e.target.value;$("o-"+k).textContent=`${String(M[k]).replace(".",",")} ${FIELDS[k][4]}`;mUpdate();});
+function openInModalites(preset,mode,over){M={preset,mode,sol:"bic",...structuredClone(DEF[mode]),...(over||{})};$("mPreset").value=preset;showTab("reglages");window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});}
+let mW0=0;const roM=new ResizeObserver(()=>{const w=$("mCharts").clientWidth;if(w!==mW0&&!$("p-reglages").hidden){mW0=w;mUpdate();}});roM.observe($("mCharts"));
+
+/* ===== MODALITÉS : chaque technique pas à pas ===== */
+const TMODES=["CVVH","CVVHD","CVVHDF","HDI"];
+const isCont=m=>["CVVH","CVVHD","CVVHDF"].includes(m);
+
+/* Stations du circuit. x,y : position du repère sur le schéma. in : techniques concernées.
+   f fonction ; r réglage ; s surveillance ; a quand ça dérape */
+const ST={
+ acces:{x:150,y:165,in:TMODES,t:"Cathéter, branche « artérielle »",
+  f:m=>"Le sang quitte le patient par la branche rouge du cathéter double lumière. Ses orifices sont situés en amont de ceux du retour (plus loin de la pointe) : le sang est aspiré avant de croiser le sang épuré, ce qui limite la recirculation. « Artérielle » est un terme historique : le cathéter est veineux.",
+  r:m=>"Site (KDIGO 2012) : jugulaire interne droite en premier, puis fémorale, puis jugulaire interne gauche ; la sous-clavière en dernier (sténose, et elle compromet une future fistule). Longueur habituelle : environ 15 cm en jugulaire droite, 20 cm à gauche, 20 à 25 cm en fémoral. Calibre 12 à 14 Fr.",
+  s:m=>"Facilité d'aspiration à la seringue au branchement, pression d'accès stable, absence de recirculation (l'urée doit baisser comme prévu).",
+  a:m=>"Cathéter qui « colle » à la paroi, coudé ou thrombosé : pression d'accès très négative, alarmes répétées, arrêts de pompe. Corriger la position du patient, rincer ; inverser les lignes seulement en dernier recours (et jamais sous citrate)."},
+ pacc:{x:215,y:90,in:TMODES,t:"Capteur de pression d'accès",
+  f:m=>"Mesure la dépression entre le cathéter et la pompe à sang. Elle reflète la facilité avec laquelle la pompe aspire le sang.",
+  r:m=>"Rien à régler : la valeur dépend du débit sang, du calibre et de la position du cathéter.",
+  s:m=>isCont(m)?"Négative, en général entre −50 et −150 mmHg pour un débit sang de 150 mL/min.":"Négative, en général entre −100 et −200 mmHg aux débits de l'hémodialyse intermittente.",
+  a:m=>"Plus négative : aspiration contre la paroi, coudure, caillot, débit sang trop élevé pour l'accès. Qui remonte vers zéro brusquement : déconnexion ou fuite en amont du capteur."},
+ anticoag:{x:285,y:90,in:TMODES,t:"Anticoagulation du circuit",
+  f:m=>isCont(m)?"Empêche le sang de coaguler au contact du circuit. Le citrate, injecté juste après le cathéter, chélate le calcium et bloque la coagulation dans le circuit seulement ; le calcium est rendu au patient sur le retour. L'héparine, injectée à la seringue avant le filtre, anticoagule aussi le patient.":"Empêche le sang de coaguler dans les lignes et le dialyseur. En hémodialyse intermittente, la séance est courte : héparine en bolus puis continu, ou séance sans anticoagulation avec rinçages si le risque hémorragique est élevé.",
+  r:m=>isCont(m)?"Le citrate est l'anticoagulation de première intention en technique continue en l'absence de contre-indication (KDIGO 2012), avec une durée de vie du filtre plus longue qu'avec l'héparine (RICH). Dose de citrate réglée sur le calcium ionisé post-filtre, compensation calcique réglée sur le calcium ionisé du patient (détail dans l'onglet Citrate). Héparine : dose selon le TCA ou l'anti-Xa.":"Héparine non fractionnée : bolus puis débit continu, arrêté avant la fin de la séance. Sans anticoagulation : débit sang élevé, rinçages réguliers au sérum physiologique. Le citrate est possible, selon l'équipe.",
+  s:m=>isCont(m)?"Citrate : calcium ionisé post-filtre (cible 0,25 à 0,35 mmol/L) et calcium ionisé du patient. Héparine : TCA ou anti-Xa, plaquettes (thrombopénie induite).":"Aspect du dialyseur et des pièges en fin de séance, saignement aux points de ponction, plaquettes.",
+  a:m=>"Anticoagulation insuffisante : filtre qui coagule, pressions qui montent, perte de sang dans le circuit. Excessive : saignement (héparine), hypocalcémie ou accumulation de citrate (citrate)."},
+ pompe:{x:365,y:90,in:TMODES,t:"Pompe à sang",
+  f:m=>"Pompe péristaltique : un rotor écrase le segment de ligne et pousse le sang à un débit fixé. Elle aspire en amont (pression d'accès négative) et pousse en aval (pressions positives).",
+  r:m=>({CVVH:"150 à 200 mL/min : en convection, le débit sang limite l'ultrafiltration possible.",CVVHD:"100 à 150 mL/min suffisent : la clairance dépend du débit de dialysat.",CVVHDF:"150 mL/min environ.",HDI:"250 à 350 mL/min selon l'accès."})[m],
+  s:m=>"Débit affiché égal au débit prescrit, absence d'arrêts répétés.",
+  a:m=>"Chaque arrêt de pompe laisse le sang stagner : au-delà de quelques minutes, le circuit coagule. Ne jamais laisser une alarme non traitée avec la pompe arrêtée."},
+ pre:{x:445,y:90,in:["CVVH","CVVHDF"],t:"Réinjection en prédilution",
+  f:m=>"La solution de substitution est ajoutée avant le filtre. Elle dilue le sang qui entre : moins d'hémoconcentration dans le filtre, qui dure plus longtemps.",
+  r:m=>"Une partie du débit de réinjection (souvent un tiers à la moitié). Sous citrate, la solution de citrate elle-même joue ce rôle de prédilution.",
+  s:m=>"Facteur de dilution = débit plasmatique / (débit plasmatique + prédilution). Il réduit d'autant la dose réelle : avec 1 L/h de prédilution pour 6 L/h de plasma, la dose est réduite d'environ 15 %.",
+  a:m=>"Trop de prédilution : dose effective trop basse. Pas assez (tout en post-dilution) : fraction de filtration élevée, filtre qui coagule."},
+ ppre:{x:515,y:90,in:["CVVH","CVVHD","CVVHDF"],t:"Capteur de pression pré-filtre",
+  f:m=>"Mesure la pression du sang à l'entrée du filtre. Avec les pressions de retour et d'effluent, la machine calcule la pression transmembranaire (PTM) et la chute de pression dans le filtre.",
+  r:m=>"Rien à régler.",
+  s:m=>"Positive, environ 100 à 250 mmHg. Surtout regarder sa tendance.",
+  a:m=>"Qui monte avec la chute de pression du filtre : le filtre se colmate et va coaguler. Qui monte avec la pression de retour : obstacle en aval du filtre."},
+ filtre:{x:532,y:225,in:TMODES,t:m=>isCont(m)?"Hémofiltre":"Dialyseur",
+  f:m=>({CVVH:"Des milliers de fibres creuses. La PTM pousse l'eau plasmatique à travers la membrane, et l'eau entraîne les solutés (convection) jusqu'au seuil de coupure de la membrane : petites et moyennes molécules.",
+   CVVHD:"Des milliers de fibres creuses. Le dialysat circule autour des fibres, à contre-courant du sang : les petites molécules diffusent du sang vers le dialysat selon leur gradient de concentration (diffusion).",
+   CVVHDF:"Des milliers de fibres creuses. On associe la convection (réinjection) et la diffusion (dialysat à contre-courant).",
+   HDI:"Dialyseur haute perméabilité. Le dialysat circule à 500 mL/min à contre-courant : la diffusion des petites molécules (urée, potassium) est très rapide."})[m],
+  r:m=>isCont(m)?"Membrane synthétique de 1 à 1,5 m², choisie selon le kit. Durée de vie maximale du kit : en général 72 h.":"Dialyseur de surface adaptée au patient, haute perméabilité.",
+  s:m=>isCont(m)?"PTM, chute de pression dans le filtre, aspect du filtre (fibres sombres), durée de vie.":"Aspect du dialyseur en fin de séance (fibres coagulées).",
+  a:m=>"Colmatage puis coagulation : PTM et chute de pression qui montent. Restituer le sang avant la coagulation complète, sinon le patient perd le volume du circuit (150 à 200 mL de sang)."},
+ dial:{x:720,y:310,in:["CVVHD","CVVHDF"],t:"Dialysat",
+  f:m=>"Solution qui circule autour des fibres à contre-courant du sang. Elle n'entre pas dans le patient : elle reçoit les solutés qui diffusent depuis le sang, et apporte le bicarbonate.",
+  r:m=>m==="CVVHD"?"Débit 25 à 30 mL/kg/h (environ 2 L/h). Composition : bicarbonate, potassium selon la kaliémie, avec ou sans phosphate.":"Environ la moitié de la dose (par exemple 1 L/h). Même composition que la réinjection.",
+  s:m=>"Le débit de dialysat (1 à 2,5 L/h) est très inférieur au débit plasmatique : le dialysat sort saturé en urée, et la clairance de l'urée est à peu près égale au débit de dialysat.",
+  a:m=>"Poche vide ou clampée : alarme de balance, la machine s'arrête, la dose baisse."},
+ effl:{x:665,y:140,in:["CVVH","CVVHD","CVVHDF"],t:"Ligne effluent : pression et détecteur de fuite de sang",
+  f:m=>"Recueille tout ce qui sort du filtre (ultrafiltrat et dialysat usé). Un capteur mesure la pression effluent ; un détecteur optique repère du sang dans l'effluent.",
+  r:m=>"Rien à régler.",
+  s:m=>"Pression effluent souvent négative (la pompe effluent aspire). Effluent clair, jaune pâle.",
+  a:m=>"Effluent rosé et alarme de fuite de sang : membrane rompue, arrêter et changer le circuit sans restituer. Pression effluent de plus en plus négative : filtre qui se colmate."},
+ peff:{x:760,y:140,in:["CVVH","CVVHD","CVVHDF"],t:"Pompe effluent",
+  f:m=>"Elle fixe le débit qui sort du filtre, donc la quantité d'eau ultrafiltrée et, avec le dialysat, la dose.",
+  r:m=>"Débit effluent = réinjection + dialysat + perte patient. Dose prescrite = effluent / poids : 25 à 30 mL/kg/h pour délivrer 20 à 25 (KDIGO).",
+  s:m=>"Débit effluent horaire, cohérent avec la prescription.",
+  a:m=>"Ce débit est le meilleur reflet de la dose : toute baisse (arrêts, poches) fait baisser la dose délivrée."},
+ bal:{x:850,y:225,in:["CVVH","CVVHD","CVVHDF"],t:"Balances",
+  f:m=>"La machine pèse en continu les poches de solution et la poche d'effluent. Elle ajuste les pompes pour que la perte patient soit exactement celle prescrite.",
+  r:m=>"Perte patient horaire (ultrafiltration nette) : 0 à 2 mL/kg/h selon l'hémodynamique et l'objectif de bilan.",
+  s:m=>"Bilan horaire affiché et bilan entrées-sorties du patient, poches libres de tout contact.",
+  a:m=>"Poche touchée, mal suspendue ou qui fuit : alarme de balance, arrêt. Ne jamais forcer une alarme de balance à répétition : le bilan peut être faux de plusieurs litres."},
+ post:{x:445,y:400,in:["CVVH","CVVHDF"],t:"Réinjection en post-dilution",
+  f:m=>"La solution de substitution est ajoutée après le filtre, juste avant le retour. Elle remplace l'eau retirée par convection.",
+  r:m=>"Le reste du débit de réinjection. Limité par la fraction de filtration : (prédilution + post-dilution + perte) / (débit plasmatique + prédilution) doit rester sous 20 à 25 %.",
+  s:m=>"Fraction de filtration, hématocrite du patient.",
+  a:m=>"Fraction de filtration trop élevée : le sang s'hémoconcentre dans le filtre, qui coagule vite. Passer une partie en prédilution ou augmenter le débit sang."},
+ piege:{x:365,y:400,in:TMODES,t:"Piège à bulles et capteur de pression de retour",
+  f:m=>"Chambre où les bulles éventuelles remontent et sont retenues. Un capteur mesure la pression de retour, c'est-à-dire la résistance à l'écoulement vers le patient.",
+  r:m=>"Niveau de sang dans la chambre (réglé à l'amorçage).",
+  s:m=>isCont(m)?"Positive, environ 50 à 150 mmHg pour 150 mL/min.":"Positive, environ 100 à 250 mmHg aux débits de l'hémodialyse intermittente (appelée pression veineuse).",
+  a:m=>"Élevée : obstacle en aval (ligne coudée, caillot dans le piège, branche veineuse obstruée). Qui chute brutalement : déconnexion du retour, risque d'hémorragie massive. C'est l'alarme la plus dangereuse."},
+ air:{x:285,y:400,in:TMODES,t:"Détecteur d'air et clamp veineux",
+  f:m=>"Un capteur à ultrasons détecte l'air dans la ligne de retour. Il ferme aussitôt le clamp et arrête la pompe à sang : il protège de l'embolie gazeuse.",
+  r:m=>"Rien à régler : la ligne doit être correctement placée dans le détecteur.",
+  s:m=>"Ligne pleine de sang, sans microbulles.",
+  a:m=>"Ne jamais relancer sans avoir trouvé l'entrée d'air (raccord, poche changée, robinet) et purgé la ligne selon la procédure."},
+ rech:{x:215,y:400,in:["CVVH","CVVHD","CVVHDF"],t:"Réchauffeur",
+  f:m=>"Réchauffe le sang (ou la solution) avant le retour. Le circuit et les litres de solution à température ambiante refroidissent le patient.",
+  r:m=>"Température selon la machine, souvent 37 à 38 °C.",
+  s:m=>"Température du patient.",
+  a:m=>"Hypothermie : frissons, troubles de la coagulation, vasoconstriction. Et l'EER masque la fièvre : une infection peut passer inaperçue."},
+ retour:{x:150,y:335,in:TMODES,t:"Retour au patient, branche « veineuse »",
+  f:m=>"Le sang épuré retourne au patient par la branche bleue, dont l'orifice est le plus distal pour éviter que le sang épuré soit réaspiré.",
+  r:m=>isCont(m)?"Sous citrate : la compensation calcique est perfusée sur la ligne de retour ou sur une voie centrale dédiée, jamais sur la ligne d'accès.":"Rien à régler.",
+  s:m=>"Pression de retour, point de ponction, hémodynamique au branchement.",
+  a:m=>"Lignes inversées : recirculation (le sang épuré est réaspiré), dose réelle effondrée."},
+ eau:{x:850,y:420,in:["HDI"],t:"Eau traitée (osmoseur)",
+  f:m=>"Le générateur fabrique le dialysat à partir d'eau : en 4 heures à 500 mL/min, le sang du patient est exposé à environ 120 litres. Cette eau doit être purifiée par osmose inverse.",
+  r:m=>"En réanimation : osmoseur portable ou boucle d'eau traitée de l'hôpital.",
+  s:m=>"Contrôles bactériologiques et endotoxines réguliers, désinfection tracée.",
+  a:m=>"Eau contaminée : frissons, fièvre, hypotension en cours de séance (réaction pyrogène)."},
+ conc:{x:770,y:420,in:["HDI"],t:"Concentrés et proportionnement",
+  f:m=>"Le générateur mélange l'eau avec un concentré acide (sodium, potassium, calcium, magnésium) et du bicarbonate (cartouche de poudre). C'est ainsi qu'on choisit la composition du bain.",
+  r:m=>"Sodium 145 mmol/L en réanimation (meilleure tolérance), potassium selon la kaliémie (2 à 4), calcium 1,5 à 1,75, bicarbonate 30 à 35.",
+  s:m=>"Concentrés branchés conformes à la prescription.",
+  a:m=>"Bain sans potassium chez un patient normokaliémique : hypokaliémie et troubles du rythme."},
+ cond:{x:700,y:365,in:["HDI"],t:"Conductivité, chauffage, dégazage",
+  f:m=>"La conductivité vérifie que le mélange est correct (elle reflète surtout le sodium). Le dialysat est chauffé et dégazé avant d'entrer dans le dialyseur.",
+  r:m=>"Température du dialysat 35,5 à 36 °C : un bain un peu frais améliore la tolérance hémodynamique.",
+  s:m=>"Conductivité stable, température affichée.",
+  a:m=>"Alarme de conductivité : le générateur met le dialysat en dérivation (il ne passe plus dans le dialyseur). Vérifier les concentrés."},
+ dialHD:{x:640,y:310,in:["HDI"],t:"Débit de dialysat",
+  f:m=>"Le dialysat traverse le dialyseur à contre-courant puis part à l'égout (circuit ouvert, passage unique).",
+  r:m=>"500 mL/min en général.",
+  s:m=>"Débit affiché.",
+  a:m=>"Débit de dialysat trop bas pour le débit sang : clairance limitée."},
+ fuite:{x:680,y:140,in:["HDI"],t:"Détecteur de fuite de sang",
+  f:m=>"Capteur optique sur la sortie du dialysat : il détecte des globules rouges passés à travers une membrane rompue.",
+  r:m=>"Rien à régler.",
+  s:m=>"Dialysat de sortie clair.",
+  a:m=>"Alarme de fuite : arrêt, ne pas restituer le sang (risque de contamination par le dialysat), changer le dialyseur."},
+ uf:{x:770,y:140,in:["HDI"],t:"Contrôle volumétrique de l'ultrafiltration",
+  f:m=>"Des chambres d'équilibrage font entrer et sortir des volumes identiques de dialysat ; une pompe d'UF retire en plus le volume prescrit. C'est elle qui fait perdre du poids au patient.",
+  r:m=>"UF totale de la séance et durée : UF horaire = UF totale / durée. Rester sous 10 à 13 mL/kg/h.",
+  s:m=>"UF réalisée, pression artérielle toutes les 15 à 30 minutes.",
+  a:m=>"Hypotension per-dialytique : réduire ou suspendre l'UF, baisser la température du bain, remplir si besoin. Allonger la séance si besoin."},
+ egout:{x:860,y:140,in:["HDI"],t:"Évacuation à l'égout",
+  f:m=>"Le dialysat usé est évacué directement. Contrairement aux techniques continues, il n'y a pas de poches à peser ni à changer.",
+  r:m=>"Rien à régler.",
+  s:m=>"Raccordement de l'évacuation.",
+  a:m=>"—"}
+};
+const SH={acces:["Accès",-24,6,"end"],pacc:["P accès",0,-26],anticoag:["",0,0],pompe:["Pompe",0,46],pre:["Prédilution",28,-56,"start"],ppre:["P pré-filtre",0,-26],
+ filtre:["",0,0],dial:["Dialysat",0,-22],effl:["P effl., fuite",-8,-26],peff:["Pompe effl.",0,-28],bal:["Balances",-24,6,"end"],post:["Post-dilution",28,52,"start"],
+ piege:["Piège, P retour",0,36],air:["Air, clamp",0,-24],rech:["Réchauffeur",0,36],retour:["Retour",-24,6,"end"],eau:["Eau osmosée",0,32],conc:["Concentrés",0,32],
+ cond:["Conductivité, T°",24,6,"start"],dialHD:["Dialysat",0,-22],fuite:["Fuite de sang",0,-24],uf:["UF",0,-24],egout:["Égout",0,-24]};
+const ORDER_C=["acces","pacc","anticoag","pompe","pre","ppre","filtre","dial","effl","peff","bal","post","piege","air","rech","retour"];
+const ORDER_H=["acces","pacc","anticoag","pompe","filtre","piege","air","retour","eau","conc","cond","dialHD","fuite","uf","egout"];
+const tStations=m=>(isCont(m)?ORDER_C:ORDER_H).filter(k=>ST[k].in.includes(m));
+
+/* Fiche et procédure */
+const TECH={
+ CVVH:{full:"Hémofiltration veino-veineuse continue",meca:"Convection",
+  prin:"La pompe effluent crée une pression transmembranaire : l'eau plasmatique traverse la membrane et entraîne avec elle les solutés jusqu'au seuil de coupure de la membrane (convection). L'eau retirée est remplacée par une solution de substitution, avant le filtre (prédilution) et/ou après (post-dilution). La clairance est à peu près égale au débit d'ultrafiltration, corrigé du facteur de prédilution.",
+  set:[["Débit sang","150 à 200 mL/min"],["Dose (effluent)","25 à 30 mL/kg/h prescrits"],["Réinjection","répartie pré / post"],["Fraction de filtration","&lt; 20 à 25 %"],["Perte patient","0 à 2 mL/kg/h"]],
+  plus:["Épure petites et moyennes molécules","Tolérance hémodynamique","Correction lente et régulière"],
+  moins:["Fraction de filtration limitante : filtre qui coagule si trop de post-dilution","Prédilution qui réduit la dose","Pertes en phosphate, potassium, antibiotiques"],
+  quand:"Patient instable ou à risque d'hypertension intracrânienne (KDIGO 2012)."},
+ CVVHD:{full:"Hémodialyse veino-veineuse continue",meca:"Diffusion",
+  prin:"Le dialysat circule autour des fibres à contre-courant du sang : les petites molécules passent du sang vers le dialysat selon leur gradient de concentration (diffusion). Le débit de dialysat étant très inférieur au débit plasmatique, le dialysat sort saturé en urée : la clairance de l'urée est à peu près égale au débit de dialysat. Seule la perte patient est ultrafiltrée.",
+  set:[["Débit sang","100 à 150 mL/min"],["Dialysat","25 à 30 mL/kg/h"],["Perte patient","0 à 2 mL/kg/h"]],
+  plus:["Fraction de filtration très faible : filtre durable","Débit sang modeste suffisant"],
+  moins:["Moins efficace sur les moyennes molécules (impact clinique non démontré)"],
+  quand:"Accès vasculaire au débit limité, ou filtres qui coagulent vite en convection."},
+ CVVHDF:{full:"Hémodiafiltration veino-veineuse continue",meca:"Convection et diffusion",
+  prin:"On associe une réinjection (convection) et un dialysat à contre-courant (diffusion). La diffusion apporte une partie de la dose sans augmenter la fraction de filtration : c'est la technique la plus souple.",
+  set:[["Débit sang","environ 150 mL/min"],["Dose totale","25 à 30 mL/kg/h"],["Répartition","environ moitié réinjection, moitié dialysat"],["Perte patient","0 à 2 mL/kg/h"]],
+  plus:["Souple : on règle la dose sans pousser la fraction de filtration","Épure petites et moyennes molécules"],
+  moins:["Plus de poches et de réglages"],
+  quand:"Choix polyvalent en réanimation, notamment avec un débit sang limité."},
+ HDI:{full:"Hémodialyse intermittente",meca:"Diffusion à haut débit",
+  prin:"Le générateur fabrique le dialysat à partir d'eau traitée et de concentrés. Le dialysat circule à 500 mL/min à contre-courant d'un débit sang élevé : la clairance de l'urée dépasse 200 mL/min. La séance dure quelques heures ; l'ultrafiltration est contrôlée par le générateur.",
+  set:[["Débit sang","250 à 350 mL/min"],["Dialysat","500 mL/min"],["Durée","4 h ou plus en réanimation"],["Bain","Na⁺ 145, K⁺ selon kaliémie, 35,5 à 36 °C"],["UF horaire","&lt; 10 à 13 mL/kg/h"]],
+  plus:["Correction la plus rapide (hyperkaliémie, intoxications dialysables)","Patient libre entre les séances","Moins d'anticoagulation"],
+  moins:["Hypotension si UF horaire élevée","Rebond du potassium et de l'urée","Risque de syndrome de déséquilibre, à éviter en cas d'hypertension intracrânienne","Eau traitée et équipe formée nécessaires"],
+  quand:"Hémodynamique stable, ou urgence métabolique (hyperkaliémie menaçante, intoxication). Pas de différence de survie avec les techniques continues (Hemodiafe)."}
+};
+function tProc(m){
+  if(isCont(m))return [
+   ["Prescrire",`Technique (${m}), dose effluent 25 à 30 mL/kg/h, débit sang, répartition ${m==="CVVHD"?"en dialysat":m==="CVVH"?"pré / post-dilution":"réinjection / dialysat"}, perte patient horaire, anticoagulation, solution (potassium, phosphate), cibles biologiques.`,"La machine n'exécute que ce qui est écrit. La dose délivrée sera inférieure à la dose prescrite : on prescrit plus pour délivrer 20 à 25 mL/kg/h."],
+   ["Vérifier l'abord","Cathéter double lumière dédié, site et longueur adaptés, position contrôlée en jugulaire. Aspirer le verrou de chaque branche, rincer, tester l'aspiration et le refoulement à la seringue.","Un accès qui aspire mal donne des alarmes, des arrêts et de la recirculation. Le verrou (citrate concentré ou héparine) ne doit pas partir dans le patient."],
+   ["Installer le kit et les poches","Monter les lignes et le filtre en suivant le guidage de la machine. Suspendre les poches de solution (et de citrate et de calcium sous citrate), la poche d'effluent vide, la seringue d'héparine le cas échéant. Vérifier les clamps.","Chaque ligne a sa pompe, son capteur et sa balance : une ligne mal placée fausse les pressions ou le bilan."],
+   ["Amorcer","Remplir le circuit de sérum physiologique (hépariné ou non selon les pratiques locales). La machine chasse l'air, mouille la membrane et fait son autotest.","Pas d'air dans le circuit, membrane prête, capteurs vérifiés. Un autotest en échec impose de changer le kit."],
+   ["Brancher","Connecter la ligne d'accès, démarrer la pompe à sang à bas débit (50 à 100 mL/min). Chez le patient instable, connecter le retour d'emblée (purge restituée) ; sinon remplir le circuit de sang puis connecter le retour. Avoir la noradrénaline prête.","Le circuit contient 150 à 200 mL : les soustraire d'un coup à un patient instable peut faire chuter la pression."],
+   ["Monter les débits","Augmenter le débit sang jusqu'à la cible en surveillant la pression d'accès, puis démarrer les solutions, la perte patient et, sous citrate, la compensation calcique.","On ne lance les échanges qu'une fois l'accès stable : moins d'alarmes, moins d'erreurs de bilan."],
+   ["Surveiller","Chaque heure : pressions (accès, retour, pré-filtre, PTM, chute de pression du filtre), bilan entrées-sorties, pression artérielle, température. Toutes les 6 à 12 h : ionogramme, calcium, phosphore, magnésium, gaz du sang. Anticoagulation : calcium ionisé post-filtre et patient sous citrate, TCA ou anti-Xa sous héparine.","Repérer tôt un filtre qui se colmate, un bilan qui dérive, un trouble ionique (hypophosphatémie, hypokaliémie) ou une accumulation de citrate."],
+   ["Changer les poches sans perdre la dose","Anticiper les changements, utiliser des poches de 5 L, regrouper les soins et les transports.","Dose délivrée = dose prescrite × temps de fonctionnement : 4 h d'arrêt par jour, c'est 17 % de dose en moins."],
+   ["Restituer","En fin de traitement, quand le filtre se colmate ou à la durée maximale du kit (en général 72 h) : rendre le sang du circuit au patient en le rinçant au sérum physiologique.","Restituer avant la coagulation complète évite de perdre 150 à 200 mL de sang."],
+   ["Débrancher et verrouiller","Rincer chaque branche au sérum physiologique, injecter lentement le verrou au volume inscrit sur chaque branche, clamper, refaire le pansement.","Le cathéter reste perméable jusqu'à la séance suivante, sans bolus d'anticoagulant au patient."],
+   ["Tracer","Durée de fonctionnement, dose délivrée, bilan, durée de vie du filtre, cause de l'arrêt.","Ajuster la prescription suivante : dose réellement délivrée, anticoagulation, accès."]
+  ];
+  return [
+   ["Prescrire","Durée (4 h ou plus ; première séance plus courte si l'urée est très élevée), débit sang, débit dialysat, UF totale, composition du bain (Na⁺ 145, K⁺ selon la kaliémie, bicarbonate, calcium), température 35,5 à 36 °C, anticoagulation.","Les réglages du bain et de l'UF font la tolérance de la séance chez un patient de réanimation."],
+   ["Vérifier l'eau et le générateur","Osmoseur raccordé, désinfection du générateur faite et tracée, autotest.","Le sang est exposé à plus de 100 L d'eau par séance : une eau contaminée donne une réaction pyrogène."],
+   ["Monter le circuit et les concentrés","Lignes et dialyseur, concentré acide et cartouche de bicarbonate conformes à la prescription. Vérifier la conductivité obtenue.","C'est le mélange eau-concentrés qui donne la composition du bain."],
+   ["Amorcer","Rinçage du circuit au sérum physiologique, purge de l'air, rinçage du compartiment dialysat.","Pas d'air, membrane prête, résidus éliminés."],
+   ["Vérifier l'abord","Aspirer le verrou de chaque branche, rincer, tester l'aspiration et le refoulement.","Les débits de l'hémodialyse intermittente exigent un accès qui aspire bien."],
+   ["Brancher","Branchement avec purge restituée (isovolumique), débit sang bas puis montée progressive.","Éviter l'hypotension de début de séance."],
+   ["Surveiller","Pression artérielle toutes les 15 à 30 minutes, pressions artérielle et veineuse du circuit, conductivité, UF réalisée. Céphalées, nausées, confusion : syndrome de déséquilibre.","L'hypotension per-dialytique est la complication la plus fréquente ; le déséquilibre osmotique menace surtout la première séance."],
+   ["Restituer et débrancher","Restitution du sang, rinçage des branches, verrou au volume inscrit, pansement.","Rendre le sang du circuit et garder le cathéter perméable."],
+   ["Après la séance","Désinfection du générateur. Contrôle de la kaliémie à distance de la fin de séance. Tracer la durée, l'UF, la tolérance.","Le potassium et l'urée remontent après la séance (rebond) : un dosage juste en fin de séance surestime l'efficacité."]
+  ];
+}
+
+/* Schéma */
+let T={mode:"CVVHDF",st:0};
+function tSvg(m){
+  const keys=tStations(m),cur=keys[T.st];
+  const has=k=>keys.includes(k);
+  const L=(d,col,cls="")=>`<path class="fl ${cls}" d="${d}" stroke="${col}" style="animation-duration:1.6s"/>`;
+  const txt=(x,y,t,c="#93a8af",a="middle",s=14)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${s}" text-anchor="${a}" font-family="Barlow,sans-serif">${t}</text>`;
+  const bag=(x,y,c,t,dy=-28)=>`<rect x="${x-18}" y="${y-22}" width="36" height="40" rx="7" fill="#0d171b" stroke="${c}" stroke-width="2"/>${t?txt(x,y+dy,t,c,"middle",16):""}`;
+  let s=`<svg viewBox="0 0 900 470" role="img" aria-label="Circuit de ${TECH[m].full}"><rect width="900" height="470" fill="#04090b"/>`;
+  // patient
+  s+=`<circle cx="70" cy="250" r="44" fill="#16242a" stroke="#3b5862"/>${txt(70,256,"Patient","#e9f1f3","middle",17)}`;
+  // sang
+  s+=L("M110 232 L150 232 L150 90 L585 90 L585 115","#ff5a4e");
+  s+=L("M585 335 L585 400 L150 400 L150 268 L110 268","#ff5a4e");
+  // filtre
+  s+=`<rect x="560" y="115" width="50" height="220" rx="16" fill="#16242a" stroke="#93a8af" stroke-width="1.5"/>`;
+  for(let i=0;i<6;i++)s+=`<line x1="${568+i*7}" y1="128" x2="${568+i*7}" y2="322" stroke="#3b5862"/>`;
+  // pompe
+  s+=`<circle cx="365" cy="90" r="24" fill="#0d171b" stroke="#ff5a4e" stroke-width="2"/><g class="rot" style="transform-origin:365px 90px"><line x1="349" y1="90" x2="381" y2="90" stroke="#ff8a7a" stroke-width="3"/></g>`;
+  // anticoag
+  s+=L("M285 50 L285 90",isCont(m)?"#7ee2c8":"#e9f1f3");s+=`<rect x="270" y="22" width="30" height="26" rx="5" fill="#0d171b" stroke="${isCont(m)?"#7ee2c8":"#e9f1f3"}"/>`;
+  // piège, clamp, réchauffeur
+  s+=`<rect x="352" y="382" width="26" height="36" rx="6" fill="#0d171b" stroke="#ff8a7a" stroke-width="2"/>`;
+  s+=`<rect x="272" y="388" width="26" height="24" rx="4" fill="#0d171b" stroke="#e9f1f3"/>`;
+  if(has("rech"))s+=`<path d="M195 412 l8 -12 l8 12 l8 -12 l8 12" fill="none" stroke="#ffc53d" stroke-width="2"/>`;
+  if(isCont(m)){
+    if(has("pre")){s+=L("M445 52 L445 90","#4fd8ea");s+=bag(445,30,"#4fd8ea","",0);}
+    if(has("post")){s+=L("M445 400 L445 428","#4fd8ea");s+=bag(445,448,"#4fd8ea","",0);}
+    s+=L("M610 140 L832 140","#ffc53d");s+=bag(850,140,"#ffc53d","");
+    s+=`<circle cx="760" cy="140" r="18" fill="#0d171b" stroke="#ffc53d" stroke-width="2"/>`;
+    if(has("dial")){s+=L("M832 310 L610 310","#b4a0ff");s+=bag(850,310,"#b4a0ff","");}
+    s+=`<line x1="850" y1="172" x2="850" y2="${has("dial")?280:200}" stroke="#3b5862" stroke-dasharray="3 4"/>`;
+  }else{
+    s+=`<rect x="650" y="40" width="240" height="420" rx="16" fill="none" stroke="#2c4650"/>${txt(770,66,"Générateur","#e9f1f3","middle",17)}`;
+    s+=L("M900 420 L790 420","#9fd3ff");
+    s+=L("M750 420 L700 420 L700 310 L610 310","#b4a0ff");
+    s+=`<rect x="750" y="400" width="40" height="40" rx="6" fill="#0d171b" stroke="#b4a0ff"/>`;
+    s+=L("M610 140 L890 140","#ffc53d");
+  }
+  // labels permanents
+  s+=txt(622,232,isCont(m)?"filtre":"dialyseur","#c9d6da","start",16);
+  // repères
+  keys.forEach(k=>{const p=ST[k],h=SH[k];let lab=h[0];if(k==="anticoag")lab=isCont(m)?"Citrate ou héparine":"Héparine";
+    if(k==="anticoag")s+=txt(p.x,14,lab,"#c9d6da","middle",16);else if(lab)s+=txt(p.x+h[1],p.y+h[2],lab,"#c9d6da",h[3]||"middle",16);});
+  keys.forEach((k,i)=>{const p=ST[k],on=k===cur;
+    s+=`<g class="mk${on?" on":""}" data-st="${i}" tabindex="0" role="button" aria-label="${i+1}. ${esc(typeof p.t==="function"?p.t(m):p.t)}"><circle cx="${p.x}" cy="${p.y}" r="${on?17:14}" fill="${on?"#e9f1f3":"#0b1215"}" stroke="#e9f1f3" stroke-width="2"/><text x="${p.x}" y="${p.y+5}" text-anchor="middle" font-size="${on?16:14}" font-weight="700" fill="${on?"#0b1215":"#e9f1f3"}" font-family="Barlow,sans-serif">${i+1}</text></g>`;});
+  return s+`</svg>`;
+}
+function tRender(){
+  const m=T.mode,keys=tStations(m);T.st=clamp(T.st,0,keys.length-1);
+  const k=keys[T.st],p=ST[k],tt=typeof p.t==="function"?p.t(m):p.t,X=TECH[m];
+  $("tMode").innerHTML=TMODES.map(x=>`<button type="button" data-tm="${x}" aria-pressed="${x===m}">${x}</button>`).join("");
+  $("tFull").innerHTML=`<b>${X.full}</b> · ${X.meca}`;
+  $("tCircuit").innerHTML=tSvg(m);
+  $("tStep").innerHTML=`<button class="btn" type="button" id="tPrev" ${T.st===0?"disabled":""} aria-label="Élément précédent">←</button><span><b>${T.st+1} / ${keys.length}</b> · ${esc(tt)}</span><button class="btn" type="button" id="tNext" ${T.st===keys.length-1?"disabled":""} aria-label="Élément suivant">→</button>`;
+  $("tStation").innerHTML=`<p class="eyebrow">Élément ${T.st+1} sur ${keys.length}</p><h2>${esc(tt)}</h2>
+    <dl class="st"><dt>À quoi ça sert</dt><dd>${p.f(m)}</dd><dt>Réglage</dt><dd>${p.r(m)}</dd><dt>Ce qu'on surveille</dt><dd>${p.s(m)}</dd><dt>Quand ça dérape</dt><dd>${p.a(m)}</dd></dl>`;
+  $("tPrin").innerHTML=`<h2>Le principe</h2><p>${X.prin}</p><h3 style="margin-top:12px">Réglages de départ (adulte)</h3><div class="kv">${X.set.map(r=>`<span>${r[0]}</span><span>${r[1]}</span>`).join("")}</div>`;
+  $("tFiche").innerHTML=`<h2>Quand la choisir</h2><p>${X.quand}</p><div class="pm"><div><h3>Atouts</h3><ul>${X.plus.map(x=>`<li>${x}</li>`).join("")}</ul></div><div><h3>Limites</h3><ul>${X.moins.map(x=>`<li>${x}</li>`).join("")}</ul></div></div>`;
+  $("tProc").innerHTML=`<h2>La séance, étape par étape</h2><ol class="proc">${tProc(m).map(s=>`<li><div><h3>${s[0]}</h3><p>${s[1]}</p><p class="why"><b>Pourquoi :</b> ${s[2]}</p></div></li>`).join("")}</ol>`;
+}
+$("tMode").addEventListener("click",e=>{const b=e.target.closest("[data-tm]");if(!b)return;const prev=tStations(T.mode)[T.st];T.mode=b.dataset.tm;const i=tStations(T.mode).indexOf(prev);T.st=i>=0?i:0;tRender();});
+$("p-modalites").addEventListener("click",e=>{
+  if(e.target.closest("#tPrev")){T.st--;tRender();return;}
+  if(e.target.closest("#tNext")){T.st++;tRender();return;}
+  const g=e.target.closest("[data-st]");if(g){T.st=+g.dataset.st;tRender();}
+});
+$("p-modalites").addEventListener("keydown",e=>{const g=e.target.closest("[data-st]");if(g&&(e.key==="Enter"||e.key===" ")){e.preventDefault();T.st=+g.dataset.st;tRender();$("tCircuit").querySelector(`[data-st="${T.st}"]`)?.focus();}});
+
+/* ===== CITRATE (protocole du service) ===== */
+const CCASES={
+  standard:{name:"Choc septique pulmonaire",w:72,ht:.30,tp:72,lac:2.1,lacT:[[0,1.6]],metf:false,cpk:"normale",ca0:1.04,kpf:0.8,caOff:-0.07,caOffT:[[0,-0.07],[8,-0.14]],liver:[[0,20]],hOff:0,naOff:0,
+    txt:"72 kg. Pneumonie à pneumocoque, choc septique sous noradrénaline 0,2 µg/kg/min, IRA KDIGO 3 anurique depuis 48 h. TP 72 %, lactate 2,1 mmol/L, CPK normales. Pas de metformine. Ca²⁺ 1,04 mmol/L."},
+  surcharge:{name:"Pancréatite aiguë, aspiration gastrique",w:68,ht:.32,tp:80,lac:1.6,lacT:[[0,1.4]],metf:false,cpk:"normale",ca0:1.15,kpf:1.0,caOff:0,liver:[[0,20]],hOff:10,naOff:4,
+    txt:"68 kg. Pancréatite aiguë grave, aspiration gastrique abondante (300 mL/h), IRA KDIGO 3. TP 80 %, lactate 1,6, CPK normales. Ca²⁺ 1,15 mmol/L, bicarbonates 27."},
+  accum:{name:"Choc hémorragique post-opératoire",w:75,ht:.26,tp:58,lac:3.0,lacT:[[0,2.6],[4,6.5]],metf:false,cpk:"normale",ca0:1.13,kpf:1.05,caOff:-0.02,liver:[[0,20],[4,2.5]],hOff:0,naOff:0,
+    txt:"75 kg. Choc hémorragique après chirurgie aortique, IRA KDIGO 3. TP 58 %, lactate 3,0, CPK normales. Ca²⁺ 1,13 mmol/L. Transfusé de 8 culots."},
+  rhabdo:{name:"Rhabdomyolyse après écrasement",w:85,ht:.36,tp:88,lac:2.2,lacT:[[0,2]],metf:false,cpk:"48 000 UI/L",ca0:1.02,kpf:1,caOff:0,liver:[[0,20]],hOff:0,naOff:0,ci:true,
+    txt:"85 kg. Écrasement de membre, CPK 48 000 UI/L, myoglobinurie puis anurie, K⁺ 6,1. TP 88 %, lactate 2,2. Ca²⁺ 1,02 mmol/L."}
+};
+const CHECKS=[1,2,3,6,12,18,24];
+const LABS_AT={1:["gds","ca","pf"],2:["gds","ca","pf"],3:["gds","ca","pf","ratio"],6:["gds","ca","pf","ratio"],12:["gds","ca","pf"],18:["gds","ca","pf"],24:["gds","ca","pf","ratio","iono","mgp"]};
+let C=null;
+function cNew(key){
+  const k=CCASES[key];
+  C={key,k,phase:"pre",t:0,i:0,ans:{},checks:[],hist:[],
+    st:{qb:140,dose:3,comp:120,reinj:1400,perte:100,sol:"phox",ca:"cl",hep:"non",pps0:false},
+    m:{caSys:k.ca0,pool:0,hco3:k.key==="surcharge"?27:22,na:139,lac:k.lac}};
+  C.m.hco3=key==="surcharge"?27:key==="accum"?20:21;
+}
+const pw=v=>Math.round(v);
+const interp=(arr,t)=>{let v=arr[0][1];for(const [a,b] of arr)if(t>=a)v=b;return v;};
+function cDerive(){
+  const k=C.k,s=C.st,m=C.m;
+  const qp=s.qb*60*(1-k.ht);
+  const dose=s.pps0?0:s.dose;
+  const cit=dose*s.qb*60/18;
+  const eff=cit+s.reinj+s.perte;
+  const ff=(cit+s.reinj+s.perte)/(qp+cit);
+  const pf=dose>0?0.40*Math.pow(3/dose,1.4)*Math.pow(m.caSys/1.15,0.4)*k.kpf:m.caSys*0.95;
+  const load=dose*s.qb*0.06;
+  const fr=clamp(0.3+0.9*ff,0.35,0.75);
+  const sys=load*(1-fr);
+  const ratio=(m.caSys*2.05+m.pool*0.02)/m.caSys;
+  const ph=6.1+Math.log10(m.hco3/(0.03*40));
+  const ag=12+m.pool*0.22+(m.lac-1)*1.0;
+  const ufr=(s.reinj+s.perte)/k.w;
+  return {qp,cit,eff,ff,pf,load,fr,sys,ratio,ph,ag,ufr,dose};
+}
+function cEvolve(dt){
+  const k=C.k,s=C.st,m=C.m,h=0.1,n=Math.round(dt/h);
+  for(let i=0;i<n;i++){
+    const d=cDerive();const cap=interp(k.liver,C.t);
+    const metab=Math.min(d.sys+m.pool*0.15,cap);
+    m.pool=Math.max(0,m.pool+(d.sys-metab)*h-m.pool*0.08*h*(d.eff/2500));
+    const compEff=s.comp*(s.ca==="cl"?1:0.33);
+    const caEq=1.13+(compEff-120)*0.0065+(k.caOffT?interp(k.caOffT,C.t):k.caOff)-m.pool*0.006;
+    m.caSys+=(caEq-m.caSys)*(1-Math.exp(-h/1.5));
+    m.lac+=(interp(k.lacT,C.t)-m.lac)*(1-Math.exp(-h/2));
+    const bath=s.sol==="phox"?26:27.5;
+    const hEq=bath+k.hOff*clamp(1600/Math.max(d.eff,800),0.45,1.3)+0.6*(metab-9)-m.pool*0.12-(m.lac-1.5)*0.9;
+    m.hco3+=(hEq-m.hco3)*(1-Math.exp(-h/3));
+    const naEq=139+k.naOff*clamp(1600/Math.max(d.eff,800),0.45,1.3)+0.5*(metab-9)+(k.hOff>0?2:0);
+    m.na+=(naEq-m.na)*(1-Math.exp(-h/6));
+    C.t+=h;
+  }
+  const d=cDerive();
+  C.hist.push({t:+C.t.toFixed(1),ca:m.caSys,pf:d.pf,ph:d.ph,ratio:d.ratio});
+}
+/* attendus selon le protocole */
+function cExpected(L,prev){
+  const e={dose:0,comp:0,acts:new Set(),why:[]};
+  if(C.st.pps0&&L.ratio<=2.5){
+    e.why.push("Citrate arrêté : ne pas le reprendre tant que l'accumulation n'est pas résolue (rapport Ca total / Ca²⁺ en baisse, acidose corrigée). La suite de l'anticoagulation se discute avec le médecin.");
+    if(L.ca<1.0){e.comp=20;}else if(L.ca<1.1){e.comp=10;}else if(L.ca>1.4){e.comp=-20;}else if(L.ca>1.3){e.comp=-10;}
+    e.why.push(`Ca²⁺ patient ${nf(L.ca,2)} : compensation ${e.comp?(e.comp>0?"+":"")+e.comp+" %":"inchangée"}.`);
+    if(L.ph<7.35&&L.hco3<20){e.acts.add("appel");e.why.push("Acidose persistante : le médecin doit rester informé.");}
+    return e;
+  }
+  const intox=L.ratio>2.5||L.ca<0.8||(L.ph<7.30&&L.hco3<20&&L.ag>12&&C.st.comp>=140)||(prev&&prev.compUps>=2&&L.ca<1.0);
+  const surch=L.ph>7.50;
+  const urgent=L.ca<0.9||C.st.comp<80||C.st.comp>150||(prev&&prev.compUps>=2)||(L.ph<7.35&&L.hco3<20)||L.ph>7.50;
+  if(intox){
+    e.dose=null;e.comp=null;["appel","pps0","qb250","ligne"].forEach(a=>e.acts.add(a));
+    e.why.push("Intoxication au citrate (rapport Ca total / Ca²⁺ > 2,5, ou hypocalcémie malgré une compensation élevée, ou acidose à trou anionique élevé) : appel immédiat, arrêt du citrate (PPS = 0), poursuite de l'EER pour épurer le citrate, débit sang jusqu'à 250 mL/min avec réinjection augmentée, vérification de la ligne de calcium et du chlorure de calcium.");
+    return e;
+  }
+  if(L.pf<0.35){e.dose=-0.2;e.why.push(`Ca²⁺ post-filtre ${nf(L.pf,2)} < 0,35 : dose de citrate −0,2 mmol/L.`);}
+  else if(L.pf>0.45){e.dose=0.2;e.why.push(`Ca²⁺ post-filtre ${nf(L.pf,2)} > 0,45 : dose de citrate +0,2 mmol/L.`);}
+  else e.why.push(`Ca²⁺ post-filtre ${nf(L.pf,2)} dans la cible (0,35 à 0,45) : dose de citrate inchangée.`);
+  if(L.ca<1.0){e.comp=20;e.why.push(`Ca²⁺ patient ${nf(L.ca,2)} entre 0,9 et 1,0 : compensation +20 %.`);}
+  else if(L.ca<1.1){e.comp=10;e.why.push(`Ca²⁺ patient ${nf(L.ca,2)} entre 1,0 et 1,1 : compensation +10 %.`);}
+  else if(L.ca>1.4){e.comp=-20;e.why.push(`Ca²⁺ patient ${nf(L.ca,2)} au-dessus de 1,4 : compensation −20 %.`);}
+  else if(L.ca>1.3){e.comp=-10;e.why.push(`Ca²⁺ patient ${nf(L.ca,2)} entre 1,3 et 1,4 : compensation −10 %.`);}
+  else e.why.push(`Ca²⁺ patient ${nf(L.ca,2)} dans la cible (1,1 à 1,3) : compensation inchangée.`);
+  if(surch){["appel","qbdown","reinj35"].forEach(a=>e.acts.add(a));if(e.dose===0)e.dose=-0.2;
+    e.why.push(`pH ${nf(L.ph,2)} > 7,50 : surcharge en citrate. Appel du médecin, poursuite de l'EER avec moins de citrate : débit sang −20 mL/min, réinjection à 35 mL/kg/h, dose de citrate diminuée.`);}
+  else if(urgent){e.acts.add("appel");e.why.push("Un critère d'appel urgent est présent (Ca²⁺ < 0,9, deux augmentations successives de la compensation, compensation hors 80–150 %, ou trouble acide-base apparu) : appel du médecin et rapport Ca total / Ca²⁺.");}
+  return e;
+}
+const ACTS=[["appel","Appel urgent du médecin"],["qbdown","Débit sang −20 mL/min"],["reinj35","Réinjection à 35 mL/kg/h"],["pps0","Arrêt du citrate (PPS = 0)"],["qb250","Débit sang 250 mL/min et réinjection augmentée"],["ligne","Vérifier la ligne de calcium et le chlorure de calcium"]];
+function cLabs(){
+  const d=cDerive(),m=C.m;
+  return {t:Math.round(C.t),ca:+m.caSys.toFixed(2),pf:+d.pf.toFixed(2),ratio:+d.ratio.toFixed(2),ph:+d.ph.toFixed(2),hco3:+m.hco3.toFixed(1),lac:+m.lac.toFixed(1),na:Math.round(m.na),ag:+d.ag.toFixed(0),catot:+(m.caSys*d.ratio).toFixed(2)};
+}
+function cGridSVG(){
+  const W=520,H=400,ml=46,mr=14,mt=14,mb=40;
+  const X=v=>ml+(W-ml-mr)*(v-0.15)/(0.65-0.15),Y=v=>mt+(H-mt-mb)*(1-(v-0.8)/(1.6-0.8));
+  const r=(x0,x1,y0,y1,f)=>`<rect x="${X(x0)}" y="${Y(y1)}" width="${X(x1)-X(x0)}" height="${Y(y0)-Y(y1)}" fill="${f}"/>`;
+  const t=(x,y,s,a)=>`<text x="${x}" y="${y}" fill="#e9f1f3" font-size="13" font-family="Barlow,sans-serif" text-anchor="${a||"middle"}">${s}</text>`;
+  let s=r(0.15,0.65,0.8,1.6,"rgba(95,224,166,.07)");
+  s+=r(0.35,0.45,1.3,1.5,"rgba(255,106,60,.38)")+r(0.35,0.45,0.9,1.1,"rgba(255,106,60,.38)")+r(0.15,0.35,1.1,1.3,"rgba(255,106,60,.38)")+r(0.45,0.65,1.1,1.3,"rgba(255,106,60,.38)");
+  s+=r(0.35,0.45,1.1,1.3,"rgba(95,224,166,.45)");
+  s+=r(0.35,0.45,0.8,0.9,"rgba(255,90,78,.6)");
+  s+=t(X(0.4),Y(1.45),"−20 %")+t(X(0.4),Y(1.35),"−10 %")+t(X(0.4),Y(1.05),"+10 %")+t(X(0.4),Y(0.95),"+20 %")+t(X(0.4),Y(0.845),"appel");
+  s+=t(X(0.25),Y(1.2)-4,"citrate")+t(X(0.25),Y(1.2)+12,"−0,2")+t(X(0.55),Y(1.2)-4,"citrate")+t(X(0.55),Y(1.2)+12,"+0,2");
+  s+=t(X(0.4),Y(1.2)+4,"cible");
+  for(const v of[0.2,0.3,0.35,0.45,0.5,0.6])s+=`<text x="${X(v)}" y="${H-22}" class="ax" text-anchor="middle">${String(v).replace(".",",")}</text>`;
+  for(const v of[0.9,1.0,1.1,1.3,1.4,1.5])s+=`<text x="${ml-6}" y="${Y(v)+4}" class="ax" text-anchor="end">${v.toFixed(1).replace(".",",")}</text>`;
+  s+=`<text x="${(W+ml)/2}" y="${H-4}" class="ax" text-anchor="middle">Ca²⁺ post-filtre (mmol/L)</text><text x="12" y="${(H-mb)/2}" class="ax" transform="rotate(-90 12 ${(H-mb)/2})" text-anchor="middle">Ca²⁺ patient (mmol/L)</text>`;
+  const pts=C?C.checks.map(c=>c.L):[];
+  if(pts.length){s+=`<path d="${pts.map((p,i)=>`${i?"L":"M"}${X(clamp(p.pf,0.15,0.65))},${Y(clamp(p.ca,0.8,1.6))}`).join("")}" fill="none" stroke="#ffe066" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+    pts.forEach((p,i)=>{const last=i===pts.length-1;s+=`<circle cx="${X(clamp(p.pf,0.15,0.65))}" cy="${Y(clamp(p.ca,0.8,1.6))}" r="${last?7:4.5}" fill="${last?"#ffe066":"#e9f1f3"}" stroke="#04090b" stroke-width="2"/>`;if(last)s+=`<text x="${X(clamp(p.pf,0.15,0.65))+10}" y="${Y(clamp(p.ca,0.8,1.6))-8}" fill="#ffe066" font-size="14" font-family="Barlow,sans-serif" font-weight="600" style="paint-order:stroke;stroke:#04090b;stroke-width:4px">H${p.t}</text>`;});}
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grille d'adaptation calcium et citrate">${s}</svg>`;
+}
+function cCharts(){
+  const H=C?C.hist:[];
+  $("cCharts").innerHTML=["Ca²⁺ patient et post-filtre (mmol/L)","pH","Rapport Ca total / Ca²⁺",""].slice(0,3).map((t,i)=>`<div class="ch"><h3>${t}</h3><svg id="cc${i}"></svg></div>`).join("");
+  if(!H.length){return;}
+  const xs=H.map(h=>h.t);
+  lineChart($("cc0"),{xs,series:[{v:H.map(h=>h.ca),c:"#e9f1f3"},{v:H.map(h=>h.pf),c:"#7ee2c8"}],yr:[0.2,1.5],refs:[0.35,0.45,1.1,1.3],xmax:24});
+  lineChart($("cc1"),{xs,series:[{v:H.map(h=>h.ph),c:"#4fd8ea"}],yr:[7.1,7.6],refs:[7.35,7.5],xmax:24});
+  const R=C.checks.filter(c=>c.ratioShown);if(R.length)lineChart($("cc2"),{xs:R.map(c=>c.L.t),series:[{v:R.map(c=>c.L.ratio),c:"#ffc53d"}],yr:[1.8,3.2],refs:[2.5],xmax:24});else $("cc2").innerHTML=`<text x="10" y="60" class="ax">Pas encore dosé</text>`;
+}
+function cExpectSetup(){
+  const w=C.k.w,qb=w<60?120:w<=90?140:160,rj=w<60?1200:w<=90?1400:1600;return {qb,rj};
+}
+function cRender(){
+  $("cGrid").innerHTML=cGridSVG();cCharts();
+  const P=$("cPanel");
+  if(!C||C.phase==="intro"){
+    P.innerHTML=`<h2>Choisir un patient</h2><p class="mut">Chaque cas suit le protocole de CVVH au citrate du service : contre-indications, réglages de démarrage, puis 24 heures de contrôles avec la grille d'adaptation.</p>
+    <div class="caselist">${Object.entries(CCASES).map(([k,c])=>`<button class="casebtn" type="button" data-cc="${k}"><b>${c.name}</b><span>${c.w} kg, TP ${c.tp} %, lactate ${nf(c.lac)}</span></button>`).join("")}</div>`;
+    return;
+  }
+  const k=C.k;
+  if(C.phase==="pre"){
+    P.innerHTML=`<h2>${k.name}</h2><p>${k.txt}</p>
+    <fieldset><legend>1. Peut-on utiliser le citrate ?</legend><div class="opts">
+      ${[["oui","Oui, pas de contre-indication formelle"],["non","Non : contre-indication, anticoagulation par héparine ou sans anticoagulation"]].map(o=>`<label class="opt"><input type="radio" name="ci" value="${o[0]}"><span>${o[1]}</span></label>`).join("")}</div></fieldset>
+    <fieldset><legend>2. Ca²⁺ patient à ${nf(k.ca0,2)} mmol/L avant branchement</legend><div class="opts">
+      ${[["rien","Brancher, la compensation corrigera"],["cacl","1 g de chlorure de calcium IVL sur VVC, contrôle du Ca²⁺ à 15 min, puis brancher"],["gluc","1 g de gluconate de calcium sur voie périphérique, puis brancher"]].map(o=>`<label class="opt"><input type="radio" name="ca0" value="${o[0]}"><span>${o[1]}</span></label>`).join("")}</div></fieldset>
+    <button class="go" type="button" id="cPreGo">Valider</button><div id="cPreFb"></div>`;
+    return;
+  }
+  if(C.phase==="setup"){
+    const opt=(id,arr,v)=>`<select id="${id}">${arr.map(a=>`<option value="${a[0]}"${String(a[0])===String(v)?" selected":""}>${a[1]}</option>`).join("")}</select>`;
+    const rng=(a,b,s,u)=>{const r=[];for(let x=a;x<=b+1e-9;x+=s)r.push([+x.toFixed(1),`${String(+x.toFixed(1)).replace(".",",")} ${u}`]);return r;};
+    P.innerHTML=`<h2>Réglages de démarrage</h2><p class="mut">${k.name}, ${k.w} kg. Machine en mode adulte, CVVH, anticoagulation Cit/Cal, Regiocit 18/0.</p>
+    <label class="f"><span>Débit sang</span>${opt("sQb",rng(100,200,10,"mL/min"),"")}</label>
+    <label class="f"><span>Dose de citrate</span>${opt("sDose",rng(2,4.4,0.2,"mmol/L"),"")}</label>
+    <label class="f"><span>Compensation calcique</span>${opt("sComp",rng(80,150,10,"%"),"")}</label>
+    <label class="f"><span>Réinjection post-filtre</span>${opt("sRj",rng(800,2400,100,"mL/h"),"")}</label>
+    <label class="f"><span>Perte patient</span>${opt("sPe",rng(0,400,50,"mL/h"),"")}</label>
+    <label class="f"><span>Solution de réinjection</span>${opt("sSol",[["phox","Phoxilium (Ca 1,25 mmol/L)"],["b0","Hémosol B0 (Ca 1,75 mmol/L)"]],"")}</label>
+    <label class="f"><span>Calcium de compensation</span>${opt("sCa",[["cl","Chlorure de calcium"],["gl","Gluconate de calcium"]],"")}</label>
+    <label class="f"><span>Héparinisation du circuit au lancement</span>${opt("sHep",[["non","Non"],["oui","Oui"]],"")}</label>
+    <p style="margin-top:12px"><button class="go" type="button" id="cSetGo">Brancher</button></p><div id="cSetFb"></div>`;
+    ["sQb","sDose","sComp","sRj","sPe"].forEach(id=>{$(id).selectedIndex=-1;});
+    return;
+  }
+  if(C.phase==="run"){
+    const L=cLabs(),T=CHECKS[C.i],drawn=LABS_AT[T],d=cDerive(),extra=C.extra;
+    const row=(n,v,u,c,ok)=>`<tr><th>${n}</th><td class="n ${c}">${v} <span class="mut" style="font-weight:400">${u}</span></td><td class="mut small">${ok}</td></tr>`;
+    const cl=(v,a,b)=>v<a?"lo":v>b?"hi":"okv";
+    let rows="";
+    if(drawn.includes("ca"))rows+=row("Ca²⁺ patient",nf(L.ca,2),"mmol/L",cl(L.ca,1.1,1.3),"cible 1,1–1,3");
+    if(drawn.includes("pf"))rows+=row("Ca²⁺ post-filtre",nf(L.pf,2),"mmol/L",cl(L.pf,0.35,0.45),"cible 0,35–0,45");
+    if(drawn.includes("gds"))rows+=row("pH",nf(L.ph,2),"",cl(L.ph,7.35,7.5),"")+row("Bicarbonates",nf(L.hco3),"mmol/L",cl(L.hco3,22,28),"")+row("Lactate",nf(L.lac),"mmol/L",L.lac>2?"hi":"okv","");
+    if(drawn.includes("ratio")||extra)rows+=row("Rapport Ca total / Ca²⁺",nf(L.ratio,2),"",L.ratio>2.5?"badv":L.ratio>2.3?"hi":"okv","< 2,5")+row("Calcium total",nf(L.catot,2),"mmol/L",L.catot>3?"badv":"","");
+    if(drawn.includes("iono")||extra)rows+=row("Natrémie",L.na,"mmol/L",L.na>150?"badv":L.na>145?"hi":"okv","")+row("Trou anionique",L.ag,"mmol/L",L.ag>16?"hi":"okv","");
+    if(drawn.includes("mgp"))rows+=row("Phosphore",nf(C.st.sol==="phox"?1.1:0.55,2),"mmol/L",C.st.sol==="phox"?"okv":"lo","");
+    const s=C.st;
+    P.innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0"><span class="day">H${T}</span>Contrôle</h2><span class="mut small">${k.name}</span></div>
+    <p class="small mut" style="margin-top:6px">En cours : débit sang ${s.qb} mL/min, citrate ${s.pps0?"arrêté (PPS = 0)":nf(s.dose)+" mmol/L"}, compensation ${s.comp} %, réinjection ${s.reinj} mL/h, perte ${s.perte} mL/h. UFR ${nf(d.ufr)} mL/kg/h, FF ${Math.round(d.ff*100)} %.</p>
+    <div class="scroll"><table class="t">${rows}</table></div>
+    ${!(drawn.includes("ratio")&&drawn.includes("iono"))&&!extra?`<p style="margin-top:8px"><button class="btn" type="button" id="cExtra">Ajouter : rapport Ca total / Ca²⁺ et ionogramme</button></p>`:""}
+    <fieldset style="margin-top:10px"><legend>Dose de citrate</legend><div class="seg" id="cDose">${[["-0.2","−0,2"],["0","inchangée"],["0.2","+0,2"]].map(o=>`<button type="button" data-v="${o[0]}" aria-pressed="${o[0]==="0"}">${o[1]}</button>`).join("")}</div></fieldset>
+    <fieldset><legend>Compensation calcique</legend><div class="seg" id="cComp">${[["-20","−20 %"],["-10","−10 %"],["0","inchangée"],["10","+10 %"],["20","+20 %"]].map(o=>`<button type="button" data-v="${o[0]}" aria-pressed="${o[0]==="0"}">${o[1]}</button>`).join("")}</div></fieldset>
+    <fieldset><legend>Autres conduites</legend><div class="opts">${ACTS.map(a=>`<label class="opt"><input type="checkbox" value="${a[0]}"><span>${a[1]}</span></label>`).join("")}</div></fieldset>
+    <button class="go" type="button" id="cGo">Valider et poursuivre</button>`;
+    return;
+  }
+  if(C.phase==="fb"){
+    const c=C.checks[C.checks.length-1];
+    P.innerHTML=`<h2><span class="day">H${c.L.t}</span>Correction</h2>
+      <p>${c.grades.map(g=>`<span class="grade ${g[0]}">${g[1]}</span>`).join("")}</p>
+      <div class="fb">${c.exp.why.map(w=>`<p>${esc(w)}</p>`).join("")}</div>
+      ${c.note?`<p class="note">${c.note}</p>`:""}
+      <p style="margin-top:12px"><button class="go" type="button" id="cNext">${C.i>=CHECKS.length-1?"Voir le bilan":`Contrôle suivant (H${CHECKS[C.i+1]})`}</button></p>`;
+    return;
+  }
+  if(C.phase==="end"||C.phase==="endci"){
+    const ok=C.checks.reduce((a,c)=>a+c.grades.filter(g=>g[0]==="g-ok").length,0),tot=C.checks.reduce((a,c)=>a+c.grades.length,0);
+    P.innerHTML=`<h2>Bilan</h2>${C.phase==="endci"?`<p>${C.endTxt}</p>`:`<p>${ok} décisions conformes au protocole sur ${tot}.</p>
+      <div class="scroll"><table class="t"><tr><th>Heure</th><th>Ca²⁺ patient</th><th>Ca²⁺ post-filtre</th><th>pH</th><th>Décisions</th></tr>${C.checks.map(c=>`<tr><td>H${c.L.t}</td><td class="n">${nf(c.L.ca,2)}</td><td class="n">${nf(c.L.pf,2)}</td><td class="n">${nf(c.L.ph,2)}</td><td>${c.grades.map(g=>`<span class="grade ${g[0]}" style="margin:0 4px 0 0">${g[1].split(" :")[0]}</span>`).join("")}</td></tr>`).join("")}</table></div>`}
+      <div class="note"><b>À retenir.</b> Le citrate est l'anticoagulation de première intention de l'EER continue en l'absence de contre-indication (KDIGO) : dans RICH, il a presque doublé la durée de vie du filtre par rapport à l'héparine (médiane 47 contre 26 heures). Le Ca²⁺ post-filtre règle la dose de citrate, le Ca²⁺ patient règle la compensation. Une alcalose signe la surcharge, une hypocalcémie avec rapport Ca total / Ca²⁺ &gt; 2,5 signe l'accumulation.</div>
+      <p style="margin-top:12px"><button class="go" type="button" id="cAgain">Autre patient</button></p>`;
+  }
+}
+function cPreValidate(){
+  const ci=(document.querySelector('input[name="ci"]:checked')||{}).value,ca=(document.querySelector('input[name="ca0"]:checked')||{}).value;
+  if(!ci||!ca){$("cPreFb").innerHTML=`<p class="note">Répondez aux deux questions.</p>`;return;}
+  const k=C.k,g=[];const exCi=k.ci?"non":"oui";
+  g.push(ci===exCi?["g-ok","Contre-indications : correct"]:["g-bad","Contre-indications : erreur"]);
+  const exCa=k.ca0<1.1?"cacl":"rien";
+  g.push(ca===exCa?["g-ok","Calcium avant branchement : correct"]:["g-bad","Calcium avant branchement : erreur"]);
+  const txt=[`Contre-indications formelles du protocole : insuffisance hépatocellulaire avec TP &lt; 50 %, acidose lactique aux biguanides, allergie au citrate, rhabdomyolyse, intoxication au paracétamol ou au trichloréthylène, choc sévère avec acidose lactique. Ici : TP ${k.tp} %, lactate ${nf(k.lac)}, CPK ${k.cpk}. ${k.ci?"<b>La rhabdomyolyse contre-indique le citrate.</b>":"Pas de contre-indication formelle."}${k.key==="accum"?" Le TP à 58 % reste au-dessus du seuil, mais c'est un terrain à surveiller de près.":""}`,
+    k.ca0<1.1?`Ca²⁺ ${nf(k.ca0,2)} &lt; 1,1 : 1 g de <b>chlorure</b> de calcium IVL sur la voie veineuse centrale, contrôle 15 min après, cible 1,1 à 1,3 avant de brancher.`:`Ca²⁺ ${nf(k.ca0,2)} dans la cible : pas de supplémentation avant branchement.`];
+  if(ca==="cacl"&&k.ca0<1.1)C.m.caSys=1.12;
+  $("cPreFb").innerHTML=`<div class="fb"><p>${g.map(x=>`<span class="grade ${x[0]}">${x[1]}</span>`).join("")}</p>${txt.map(t=>`<p>${t}</p>`).join("")}</div>
+    <p style="margin-top:10px"><button class="go" type="button" id="cPreNext">${k.ci?"Terminer le cas":"Régler la machine"}</button></p>`;
+  C.preGrades=g;
+}
+function cSetValidate(){
+  const v=id=>$(id).value;
+  if(["sQb","sDose","sComp","sRj","sPe"].some(id=>$(id).selectedIndex<0)){$("cSetFb").innerHTML=`<p class="note">Renseignez tous les réglages.</p>`;return;}
+  const ex=cExpectSetup(),k=C.k;
+  const s={qb:+v("sQb"),dose:+v("sDose"),comp:+v("sComp"),reinj:+v("sRj"),perte:+v("sPe"),sol:v("sSol"),ca:v("sCa"),hep:v("sHep"),pps0:false};
+  const items=[
+    [s.qb===ex.qb,`Débit sang ${s.qb} mL/min`,`attendu ${ex.qb} mL/min pour ${k.w} kg (jamais au-dessus de 160 mL/min)`],
+    [s.dose===3,`Citrate ${nf(s.dose)} mmol/L`,"attendu 3 mmol/L"],
+    [s.comp===120,`Compensation ${s.comp} %`,"attendue 120 %"],
+    [s.reinj===ex.rj,`Réinjection ${s.reinj} mL/h`,`attendue ${ex.rj} mL/h, à adapter pour une UFR délivrée de 20 à 25 mL/kg/h et une FF &lt; 40 %`],
+    [s.perte<=300,`Perte ${s.perte} mL/h`,"0 à 300 mL/h maximum"],
+    [s.sol==="phox","Solution "+(s.sol==="phox"?"Phoxilium":"Hémosol B0"),"Phoxilium (Hémosol B0 réservé aux hyperkaliémies sévères) ; ne pas changer en cours de séance, et régler la concentration de calcium de la solution sur la machine"],
+    [s.ca==="cl","Calcium "+(s.ca==="cl"?"chlorure":"gluconate"),"chlorure de calcium, jamais de gluconate"],
+    [s.hep==="non","Héparinisation "+s.hep,"ne pas hépariner le circuit"]];
+  C.st={...s,qb:Math.min(s.qb,200)};
+  C.setupItems=items;
+  $("cSetFb").innerHTML=`<div class="fb">${items.map(i=>`<p><span class="grade ${i[0]?"g-ok":"g-bad"}">${i[0]?"Conforme":"À revoir"}</span>${i[1]} : ${i[2]}.</p>`).join("")}
+    ${s.ca!=="cl"?`<p><b>Conséquence :</b> à volume égal, le gluconate apporte environ trois fois moins de calcium que le chlorure. La compensation réelle sera très inférieure à celle affichée.</p>`:""}</div>
+    <p style="margin-top:10px"><button class="go" type="button" id="cRun">Démarrer, premier contrôle à H1</button></p>`;
+}
+function cSubmit(){
+  const L=cLabs(),T=CHECKS[C.i];
+  const dose=+document.querySelector("#cDose [aria-pressed=true]").dataset.v,comp=+document.querySelector("#cComp [aria-pressed=true]").dataset.v;
+  const acts=new Set([...document.querySelectorAll("#cPanel .opts input:checked")].map(x=>x.value));
+  const prev=C.checks.length?C.checks[C.checks.length-1]:null;
+  const prevInfo={compUps:prev?prev.compUps:0};
+  const e=cExpected(L,prevInfo);
+  const g=[];
+  if(e.dose===null){g.push(acts.has("pps0")?["g-ok","Citrate : arrêt"]:["g-bad","Citrate : il fallait l'arrêter"]);}
+  else g.push(Math.abs(dose-e.dose)<1e-9?["g-ok","Dose de citrate : conforme"]:["g-bad","Dose de citrate : non conforme"]);
+  if(e.comp!==null)g.push(comp===e.comp?["g-ok","Compensation : conforme"]:Math.sign(comp)===Math.sign(e.comp)&&comp!==0?["g-mid","Compensation : bon sens, mauvaise ampleur"]:["g-bad","Compensation : non conforme"]);
+  const need=[...e.acts],miss=need.filter(a=>!acts.has(a)),extra=[...acts].filter(a=>!e.acts.has(a));
+  if(need.length||acts.size)g.push(!miss.length&&!extra.length?["g-ok","Conduites associées : conformes"]:miss.length?["g-bad","Conduites associées : "+miss.map(a=>ACTS.find(x=>x[0]===a)[1].toLowerCase()).join(", ")+" manquant"]:["g-mid","Conduites associées : actions en trop"]);
+  // appliquer les choix de l'interne
+  const s=C.st;
+  if(acts.has("pps0"))s.pps0=true;
+  if(!s.pps0)s.dose=clamp(+(s.dose+dose).toFixed(1),1.6,4.4);
+  s.comp=clamp(s.comp+comp,60,200);
+  if(acts.has("qbdown"))s.qb=Math.max(100,s.qb-20);
+  if(acts.has("reinj35"))s.reinj=Math.round(C.k.w*35/100)*100;
+  if(acts.has("qb250")){s.qb=250;s.reinj=Math.max(s.reinj,2400);}
+  if(acts.has("ligne")&&s.ca!=="cl")s.ca="cl";
+  const compUps=comp>0?(prevInfo.compUps+1):0;
+  let note="";
+  if(s.pps0)note="Citrate arrêté : l'EER continue et épure le citrate accumulé. Une fois la situation contrôlée, discuter une autre anticoagulation (héparine ou aucune) avec le médecin.";
+  C.checks.push({L,exp:e,grades:g,compUps,note,ratioShown:LABS_AT[T].includes("ratio")||C.extra});
+  C.phase="fb";cRender();
+}
+document.addEventListener("click",e=>{
+  const cc=e.target.closest("[data-cc]");if(cc){cNew(cc.dataset.cc);C.hist=[];cRender();return;}
+  if(e.target.closest("#cPreGo"))return cPreValidate();
+  if(e.target.closest("#cPreNext")){if(C.k.ci){C.phase="endci";C.endTxt=`La rhabdomyolyse contre-indique le citrate dans le protocole du service : EER avec héparine (ou sans anticoagulation si risque hémorragique). Avec K⁺ 6,1 et un patient stable, l'hémodialyse intermittente permet l'épuration la plus rapide du potassium. Vous pouvez simuler ce choix dans l'onglet Réglages.`;}else C.phase="setup";cRender();return;}
+  if(e.target.closest("#cSetGo"))return cSetValidate();
+  if(e.target.closest("#cRun")){C.phase="run";C.i=0;C.t=0;C.hist=[{t:0,ca:C.m.caSys,pf:cDerive().pf,ph:cDerive().ph,ratio:cDerive().ratio}];cEvolve(CHECKS[0]);C.extra=false;cRender();return;}
+  const sb=e.target.closest("#cDose button,#cComp button");if(sb){sb.parentElement.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b===sb?"true":"false"));return;}
+  if(e.target.closest("#cExtra")){C.extra=true;cRender();return;}
+  if(e.target.closest("#cGo"))return cSubmit();
+  if(e.target.closest("#cNext")){if(C.i>=CHECKS.length-1){C.phase="end";cRender();return;}C.i++;cEvolve(CHECKS[C.i]-C.t);C.extra=false;C.phase="run";cRender();return;}
+  if(e.target.closest("#cAgain")){C=null;cRender();return;}
+});
+let cW0=0;const roC=new ResizeObserver(()=>{const w=$("cCharts").clientWidth;if(w!==cW0&&!$("p-citrate").hidden){cW0=w;cCharts();}});roC.observe($("cCharts"));
+
+/* ===== DÉPANNAGE ===== */
+const DCASES=[
+ {t:"Pression d'accès très négative",lvl:"red",ctx:"CVVH héparine, cathéter fémoral droit. Le patient vient d'être tourné en décubitus latéral pour un nursing.",
+  p:{acc:-245,ret:85,pre:160,eff:-40,ptm:95,dp:40},al:["acc"],
+  q:"Que faites-vous en premier ?",
+  o:["Inverser d'emblée les lignes artérielle et veineuse pour lever l'aspiration","Vérifier la position du patient et du cathéter, remettre à plat, réduire le débit sang","Augmenter le débit sang pour vaincre l'aspiration et maintenir la dose prescrite","Rincer le filtre avec 200 mL de sérum salé : il est probablement en train de coaguler"],a:1,
+  w:"Une pression d'accès très négative traduit une aspiration : le cathéter « colle » à la paroi ou la ligne est coudée, souvent après une mobilisation. On corrige la position, on baisse un peu le débit sang le temps de rétablir l'accès. L'inversion des lignes est un dernier recours, et elle augmente la recirculation."},
+ {t:"La même alarme, sous citrate",lvl:"red",ctx:"CVVH au citrate. Pression d'accès à −260 mmHg malgré la remise à plat du patient. L'infirmière propose d'inverser les lignes.",
+  p:{acc:-260,ret:90,pre:150,eff:-35,ptm:90,dp:35},al:["acc"],
+  q:"Inverser les lignes ?",
+  o:["Oui : c'est la solution habituelle quand la remise à plat n'a pas suffi","Non : jamais sous citrate ; rincer, repositionner, et changer le cathéter si besoin","Oui, à condition d'arrêter la compensation calcique pendant toute l'inversion","Oui, pendant une heure seulement, le temps de terminer le nursing"],a:1,
+  w:"Sous citrate, l'inversion est à proscrire : lignes inversées, une partie du sang citraté retourne directement dans la ligne d'accès, ce qui majore la recirculation et la charge systémique en citrate, et fausse la compensation calcique. Si l'accès ne fonctionne pas, on traite le cathéter."},
+ {t:"Pression de retour élevée",lvl:"red",ctx:"CVVHDF. La pression de retour monte progressivement depuis 30 minutes.",
+  p:{acc:-90,ret:310,pre:220,eff:-20,ptm:110,dp:45},al:["ret"],
+  q:"Hypothèses à vérifier ?",
+  o:["Un filtre en train de coaguler, qui gêne l'écoulement du sang vers le retour","Un obstacle après le filtre : ligne de retour coudée, piège à bulles, branche veineuse","Un débit de dialysat trop élevé, qui pressurise le compartiment sanguin du filtre","Une pression d'accès trop négative, qui se répercute sur tout le circuit"],a:1,
+  w:"La pression de retour reflète tout ce qui est en aval du filtre : piège à bulles, ligne de retour, branche veineuse du cathéter. Un filtre qui coagule fait monter la pression pré-filtre et la chute de pression du filtre, pas d'abord la pression de retour."},
+ {t:"PTM et chute de pression du filtre en hausse",lvl:"yel",ctx:"CVVH héparine, filtre installé il y a 18 h. Post-dilution 1 800 mL/h, débit sang 150 mL/min, hématocrite 34 %.",
+  p:{acc:-100,ret:120,pre:280,eff:-140,ptm:260,dp:150},al:["ptm","dp"],
+  q:"Interprétation et conduite ?",
+  o:["Membrane rompue : arrêt immédiat, sans restituer le sang du circuit","Filtre qui se colmate (FF trop haute) : restituer, changer, puis réduire la FF","Cathéter trop court qui recircule : le remplacer par un plus long","Valeurs habituelles pour un filtre de 18 h : poursuivre sans rien modifier"],a:1,
+  w:"PTM et chute de pression du filtre qui montent ensemble : le filtre se colmate. Ici la FF dépasse 30 % (1 800 mL/h de post-dilution pour un débit plasmatique d'environ 5,9 L/h) : le sang s'hémoconcentre dans le filtre. Restituer avant qu'il ne coagule complètement, puis corriger la prescription."},
+ {t:"Le calcium du patient s'effondre",lvl:"red",ctx:"CVVH au citrate, H5. Compensation calcique à 130 %. Le patient décrit des paresthésies péribuccales.",
+  p:{acc:-110,ret:95,pre:140,eff:-30,ptm:80,dp:30},al:[],extra:"Ca²⁺ patient 0,84 mmol/L, Ca²⁺ post-filtre 0,38. Pompe de calcium : « seringue vide » acquittée il y a 40 minutes.",
+  q:"Conduite ?",
+  o:["Augmenter la compensation calcique de 10 % et recontrôler dans une heure","Appel urgent, vérifier ligne et poche de calcium, corriger l'hypocalcémie","Arrêter la dialyse et rincer le circuit en attendant un avis","Augmenter la dose de citrate pour mieux protéger le filtre de la coagulation"],a:1,
+  w:"Ca²⁺ patient &lt; 0,9 avec paresthésies : hypocalcémie sévère, le médecin doit être appelé. Le Ca²⁺ post-filtre est dans la cible, donc ce n'est pas le citrate qui est en cause : c'est la compensation qui ne passe plus. Toujours vérifier physiquement la ligne de calcium avant de modifier les réglages."},
+ {t:"Gluconate à la place du chlorure",lvl:"yel",ctx:"CVVH au citrate démarrée la nuit. Compensation affichée à 120 %, puis 130 %, puis 140 %. Le Ca²⁺ patient reste à 0,95 malgré trois augmentations.",
+  p:{acc:-100,ret:90,pre:150,eff:-30,ptm:85,dp:30},al:[],extra:"Poche de compensation préparée avec du gluconate de calcium 10 %.",
+  q:"Explication ?",
+  o:["Accumulation de citrate : le foie ne le métabolise plus, le calcium reste chélaté","Le gluconate apporte trois fois moins de calcium que le chlorure attendu par la machine","Hémodilution par la réinjection, qui abaisse le calcium mesuré chez le patient","Erreur de prélèvement : sang pris sur la ligne d'accès, juste après le citrate"],a:1,
+  w:"La compensation automatique est calculée pour la solution de calcium paramétrée sur la machine (en général du chlorure). Avec du gluconate, la compensation affichée ne correspond plus au calcium réellement apporté. Des augmentations répétées de la compensation doivent aussi faire doser le rapport Ca total / Ca²⁺, pour éliminer une accumulation de citrate."},
+ {t:"Recirculation",lvl:"yel",ctx:"CVVHDF, dose délivrée calculée à 25 mL/kg/h, mais l'urée ne baisse pas depuis 48 h. Cathéter jugulaire interne gauche de 15 cm.",
+  p:{acc:-70,ret:80,pre:150,eff:-20,ptm:80,dp:35},al:[],
+  q:"Cause la plus probable ?",
+  o:["Dose insuffisante : il faut passer à 35 mL/kg/h pour couvrir le catabolisme","Cathéter trop court à gauche : son extrémité n'atteint pas l'oreillette, il recircule","Hypercatabolisme seul, qui produit plus d'urée que la machine n'en épure","Filtre colmaté : la membrane encrassée ne laisse presque plus passer l'urée"],a:1,
+  w:"Longueurs habituelles : environ 15 cm en jugulaire interne droite, 20 cm à gauche, 20 à 25 cm en fémoral. Un cathéter trop court ou des lignes inversées font recirculer le sang déjà épuré : la dose « délivrée » sur l'écran n'atteint pas le patient."},
+ {t:"Air dans la ligne de retour",lvl:"red",ctx:"Alarme « air détecté » au détecteur de la ligne de retour, la pompe à sang s'est arrêtée. Une poche de réinjection vient d'être changée.",
+  p:{acc:-90,ret:0,pre:120,eff:-20,ptm:70,dp:30},al:["ret"],
+  q:"Conduite ?",
+  o:["Acquitter l'alarme et relancer la pompe : la bulle est déjà dans le piège","Ne pas relancer : trouver l'entrée d'air (poche changée, raccords), purger, relancer","Inverser les lignes pour que l'air reparte vers la ligne d'accès et le filtre","Augmenter la perte patient pour aspirer l'air à travers la membrane du filtre"],a:1,
+  w:"Le détecteur d'air protège d'une embolie gazeuse. On ne relance jamais sans avoir trouvé et corrigé l'entrée d'air (raccord desserré, poche mal connectée) et purgé la ligne."},
+ {t:"La perte patient n'est pas atteinte",lvl:"yel",ctx:"CVVH prescrite à 25 mL/kg/h. Les alarmes de balance (poches, pesée) arrêtent la machine plusieurs fois par heure. Sur 24 h, la machine a tourné 17 heures.",
+  p:{acc:-100,ret:90,pre:150,eff:-30,ptm:85,dp:30},al:[],
+  q:"Quelle dose a réellement reçu le patient ?",
+  o:["25 mL/kg/h : la machine compense automatiquement les temps d'arrêt","Environ 18 mL/kg/h (25 × 17/24), et moins encore avec la prédilution","30 mL/kg/h : la machine accélère ses débits après chaque interruption","Impossible à estimer sans doser l'urée dans l'effluent des 24 heures"],a:1,
+  w:"La dose délivrée, c'est la dose prescrite multipliée par le temps de fonctionnement, puis corrigée de la prédilution. C'est pour cela que l'on prescrit 25 à 30 mL/kg/h pour délivrer 20 à 25. Et il faut corriger la cause des arrêts."},
+ {t:"Hypothermie",lvl:"yel",ctx:"CVVHDF à 35 mL/kg/h depuis 3 jours. Température 35,1 °C, frissons, extrémités froides. Pas de fièvre malgré une PCT qui remonte.",
+  p:{acc:-100,ret:90,pre:150,eff:-30,ptm:85,dp:30},al:[],
+  q:"Conduite ?",
+  o:["Rien de particulier : c'est fréquent et sans conséquence sous EER continue","Réchauffer, réévaluer la dose, et chercher une infection que l'EER masque","Arrêter l'EER le temps que la température remonte au-dessus de 36 °C","Augmenter encore la dose pour épurer les cytokines responsables des frissons"],a:1,
+  w:"Le circuit extracorporel refroidit le patient, d'autant plus que les débits sont élevés. L'hypothermie aggrave la coagulation et l'hémodynamique, et masque la fièvre : une infection de cathéter peut passer inaperçue."},
+ {t:"Hypophosphatémie",lvl:"yel",ctx:"J5 d'EER continue avec une solution sans phosphate. Sevrage ventilatoire difficile, faiblesse musculaire.",
+  p:{acc:-100,ret:90,pre:150,eff:-30,ptm:85,dp:30},al:[],extra:"Phosphore 0,42 mmol/L.",
+  q:"Conduite ?",
+  o:["Ne rien faire : le phosphore remontera tout seul à l'arrêt de l'EER","Supplémenter et passer à une solution de réinjection contenant du phosphate","Arrêter l'EER quelques jours pour laisser le phosphore remonter","Augmenter la dose pour mieux corriger l'acidose qui aggrave la faiblesse"],a:1,
+  w:"L'EER continue épure le phosphate en continu. L'hypophosphatémie aggrave la faiblesse musculaire et gêne le sevrage ventilatoire. On supplémente, et on utilise une solution contenant du phosphate pour prévenir la récidive."},
+ {t:"Le verrou au citrate",lvl:"red",ctx:"Reprise d'une EER sur un cathéter verrouillé au Citra-lock. Le circuit est branché directement, sans aspirer le verrou. Le patient fait un malaise avec paresthésies.",
+  p:{acc:-110,ret:95,pre:150,eff:-30,ptm:85,dp:30},al:[],
+  q:"Qu'est-il arrivé ?",
+  o:["Une embolie gazeuse par la branche artérielle restée ouverte au branchement","Un bolus de citrate concentré du verrou : il fallait l'aspirer avant de brancher","Une réaction allergique à la membrane du filtre, fréquente au premier circuit","Une hypoglycémie, car le circuit épure le glucose dès les premières minutes"],a:1,
+  w:"Le verrou contient du citrate concentré. Il doit toujours être aspiré avant le branchement, et injecté lentement, au volume exact de la branche, en fin de procédure."}
+];
+let D={order:[],i:0,score:0,done:0,ans:null,perm:[]};
+function dShuffle(){const a=DCASES.map((_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}D={order:a,i:0,score:0,done:0,ans:null,perm:DCASES.map(c=>{const p=c.o.map((_,i)=>i);for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}return p;})};}
+function dRender(){
+  if(!D.order.length)dShuffle();
+  if(D.i>=D.order.length){
+    $("dMachine").innerHTML=`<div class="alarm yel" style="animation:none">Série terminée</div><p style="color:#e9f1f3">${D.score} bonne(s) réponse(s) sur ${D.order.length}.</p>`;
+    $("dPanel").innerHTML=`<h2>Série terminée</h2><p>${D.score} sur ${D.order.length}.</p><button class="go" type="button" id="dAgain">Nouvelle série</button>`;
+    $("dScore").textContent=`Score ${D.score}/${D.done}`;$("dCount").textContent="";return;
+  }
+  const c=DCASES[D.order[D.i]];
+  $("dScore").textContent=`Score ${D.score}/${D.done}`;$("dCount").textContent=`Cas ${D.i+1} sur ${D.order.length}`;
+  const P=[["acc","Pression d'accès"],["ret","Pression de retour"],["pre","Pression pré-filtre"],["eff","Pression effluent"],["ptm","PTM"],["dp","Chute de pression filtre"]];
+  $("dMachine").innerHTML=`<div class="alarm ${c.lvl}">${esc(c.t)}</div>
+    <div class="pgrid">${P.map(p=>`<div class="pv${c.al.includes(p[0])?" al":""}"><small>${p[1]}</small><b>${c.p[p[0]]}</b> <span class="mut small">mmHg</span></div>`).join("")}</div>
+    ${c.extra?`<p class="note" style="margin-top:10px">${c.extra}</p>`:""}`;
+  const ans=D.ans;
+  $("dPanel").innerHTML=`<h2>${esc(c.t)}</h2><p>${esc(c.ctx)}</p><p><b>${esc(c.q)}</b></p>
+    <div class="choices">${D.perm[D.order[D.i]].map((i,j)=>`<button class="choice${ans!==null?(i===c.a?" right":i===ans?" wrong":""):""}" type="button" data-d="${i}" ${ans!==null?"disabled":""}><b>${"ABCD"[j]}</b><span>${esc(c.o[i])}</span></button>`).join("")}</div>
+    ${ans!==null?`<div class="fb"><p><span class="grade ${ans===c.a?"g-ok":"g-bad"}">${ans===c.a?"Bonne réponse":"Réponse attendue : "+"ABCD"[D.perm[D.order[D.i]].indexOf(c.a)]}</span></p><p>${c.w}</p></div><p style="margin-top:10px"><button class="go" type="button" id="dNext">Cas suivant</button></p>`:""}`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-d]");if(b&&D.ans===null){D.ans=+b.dataset.d;D.done++;if(D.ans===DCASES[D.order[D.i]].a)D.score++;dRender();return;}
+  if(e.target.closest("#dNext")){D.i++;D.ans=null;dRender();window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#dAgain")){dShuffle();dRender();}
+});
+
+/* ===== DÉCISIONS ===== */
+const KC=[
+ {id:"k",title:"Potassium à 7,1",sub:"Rhabdomyolyse, anurie",steps:[
+  {day:"J0, 14 h",text:"85 kg. Écrasement de membre inférieur il y a 30 heures. Anurie depuis 6 heures.",
+   p:{clin:[["Poids","85 kg"],["PAM","78 mmHg, sans amine"],["Conscience","normale"],["ECG","ondes T amples, QRS 130 ms","a"]],
+      bio:[["K⁺","7,1 mmol/L","a"],["Urée","21 mmol/L"],["Créatinine","410 µmol/L"],["CPK","48 000 UI/L","a"]],
+      gaz:[["pH","7,24","w"],["Bicarbonates","15 mmol/L","w"],["PaCO₂","34 mmHg"]],
+      diu:[["Diurèse","0 mL depuis 6 h","a"],["Bilan","+1,8 L"]],dial:null},
+   q:"Conduite immédiate ?",
+   c:[["Calcium, insuline-glucose, salbutamol, puis HDI en urgence, anticoagulation par héparine","g-ok","Stabiliser la membrane (calcium), faire entrer le potassium dans les cellules (insuline-glucose, salbutamol), puis l'épurer. Hémodynamique stable : l'HDI est la technique qui fait baisser le potassium le plus vite. Séance courte : une héparine standard suffit."],
+      ["Traitement médical seul (calcium, insuline-glucose), puis réévaluation à 6 heures","g-bad","Le traitement médical ne fait que gagner du temps : chez un patient anurique avec une hyperkaliémie menaçante et des signes ECG, il faut épurer. K⁺ &gt; 6 mmol/L est un critère impératif."],
+      ["CVVH au citrate d'emblée : la machine corrigera le potassium sans traitement médical","g-bad","Deux erreurs : le traitement médical de stabilisation ne doit jamais attendre la machine, et une technique continue fait baisser le potassium bien plus lentement qu'une HDI chez un patient stable."],
+      ["Bicarbonate de sodium 8,4 % pour faire rentrer le potassium, puis contrôle à 1 heure","g-bad","Effet modeste et inconstant sur la kaliémie, surcharge sodée chez un patient anurique. Ce n'est pas un traitement de l'hyperkaliémie menaçante."]],
+   sim:{preset:"hyperk",mode:"HDI",over:{qb:300,qd:500,dur:4,uft:1500},label:"Simuler une séance d'HDI de 4 h"}},
+  {day:"J0, 22 h",text:"Séance d'HDI de 4 heures terminée à 20 h : K⁺ 4,4 en fin de séance. Deux heures plus tard, K⁺ 5,6. CPK 61 000, toujours anurique.",
+   p:{clin:[["PAM","80 mmHg"],["ECG","normalisé"]],bio:[["K⁺","5,6 mmol/L","w"],["Urée","12 mmol/L"],["CPK","61 000 UI/L","a"]],gaz:[["pH","7,33"],["Bicarbonates","20 mmol/L"]],diu:[["Diurèse","0 mL","a"]],dial:[["Dernière séance","HDI 4 h, fin à 20 h"]]},
+   q:"Le potassium remonte. Ensuite ?",
+   c:[["Rebond attendu : surveiller le K⁺ de près, séance suivante selon la cinétique","g-ok","Après une HDI, le potassium intracellulaire ressort : le rebond est la règle. Avec une rhabdomyolyse en cours, une nouvelle séance sera probablement nécessaire dans les 12 à 24 heures. Décider sur la cinétique."],
+      ["Nouvelle séance de 4 heures immédiatement, puisque le K⁺ dépasse déjà 5,5","g-mid","Pas indispensable à 5,6 sans signe ECG : on peut surveiller de près. Mais avec la lyse en cours, la prochaine séance ne tardera pas."],
+      ["Résine échangeuse d'ions seule et arrêt de l'EER : la séance a suffi","g-bad","Effet lent et faible, inadapté chez un patient anurique dont la source de potassium (muscle lésé) n'est pas tarie."]]}
+ ]},
+ {id:"w",title:"Attendre ou démarrer ?",sub:"Choc septique, IRA KDIGO 3",steps:[
+  {day:"J1",text:"72 ans, 78 kg. Pneumonie, choc septique sous noradrénaline 0,3 µg/kg/min, ventilé. Créatinine de base 80 µmol/L.",
+   p:{clin:[["Noradrénaline","0,3 µg/kg/min","w"],["PaO₂/FiO₂","210"],["Lactate","2,8 mmol/L","w"]],bio:[["Créatinine","290 µmol/L","w"],["Urée","19 mmol/L"],["K⁺","5,2 mmol/L"]],gaz:[["pH","7,29","w"],["Bicarbonates","17 mmol/L"],["PaCO₂","36 mmHg"]],diu:[["Diurèse","0,2 mL/kg/h depuis 14 h","w"],["Bilan","+4 L"]],dial:null},
+   q:"KDIGO 3, sans critère impératif. Que faites-vous ?",
+   c:[["Attendre sous surveillance rapprochée, démarrer dès qu'un critère impératif apparaît","g-ok","Sans urgence vitale, la stratégie d'attente est sûre (AKIKI, IDEAL-ICU, STARRT-AKI) : une partie importante des patients récupère sans jamais être dialysée, sans les risques du cathéter et de l'EER."],
+      ["Démarrer maintenant pour prévenir la surcharge et les troubles métaboliques","g-mid","Défendable en apparence, mais non supporté : le démarrage précoce n'améliore pas la survie (STARRT-AKI) et expose à plus d'EER, de dépendance à la dialyse à J90 et d'effets indésirables."],
+      ["Furosémide 1 g en bolus pour relancer la diurèse et éviter la dialyse","g-bad","Les diurétiques ne modifient pas l'évolution de l'IRA. Une dose aussi massive expose à l'ototoxicité. Le furosémide sert à gérer la volémie chez un patient qui y répond, pas à « relancer » le rein."]]},
+  {day:"J3",text:"Noradrénaline 0,1. La diurèse remonte depuis 24 heures.",
+   p:{clin:[["Noradrénaline","0,1 µg/kg/min"],["PaO₂/FiO₂","250"]],bio:[["Créatinine","260 µmol/L"],["Urée","22 mmol/L"],["K⁺","4,6 mmol/L"]],gaz:[["pH","7,35"],["Bicarbonates","21 mmol/L"]],diu:[["Diurèse","0,6 mL/kg/h"],["Bilan","+3,1 L"]],dial:null},
+   q:"Et maintenant ?",
+   c:[["Pas d'EER : la fonction rénale récupère ; gérer la volémie et surveiller","g-ok","C'est exactement le bénéfice de l'attente : environ la moitié des patients du bras « attente » d'AKIKI n'ont jamais été dialysés."],
+      ["Démarrer l'EER : la créatinine est encore à 260 µmol/L, sans récupération","g-bad","La créatinine baisse et la diurèse reprend : aucune indication. Une créatinine élevée n'est pas, en soi, un critère d'EER."]]}
+ ]},
+ {id:"a",title:"72 heures d'anurie",sub:"Jusqu'où attendre ?",steps:[
+  {day:"J4",text:"64 ans, 80 kg. Choc septique résolu, noradrénaline arrêtée hier. Toujours ventilé, sans critère impératif. Anurie depuis 76 heures.",
+   p:{clin:[["Hémodynamique","stable sans amine"],["PaO₂/FiO₂","230"]],bio:[["Urée","41 mmol/L","a"],["Créatinine","540 µmol/L","w"],["K⁺","5,4 mmol/L","w"]],gaz:[["pH","7,31","w"],["Bicarbonates","18 mmol/L"]],diu:[["Diurèse","anurie depuis 76 h","a"],["Bilan","+3 L"]],dial:null},
+   q:"Que faites-vous ?",
+   c:[["Démarrer l'EER maintenant, sans attendre de critère impératif","g-ok","Oligo-anurie &gt; 72 h et urée &gt; 40 mmol/L : dans AKIKI 2, retarder encore jusqu'à un critère impératif ou une urée à 50 n'a pas augmenté le nombre de jours sans EER, et a pu être délétère. C'est le moment de démarrer. Hémodynamique stable : technique continue ou intermittente, selon l'organisation."],
+      ["Attendre encore, jusqu'à une urée de 50 mmol/L ou un critère impératif","g-bad","C'est la stratégie « plus retardée » d'AKIKI 2 : pas de bénéfice, et un signal de surmortalité. Attendre est utile au début, pas indéfiniment."],
+      ["Faire un test au furosémide et ne démarrer qu'en l'absence de réponse","g-bad","Chez un patient anurique depuis 3 jours, le test n'apporte rien : la réponse est connue."]],
+   sim:{preset:"sepsis",mode:"CVVHDF",over:{},label:"Simuler une CVVHDF pour ce patient"}}
+ ]},
+ {id:"o",title:"OAP de surcharge",sub:"Retirer du volume sous noradrénaline",steps:[
+  {day:"J2",text:"90 kg. Péritonite opérée, choc septique, bilan cumulé +9 L. Furosémide 250 mg puis 20 mg/h : 15 mL/h de diurèse.",
+   p:{clin:[["Noradrénaline","0,15 µg/kg/min","w"],["FiO₂ / PEP","70 % / 10","a"],["PaO₂/FiO₂","110","a"],["Échographie","lignes B diffuses, VCI 24 mm"]],bio:[["Créatinine","260 µmol/L"],["K⁺","5,0 mmol/L"],["Na⁺","132 mmol/L"]],gaz:[["pH","7,33"],["PaCO₂","48 mmHg","w"]],diu:[["Diurèse","15 mL/h","a"],["Bilan","+9 L","a"]],dial:null},
+   q:"Conduite ?",
+   c:[["EER continue avec une perte nette prudente, 100 à 150 mL/h selon la tolérance","g-ok","OAP de surcharge avec hypoxémie sévère résistant aux diurétiques : critère impératif. Sous noradrénaline, la technique continue permet une déplétion lente et mieux tolérée."],
+      ["HDI avec 4 L d'ultrafiltration en 4 heures pour décharger rapidement","g-bad","Plus de 11 mL/kg/h d'ultrafiltration chez un patient sous noradrénaline : collapsus quasi certain. Le volume vient d'abord du secteur vasculaire, qui se recharge lentement."],
+      ["Doubler le furosémide et associer un thiazidique avant d'envisager l'EER","g-bad","Échec déjà documenté. Poursuivre l'escalade retarde un traitement efficace chez un patient de plus en plus hypoxémique."],
+      ["Remplissage de 1 L pour améliorer la perfusion rénale et la diurèse","g-bad","Le patient est surchargé et non précharge-dépendant : le remplissage aggrave l'OAP sans bénéfice rénal."]],
+   sim:{preset:"surcharge",mode:"CVVH",over:{uf:150},label:"Simuler une CVVH avec perte de 150 mL/h"}},
+  {day:"J3",text:"24 heures de CVVH, perte nette 150 mL/h : bilan −3,2 L.",
+   p:{clin:[["Noradrénaline","0,25 µg/kg/min","w"],["PaO₂/FiO₂","190"],["Lactate","1,8 mmol/L"],["Échographie","VCI 14 mm, variation 30 %","w"]],bio:[["K⁺","4,3 mmol/L"]],gaz:[["pH","7,38"]],diu:[["Bilan des 24 h","−3,2 L"]],dial:[["Technique","CVVH"],["Perte nette","150 mL/h"]]},
+   q:"La noradrénaline augmente et la VCI devient compliante. La perte nette ?",
+   c:[["La réduire et réévaluer : le secteur vasculaire ne se recharge plus","g-ok","La hausse des besoins en noradrénaline et la VCI qui devient compliante signent une déplétion plus rapide que la recharge vasculaire. On ralentit, on réévalue, on reprendra quand la tolérance le permet."],
+      ["L'augmenter à 300 mL/h pour atteindre plus vite le bilan négatif visé","g-bad","Collapsus et hypoperfusion rénale garantis : c'est la tolérance qui fixe la vitesse de déplétion, pas le bilan à atteindre."],
+      ["La maintenir à 150 mL/h et augmenter la noradrénaline si besoin","g-mid","Les signaux d'intolérance sont là : maintenir expose à l'hypotension. Mieux vaut ralentir et réévaluer."]]}
+ ]},
+ {id:"m",title:"pH 6,95 sous metformine",sub:"Acidose lactique et intoxication",steps:[
+  {day:"J0",text:"70 kg, diabétique sous metformine. Vomissements et diarrhée depuis 3 jours.",
+   p:{clin:[["PAM","62 mmHg sous noradrénaline 0,4","a"],["Glasgow","13"]],bio:[["Créatinine","450 µmol/L","w"],["K⁺","5,9 mmol/L","w"],["Lactate","18 mmol/L","a"]],gaz:[["pH","6,95","a"],["Bicarbonates","5 mmol/L","a"],["PaCO₂","22 mmHg"]],diu:[["Diurèse","10 mL/h","a"]],dial:null},
+   q:"Conduite ?",
+   c:[["EER en urgence à haute clairance, sous héparine ou sans anticoagulation","g-ok","Acidose métabolique sévère (pH &lt; 7,15) et intoxication dialysable : double indication. En acidose lactique sévère avec choc, le citrate est à éviter : son métabolisme hépatique est altéré et il risque de s'accumuler (KDIGO). Sous forte dose de noradrénaline, une technique continue à haut débit est souvent mieux tolérée que l'HDI."],
+      ["Bicarbonate de sodium seul pour remonter le pH, sans EER à ce stade","g-bad","Ne traite ni l'accumulation de metformine ni la cause de l'acidose, et apporte une charge sodée et du CO₂."],
+      ["CVVH au citrate à 25 mL/kg/h, l'anticoagulation de référence en continu","g-bad","Le citrate est à éviter en acidose lactique sévère avec choc : le foie hypoperfusé ne le métabolise plus, il s'accumule. Et la dose est trop faible pour une intoxication."],
+      ["Attendre la baisse du lactate sous réanimation et arrêt de la metformine","g-bad","La metformine s'accumule tant que le rein ne l'élimine pas : sans épuration, l'acidose s'aggrave."]],
+   sim:{preset:"metf",mode:"CVVHDF",over:{pre:600,post:1200,dial:2500,uf:0},label:"Simuler une CVVHDF à forte dose"}}
+ ]},
+ {id:"s",title:"Peut-on arrêter ?",sub:"Sevrage de l'EER",steps:[
+  {day:"J8",text:"68 ans, 75 kg. CVVH au citrate depuis 7 jours. Noradrénaline arrêtée depuis 48 heures. La diurèse revient depuis 3 jours, sans diurétique.",
+   p:{clin:[["Hémodynamique","stable sans amine"],["Ventilation","extubé à J6"]],bio:[["Urée","14 mmol/L"],["K⁺","4,2 mmol/L"]],gaz:[["pH","7,40"],["Bicarbonates","24 mmol/L"]],diu:[["Diurèse","1 100 mL/24 h sans diurétique"],["Bilan","−1,5 L"]],dial:[["Technique","CVVH au citrate"],["Débit sang","140 mL/min"],["Citrate / compensation","3 mmol/L / 120 %"],["Réinjection / perte","1 400 / 50 mL/h"]]},
+   q:"Que faites-vous ?",
+   c:[["Arrêter l'EER et surveiller chaque jour diurèse, urée et K⁺","g-ok","Une diurèse spontanée au-delà de 400 à 500 mL/24 h sans diurétique prédit le succès du sevrage. Hémodynamique stable, pas de critère d'urgence : on arrête et on surveille."],
+      ["Continuer l'EER jusqu'à la normalisation de la créatinine","g-bad","Sous EER, la créatinine reflète surtout la machine : elle ne renseigne pas sur la récupération. Attendre sa normalisation prolonge inutilement l'EER."],
+      ["Faire d'abord un test au furosémide avant de décider l'arrêt","g-mid","Un outil d'appoint, pas indispensable ici : la diurèse spontanée parle déjà d'elle-même."],
+      ["Relais par HDI trois fois par semaine jusqu'à récupération","g-bad","La fonction rénale récupère : programmer des séances, c'est entretenir une dépendance qui n'existe plus."]]},
+  {day:"J10",text:"48 heures après l'arrêt.",
+   p:{clin:[["Hémodynamique","stable"]],bio:[["Urée","18 mmol/L"],["Créatinine","230 µmol/L"],["K⁺","4,5 mmol/L"]],gaz:[["pH","7,38"]],diu:[["Diurèse","1 800 mL/24 h"]],dial:null},
+   q:"L'urée a pris 4 mmol/L. Conclusion ?",
+   c:[["Sevrage réussi : la diurèse augmente et l'urée se stabilise, surveiller","g-ok","Une légère remontée de l'urée et de la créatinine après l'arrêt est attendue. Ce qui compte : la diurèse augmente, le K⁺ est normal, le patient est stable."],
+      ["Échec du sevrage : l'urée remonte, il faut reprendre l'EER aujourd'hui","g-bad","Remontée modérée et attendue, sans critère d'urgence : aucune indication à reprendre."]]}
+ ]}
+];
+function kShuf(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+let K={order:kShuf(KC.length),c:0,s:0,ans:null,perm:{}};K.c=K.order[0];
+function kStart(ci){K.c=ci;K.s=0;K.ans=null;for(const k in K.perm)if(k.startsWith(KC[ci].id))delete K.perm[k];}
+function kPerm(key,n){if(!K.perm[key]){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}K.perm[key]=a;}return K.perm[key];}
+function kv(arr){return `<div class="kv">${arr.map(x=>`<span>${x[0]}</span><span class="${x[2]||""}">${x[1]}</span>`).join("")}</div>`;}
+function kRender(){
+  const cs=KC[K.c],st=cs.steps[K.s];
+  $("kList").innerHTML=K.order.map(i=>[KC[i],i]).map(([c,i])=>`<button class="casebtn" type="button" data-kc="${i}" aria-pressed="${i===K.c}"><b>${c.title}</b><span>${c.sub}</span></button>`).join("");
+  $("kHead").innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0"><span class="day">${st.day}</span>${cs.title}</h2><span class="mut small">cas ${K.order.indexOf(K.c)+1} sur ${KC.length} · étape ${K.s+1} sur ${cs.steps.length}</span></div><p style="margin-top:8px">${st.text}</p>`;
+  $("kPanels").innerHTML=[["État clinique",st.p.clin],["Biologie",st.p.bio],["Gaz du sang",st.p.gaz],["Diurèse et bilan",st.p.diu]].map(x=>`<div class="pan"><h3>${x[0]}</h3>${kv(x[1])}</div>`).join("")+
+    `<div class="pan" style="grid-column:1/-1"><h3>Dialyse en cours</h3>${st.p.dial?kv(st.p.dial):`<p class="mut small" style="margin:0">Aucune EER en cours.</p>`}</div>`;
+  const key=cs.id+K.s,perm=kPerm(key,st.c.length),a=K.ans;
+  $("kBody").innerHTML=`<p><b>${st.q}</b></p><div class="choices">${perm.map((ci,j)=>{const c=st.c[ci];const cl=a===null?"":c[1]==="g-ok"?" right":ci===a?" wrong":"";return `<button class="choice${cl}" type="button" data-kch="${ci}" ${a!==null?"disabled":""}><b>${"ABCD"[j]}</b><span>${c[0]}</span></button>`;}).join("")}</div>
+    ${a!==null?`<div class="fb"><p><span class="grade ${st.c[a][1]}">${st.c[a][1]==="g-ok"?"Conduite adaptée":st.c[a][1]==="g-mid"?"Discutable":"Délétère"}</span></p><p>${st.c[a][2]}</p>${st.c[a][1]!=="g-ok"?`<p class="mut">Conduite attendue : ${st.c.find(c=>c[1]==="g-ok")[0]}.</p>`:""}</div>
+    <p class="row" style="margin-top:10px">${st.sim?`<button class="btn" type="button" id="kSim">${st.sim.label} →</button>`:""}${K.s<cs.steps.length-1?`<button class="go" type="button" id="kNext">Étape suivante</button>`:K.order.indexOf(K.c)<KC.length-1?`<button class="go" type="button" id="kNextCase">Cas suivant</button>`:`<button class="go" type="button" id="kAgain">Nouvelle série, dans un autre ordre</button>`}</p>`:""}`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-kc]");if(b){kStart(+b.dataset.kc);kRender();return;}
+  const ch=e.target.closest("[data-kch]");if(ch&&K.ans===null){K.ans=+ch.dataset.kch;kRender();return;}
+  if(e.target.closest("#kNext")){K.s++;K.ans=null;kRender();return;}
+  if(e.target.closest("#kNextCase")){kStart(K.order[K.order.indexOf(K.c)+1]);kRender();window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#kAgain")){K.order=kShuf(KC.length);K.perm={};kStart(K.order[0]);kRender();window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#kSim")){const st=KC[K.c].steps[K.s];openInModalites(st.sim.preset,st.sim.mode,st.sim.over);}
+});
+/* démarrage */
+showTab(location.hash.slice(1)||"modalites");
+
+}
+</script>
+</body>
+</html>

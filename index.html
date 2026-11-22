@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateurs de réanimation</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><meta name="theme-color" content="#0b1215"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinique, calme, précis : un outil de salle de simulation
+   IDEA la centrale de surveillance d'un service de réanimation, un écran par lit
+   PICTURE la grille des lits : chaque simulateur est un lit avec sa courbe qui défile (Paw, PA, ECG, capno…)
+   COLOUR boîtier bleu nuit, une couleur de courbe par lit (ambre, cyan, rouge, vert…), lits à venir en veille
+   TYPE Barlow Condensed pour titres et valeurs, Barlow pour le texte — comme les simulateurs
+   LAYOUT titre + compteurs en haut, filtres, lits en service en grand (2 colonnes), lits à venir en grille 4/2/1, trame commune, mention légale */
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--li:#b4a0ff;--red:#ff5a4e;--ok:#5fe0a6}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1280px;margin:0 auto;padding:clamp(18px,3vw,40px) max(3vw,16px)}
+h1{font:600 clamp(34px,4.4vw,52px)/1.05 "Barlow Condensed",Barlow,sans-serif;letter-spacing:-.01em;margin:0 0 8px;text-wrap:balance}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 14px}
+h3{font:600 22px/1.15 "Barlow Condensed",sans-serif;margin:0 0 4px}
+p{margin:0}
+.top{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:end;margin-bottom:22px}
+.lede{color:var(--mut);max-width:62ch;font-size:17px}
+.counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+.counts div{padding:12px 14px;border-left:1px solid var(--line)}
+.counts div:first-child{border-left:0}
+.counts b{display:block;font:600 40px/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.counts span{color:var(--mut);font-size:14px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.chip{min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:500 15px Barlow,sans-serif;cursor:pointer}
+.chip:hover{border-color:#3b5862}
+.chip[aria-pressed=true]{background:var(--ink);color:#0b1215;border-color:var(--ink)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.sec{margin-bottom:30px}
+.sec[hidden]{display:none}
+.live{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.soon{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bed{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.bed[hidden]{display:none}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 14px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:14px;color:var(--mut)}
+.bar b{color:var(--ink);font:600 16px "Barlow Condensed",sans-serif}
+.dot{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.dot::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.on{color:var(--ok)}.next{color:var(--amb)}.plan{color:var(--mut)}
+.screen{position:relative;background:#060b0d;height:130px;border-bottom:1px solid var(--line)}
+.soon .screen{height:78px}
+.screen canvas{position:absolute;inset:0;width:100%;height:100%}
+.screen .lab{position:absolute;left:12px;top:8px;font:600 14px "Barlow Condensed",sans-serif;letter-spacing:.02em}
+.vals{display:flex;flex-wrap:wrap;gap:4px 22px;padding:10px 14px 0}
+.vals div{font:600 30px/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vals small{display:block;font:500 13px Barlow,sans-serif;color:var(--mut);margin-bottom:2px}
+.body{display:flex;flex-direction:column;gap:10px;padding:14px;flex:1}
+.body p{color:var(--mut)}
+.soon .body p{font-size:15px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+.tags li{font-size:13px;padding:3px 9px;border:1px solid var(--line);border-radius:6px;color:var(--mut);white-space:nowrap}
+.go{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;text-decoration:none;align-self:flex-start}
+.go:hover{background:#fff}
+.go::after{content:"→"}
+.seen{font-size:13px;color:var(--ok)}
+.scope{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:112px;height:112px}
+.scopetxt{position:absolute;left:140px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:14px;max-width:24ch}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:s}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.step h3{font-size:20px}
+.step p{color:var(--mut)}
+.trace-key{display:block;height:3px;width:44px;border-radius:2px;margin-bottom:12px}
+.empty{color:var(--mut);padding:18px;border:1px dashed var(--line);border-radius:14px}
+footer{border-top:1px solid var(--line);margin-top:10px;padding-top:18px;color:var(--mut);font-size:14px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+footer strong{color:var(--ink);font-weight:600}
+@media(max-width:1100px){.soon{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:820px){.top{grid-template-columns:minmax(0,1fr)}.live{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:520px){.soon{grid-template-columns:minmax(0,1fr)}.counts b{font-size:32px}.vals div{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Simulateurs de réanimation</h1>
+      <p class="lede">Des cas cliniques interactifs pour s'entraîner aux gestes et aux réglages de réanimation, sur ordinateur ou téléphone. Chaque lit est un simulateur.</p>
+    </div>
+    <div class="counts" aria-label="État des simulateurs">
+      <div><b id="nOn" class="on">0</b><span>en service</span></div>
+      <div><b id="nNext" class="next">0</b><span>en préparation</span></div>
+      <div><b id="nPlan">0</b><span>prévus</span></div>
+    </div>
+  </header>
+
+  <nav class="filters" id="filters" aria-label="Filtrer par thème"></nav>
+
+  <section class="sec" id="secLive">
+    <h2>En service</h2>
+    <div class="live" id="live"></div>
+  </section>
+
+  <section class="sec" id="secSoon">
+    <h2>En préparation et prévus</h2>
+    <div class="soon" id="soon"></div>
+  </section>
+
+  <p class="empty" id="empty" hidden>Aucun simulateur dans ce thème pour l'instant.</p>
+
+  <section class="sec">
+    <h2>Chaque simulateur suit la même trame</h2>
+    <div class="steps">
+      <div class="step"><span class="trace-key" style="background:var(--amb)"></span><h3>Cas clinique</h3><p>Un patient, un contexte, des objectifs explicites. Plusieurs cas par simulateur, du plus simple au plus piégeux.</p></div>
+      <div class="step"><span class="trace-key" style="background:var(--cy)"></span><h3>Moniteur et réglages</h3><p>Le patient réagit en direct à vos décisions : courbes, valeurs mesurées, alarmes et biologie évoluent.</p></div>
+      <div class="step"><span class="trace-key" style="background:var(--li)"></span><h3>Débriefing</h3><p>Ce que vous avez fait, ce qui était attendu, et les repères théoriques pour aller plus loin.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Les valeurs affichées sont simulées.</p>
+    <p>Aucune donnée personnelle collectée. <a href="mentions-legales/" style="color:inherit">Mentions légales</a></p>
+  </footer>
+</div>
+
+<script>
+{
+const THEMES=[["all","Tous"],["resp","Ventilation et voies aériennes"],["hemo","Hémodynamique et circulation"],["rein","Rein et métabolisme"],["infect","Infectiologie"]];
+const BEDS=[
+ {id:"vent",bed:1,st:"on",th:"resp",name:"Ventilation mécanique",col:"#ffc53d",lab:"Paw",wave:"paw",url:"ventilation/",
+  desc:"Réglez le ventilateur face à des patients qui réagissent : SDRA, obstruction bronchique, auto-PEP. Courbes pression, débit et volume en direct, gaz du sang et boucles.",
+  vals:[["Ppic","32"],["PEP","8"],["Vt mL","420"]],tags:["Interne à senior","VAC et VPC","Gaz du sang"]},
+ {id:"fibro",bed:2,st:"on",th:"resp",name:"Fibroscopie bronchique",col:"#ff8fa3",lab:"Vue endoscopique",wave:"scope",url:"fibroscopie/",
+  desc:"Naviguez dans l'arbre bronchique depuis la carène jusqu'aux segmentaires, sans toucher la muqueuse. Quiz d'orientation, parcours chronométrés et missions d'aspiration de bouchons muqueux selon la position du patient.",
+  vals:[],tags:["Interne","Anatomie segmentaire","Aspiration"]},
+ {id:"eer",bed:4,st:"on",th:"rein",name:"Épuration extrarénale",col:"#4fd8ea",lab:"P. accès",wave:"eer",url:"epuration-extrarenale/",
+  desc:"Comprendre chaque technique élément par élément (CVVH, CVVHD, CVVHDF, HDI), régler la prescription, piloter le citrate selon le protocole du service, dépanner les alarmes, décider quand démarrer et arrêter.",
+  vals:[["Dose","22"],["FF %","16"],["Ca²⁺ PF","0,40"]],tags:["DES MIR","Protocole citrate","5 modules"]},
+ {id:"choc",bed:3,st:"on",th:"hemo",name:"Choc cardiogénique",col:"#ff5a4e",lab:"PA",wave:"art",url:"choc-cardiogenique/",
+  desc:"Un patient en bas débit qui s'aggrave de H0 à H24 : amines, coronarographie, assistance circulatoire. Patient modélisé, échographie simulée avec ITV et index cardiaque.",
+  vals:[["PAM","63"],["IC","1,8"],["Lactate","4,7"]],tags:["DES MIR","Scénario adaptatif","Échographie"]},
+ {id:"ab",bed:5,st:"plan",th:"rein",name:"Acide-base et gaz du sang",col:"#b4a0ff",lab:"EtCO₂",wave:"capno",desc:"Analyse guidée : trou anionique, delta/delta et compensations attendues."},
+ {id:"ecmo",bed:6,st:"on",th:"hemo",name:"ECMO VA et VV",col:"#ff9a6b",lab:"Débit",wave:"ecmo",url:"ecmo/",
+  desc:"Le patient entier sous ECMO, canules en place : réglez le débit d'ECMO, le débit cardiaque et les poumons, et voyez où va le sang oxygéné. Zone de mélange, syndrome d'Arlequin, configuration VAV, recirculation en VV.",
+  vals:[["ECMO L/min","3,0"],["SpO₂ droite","54"],["SpO₂ jambes","100"]],tags:["DES MIR","VA, VAV, VV","Arlequin"]},
+ {id:"acr",bed:7,st:"plan",th:"hemo",name:"Arrêt cardiaque (ALS)",col:"#5fe0a6",lab:"II",wave:"fv",desc:"Rythmes choquables ou non, défibrillation, adrénaline et causes réversibles, au chronomètre."},
+ {id:"atb",bed:8,st:"plan",th:"infect",name:"Antibiothérapie en réanimation",col:"#f0a6d8",lab:"T °C",wave:"temp",desc:"Probabiliste selon l'écologie, PK/PD, adaptation à l'EER et à l'ARC, vancomycine et aminosides."},
+ {id:"iot",bed:9,st:"plan",th:"resp",name:"Intubation et voies aériennes difficiles",col:"#ffe066",lab:"SpO₂",wave:"pleth",desc:"Séquence d'induction rapide, courbe de désaturation et algorithme de l'intubation difficile."},
+ {id:"elec",bed:10,st:"plan",th:"rein",name:"Électrolytes",col:"#7ee2b8",lab:"II",wave:"hyperk",desc:"Dysnatrémies et vitesse de correction, hyperkaliémie et signes ECG."}
+];
+const ST={on:["on","En service"],next:["next","En préparation"],plan:["plan","Prévu"]};
+
+let seen={};
+try{seen=JSON.parse(localStorage.getItem("rea-vus")||"{}")}catch(e){}
+let filt="all";
+try{filt=localStorage.getItem("rea-filtre")||"all"}catch(e){}
+if(!THEMES.some(t=>t[0]===filt))filt="all";
+
+const thName=k=>(THEMES.find(t=>t[0]===k)||["",""])[1];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const scopeSvg=`<svg class="scope" viewBox="0 0 120 120" aria-hidden="true"><defs><radialGradient id="mu" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#f7b3b8"/><stop offset=".7" stop-color="#c85a6a"/><stop offset="1" stop-color="#3a0d16"/></radialGradient><radialGradient id="ho" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#050203"/><stop offset=".75" stop-color="#2a0910"/><stop offset="1" stop-color="#8a3242"/></radialGradient><clipPath id="cl"><circle cx="60" cy="60" r="58"/></clipPath></defs><g clip-path="url(#cl)"><rect width="120" height="120" fill="url(#mu)"/><ellipse cx="38" cy="64" rx="20" ry="25" fill="url(#ho)"/><ellipse cx="84" cy="66" rx="17" ry="22" fill="url(#ho)"/><path d="M58 40 Q61 62 60 92" stroke="#ffd9dc" stroke-width="3" fill="none" opacity=".7"/><g stroke="#fff" stroke-opacity=".18" fill="none"><path d="M10 30 Q60 20 110 30"/><path d="M6 46 Q60 36 114 46"/></g></g><circle cx="60" cy="60" r="58" fill="none" stroke="#1b1f25" stroke-width="3"/><path d="M55 4 L65 4 L60 11Z" fill="#fff" opacity=".75"/></svg>`;
+
+function card(b){
+  const [cls,lbl]=ST[b.st];
+  const live=b.st==="on";
+  const scr=b.wave==="scope"
+    ?`<div class="screen">${scopeSvg}<p class="scopetxt">Carène, bronches souches droite et gauche</p></div>`
+    :`<div class="screen"><canvas data-w="${b.wave}" data-c="${b.col}" data-live="${live?1:0}"></canvas><span class="lab" style="color:${b.col}">${esc(b.lab)}</span></div>`;
+  const vals=live&&b.vals.length?`<div class="vals">${b.vals.map(v=>`<div style="color:${b.col}"><small>${esc(v[0])}</small>${esc(v[1])}</div>`).join("")}</div>`:"";
+  const tags=live?`<ul class="tags">${b.tags.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:"";
+  const act=live?`<a class="go" href="${b.url}" data-id="${b.id}">Ouvrir le simulateur</a>${seen[b.id]?'<span class="seen">Déjà ouvert sur cet appareil</span>':""}`:"";
+  return `<article class="bed" data-th="${b.th}" id="lit-${b.id}">
+    <div class="bar"><b>Lit ${b.bed}</b><span>${esc(thName(b.th))}</span><span class="dot ${cls}">${lbl}</span></div>
+    ${scr}${vals}
+    <div class="body"><h3>${esc(b.name)}</h3><p>${esc(b.desc)}</p>${tags}${act}</div>
+  </article>`;
+}
+
+const elLive=document.getElementById("live"),elSoon=document.getElementById("soon");
+elLive.innerHTML=BEDS.filter(b=>b.st==="on").map(card).join("");
+elSoon.innerHTML=BEDS.filter(b=>b.st!=="on").sort((a,b)=>(a.st==="next"?-1:0)-(b.st==="next"?-1:0)||a.bed-b.bed).map(card).join("");
+document.getElementById("nOn").textContent=BEDS.filter(b=>b.st==="on").length;
+document.getElementById("nNext").textContent=BEDS.filter(b=>b.st==="next").length;
+document.getElementById("nPlan").textContent=BEDS.filter(b=>b.st==="plan").length;
+
+const elF=document.getElementById("filters");
+elF.innerHTML=THEMES.map(t=>`<button class="chip" type="button" id="f-${t[0]}" data-f="${t[0]}" aria-pressed="false">${t[1]}</button>`).join("");
+function applyFilter(){
+  for(const c of elF.querySelectorAll(".chip"))c.setAttribute("aria-pressed",c.dataset.f===filt?"true":"false");
+  let shown=0;
+  for(const sec of [["secLive",elLive],["secSoon",elSoon]]){
+    let n=0;
+    for(const a of sec[1].children){const ok=filt==="all"||a.dataset.th===filt;a.hidden=!ok;if(ok)n++}
+    document.getElementById(sec[0]).hidden=n===0;shown+=n;
+  }
+  document.getElementById("empty").hidden=shown>0;
+}
+elF.addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;filt=b.dataset.f;try{localStorage.setItem("rea-filtre",filt)}catch(x){}applyFilter()});
+document.addEventListener("click",e=>{const a=e.target.closest(".go");if(!a)return;seen[a.dataset.id]=1;try{localStorage.setItem("rea-vus",JSON.stringify(seen))}catch(x){}});
+applyFilter();
+
+/* courbes : valeurs entre 0 (bas) et 1 (haut) */
+const g=(x,m,s)=>Math.exp(-((x-m)**2)/(2*s*s));
+const W={
+ paw:t=>{const p=t%3;const v=p<1?5+22*(1-Math.exp(-p/.07)):5+22*Math.exp(-(p-1)/.09);return .12+v/34},
+ art:t=>{const p=(t%.8)/.8;return .22+.62*g(p,.13,.05)+.28*Math.exp(-Math.max(0,p-.13)*3.2)*(p>.13?1:p/.13)+.12*g(p,.4,.035)},
+ fv:t=>.5+.28*Math.sin(2*Math.PI*4.6*t)*(.6+.4*Math.sin(2*Math.PI*.7*t))+.08*Math.sin(2*Math.PI*7.9*t),
+ eer:t=>.45+.07*Math.abs(Math.sin(Math.PI*1.6*t)),
+ ecmo:t=>.55+.06*Math.sin(2*Math.PI*1.2*t),
+ capno:t=>{const p=t%4;if(p<.25)return .15+.5*(p/.25);if(p<1.8)return .65+.08*(p-.25)/1.55;if(p<2)return .73-.58*((p-1.8)/.2);return .15},
+ pleth:t=>{const p=(t%.9)/.9;return .2+.6*g(p,.2,.08)+.22*g(p,.45,.07)},
+ temp:t=>.5+.25*Math.sin(2*Math.PI*t/5)+.04*Math.sin(2*Math.PI*t*1.3),
+ hyperk:t=>{const p=(t%.85)/.85;return .45+.06*g(p,.1,.02)+.42*g(p,.25,.012)-.1*g(p,.28,.012)+.38*g(p,.5,.035)}
+};
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cvs=[...document.querySelectorAll("canvas[data-w]")].map(c=>({c,f:W[c.dataset.w],col:c.dataset.c,live:c.dataset.live==="1"}));
+function size(o){const r=o.c.getBoundingClientRect(),d=devicePixelRatio||1;o.w=r.width;o.h=r.height;o.c.width=Math.max(1,r.width*d);o.c.height=Math.max(1,r.height*d);o.x=o.c.getContext("2d");o.x.setTransform(d,0,0,d,0,0)}
+const ro=new ResizeObserver(()=>{for(const o of cvs)size(o);drawAll(performance.now()/1000)});
+for(const o of cvs)ro.observe(o.c);
+const WIN=5,GAP=14;
+function drawOne(o,now){
+  const x=o.x;if(!x||!o.w)return;
+  const w=o.w,h=o.h,top=24,bot=8,hh=h-top-bot;
+  x.clearRect(0,0,w,h);
+  x.strokeStyle="rgba(147,168,175,.08)";x.lineWidth=1;
+  for(let gx=0;gx<w;gx+=40){x.beginPath();x.moveTo(gx+.5,top);x.lineTo(gx+.5,h-bot);x.stroke()}
+  const animate=o.live&&!reduce;
+  const cx=animate?((now%WIN)/WIN)*w:w+GAP;
+  const start=animate?now-(now%WIN):0;
+  x.strokeStyle=o.col;x.lineWidth=2;x.globalAlpha=o.live?1:.35;
+  if(!o.live)x.setLineDash([4,4]);else x.setLineDash([]);
+  x.beginPath();let pen=false;
+  for(let px=0;px<=w;px+=1.5){
+    if(px>=cx&&px<cx+GAP){pen=false;continue}
+    const t=(px<cx?start:start-WIN)+px/w*WIN;
+    const y=top+hh*(1-o.f(t+(o.live?0:1)));
+    if(!pen){x.moveTo(px,y);pen=true}else x.lineTo(px,y);
+  }
+  x.stroke();x.globalAlpha=1;x.setLineDash([]);
+  if(animate&&cx<w){x.fillStyle=o.col;x.beginPath();x.arc(cx,top+hh*(1-o.f(now)),3,0,7);x.fill()}
+}
+function drawAll(now){for(const o of cvs)drawOne(o,now)}
+function loop(){drawAll(performance.now()/1000);requestAnimationFrame(loop)}
+if(reduce)drawAll(0);else requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

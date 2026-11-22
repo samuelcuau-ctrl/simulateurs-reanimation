@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur de fibroscopie bronchique</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: clinique, calme, outil de bloc d'endoscopie
+   IDEA: la colonne d'endoscopie — moniteur rond sur fond noir, console à côté
+   PICTURE: la vue fibroscopique elle-même, grande, à gauche
+   COLOUR and TYPE: noir d'écran, rose muqueuse dans l'image, accent vert d'eau ; IBM Plex Sans
+   LAYOUT: vue à gauche, console de réglages à droite ; empilé sous 900px */
+:root{color-scheme:dark;--bg:#0b0d10;--panel:#14171c;--line:#262b33;--ink:#e7eaee;--muted:#9aa4af;--acc:#5fd4c4;--bad:#f2777a;--good:#6fdc8c}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+#app{display:grid;grid-template-columns:minmax(0,1fr) 370px;min-height:100vh}
+#stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px}
+#viewWrap{position:relative;width:min(84vh,100%);aspect-ratio:1;border-radius:50%;box-shadow:0 0 0 3px #1b1f25,0 0 0 4px #000;transition:box-shadow .15s;touch-action:none}
+#viewWrap.contact{box-shadow:0 0 0 3px var(--bad),0 0 30px rgba(242,119,122,.45)}
+#gl{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;display:block;cursor:grab}
+#gl:active{cursor:grabbing}
+#overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:50%}
+#notch{position:absolute;left:50%;top:6px;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid rgba(255,255,255,.75)}
+.lbl{position:absolute;transform:translate(-50%,-50%);background:rgba(8,10,12,.72);color:#fff;border:1px solid rgba(95,212,196,.7);padding:2px 7px;border-radius:10px;font-size:13px;white-space:nowrap}
+.lbl.sub{font-size:11px;border-color:rgba(255,255,255,.35);color:#cfd5db}
+.mark{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;border:3px solid #ffe066;color:#ffe066;font-weight:600;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(0,0,0,.35)}
+#hud:empty{display:none}
+#hud{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);font-size:13px;color:#dfe5ea;background:rgba(0,0,0,.5);padding:3px 10px;border-radius:10px;white-space:nowrap}
+#conv{color:var(--muted);font-size:13px;text-align:center;max-width:620px}
+#pad{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#pad button{min-width:44px;min-height:44px}
+#side{background:var(--panel);border-left:1px solid var(--line);padding:18px;overflow:auto;max-height:100vh}
+h1{font-size:20px;line-height:1.2;margin:0 0 12px;font-weight:600}
+h2{font-size:13px;color:var(--muted);font-weight:500;margin:18px 0 6px}
+.tabs{display:flex;gap:4px;background:#0d1014;padding:4px;border-radius:10px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);min-height:38px;border-radius:7px;font:inherit;font-size:13.5px;padding:4px 2px;cursor:pointer}
+.expl{margin-top:8px;color:#cdd3d9;font-size:14px}
+.expl p{margin:6px 0}
+.tabs button.on{background:#232933;color:var(--ink)}
+button,select{font:inherit;color:var(--ink);background:#1d2229;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:#3a414c}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.card{background:#0f1216;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px}
+.big{font-size:17px;font-weight:600}
+.muted{color:var(--muted);font-size:13px}
+.choices{display:grid;gap:6px;margin-top:10px}
+.choices button{text-align:left;min-height:44px}
+.choices button.ok{border-color:var(--good);background:rgba(111,220,140,.12)}
+.choices button.ko{border-color:var(--bad);background:rgba(242,119,122,.12)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 0}
+.row label{color:var(--ink)}
+#map{width:100%;height:300px;display:block;background:#0f1216;border:1px solid var(--line);border-radius:10px}
+kbd{background:#232933;border:1px solid #333b46;border-radius:4px;padding:0 5px;font-size:12px;font-family:inherit}
+ul.keys{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
+.hidden{display:none!important}
+.ok-t{color:var(--good)}.ko-t{color:var(--bad)}
+#err{position:absolute;inset:20%;display:flex;align-items:center;text-align:center;color:var(--bad)}
+@media(max-width:900px){#app{grid-template-columns:1fr}#side{border-left:0;border-top:1px solid var(--line);max-height:none}#viewWrap{width:min(100%,70vh)}}
+</style>
+</head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div id="app">
+  <div id="stage">
+    <div id="viewWrap">
+      <canvas id="gl"></canvas>
+      <div id="overlay"><div id="notch"></div><div id="labels"></div><div id="mark" class="mark hidden">?</div><div id="hud"></div></div>
+    </div>
+    <div id="conv"></div>
+    <div id="pad" aria-label="Commandes tactiles">
+      <button data-k="ArrowUp" title="Avancer">▲ Avancer</button>
+      <button data-k="ArrowDown" title="Reculer">▼ Reculer</button>
+      <button data-k="KeyW" title="Béquillage haut">⤒ Béquille haut</button>
+      <button data-k="KeyS" title="Béquillage bas">⤓ Béquille bas</button>
+      <button data-k="KeyA" title="Rotation antihoraire">↺ Rotation</button>
+      <button data-k="KeyD" title="Rotation horaire">↻ Rotation</button>
+      <button data-k="KeyE" title="Aspirer (E)">Aspirer</button>
+      <button id="btnCenter" title="Recentrer dans l'axe (C)">Recentrer</button>
+    </div>
+  </div>
+
+  <aside id="side">
+    <h1>Fibroscopie bronchique — simulateur</h1>
+    <div class="tabs" role="tablist">
+      <button data-mode="explore" class="on">Exploration</button>
+      <button data-mode="quiz">Quiz</button>
+      <button data-mode="run">Parcours</button>
+      <button data-mode="sec">Sécrétions</button>
+    </div>
+
+    <section id="pExplore">
+      <div class="card">
+        <div class="muted">Position de l'extrémité</div>
+        <div id="whereCode" class="big">—</div>
+        <div id="whereName" class="muted"></div>
+      </div>
+    </section>
+
+    <section id="pQuiz" class="hidden">
+      <div class="card">
+        <div id="qText" class="big"></div>
+        <div id="qSub" class="muted"></div>
+        <div id="qChoices" class="choices"></div>
+        <div id="qFeed" style="margin-top:10px"></div>
+        <div class="row" style="margin-top:10px"><span id="qScore" class="muted"></span><button id="qNext">Question suivante</button></div>
+      </div>
+      <div class="row"><label><input type="checkbox" id="qLoc" checked> « Où êtes-vous ? »</label><label><input type="checkbox" id="qOri" checked> Orifice marqué</label></div>
+      <div class="muted">Après la réponse, les étiquettes réapparaissent : vous pouvez explorer autour avant de passer à la suite.</div>
+    </section>
+
+    <section id="pRun" class="hidden">
+      <div class="card">
+        <div class="muted">Cible à atteindre</div>
+        <div id="rTarget" class="big"></div>
+        <div id="rName" class="muted"></div>
+        <div class="row" style="margin-top:8px"><span>Temps <b id="rTime">0,0 s</b></span><span>Contacts <b id="rCont">0</b></span></div>
+        <div id="rFeed"></div>
+        <div class="row"><button id="rNew">Nouvelle cible</button><button id="rRestart">Recommencer</button></div>
+      </div>
+      <div class="row"><label><input type="checkbox" id="rMap"> Afficher le schéma</label><label><input type="checkbox" id="rLbl"> Étiquettes</label></div>
+      <div class="muted" id="rBest"></div>
+      <div class="muted" style="margin-top:6px">Départ en haut de la trachée. Le schéma montre la cible en jaune : affichez-le pour apprendre le trajet, masquez-le pour vous tester. Un contact est compté chaque fois que l'extrémité touche la paroi.</div>
+    </section>
+
+    <section id="pSec" class="hidden">
+      <div class="card">
+        <div class="muted">Mission</div>
+        <div id="sTitle" class="big"></div>
+        <div id="sDesc" class="muted"></div>
+        <div class="row" style="margin-top:8px"><span>Aspirés <b id="sCount">0/0</b></span><span>Temps <b id="sTime">0,0 s</b></span><span>Contacts <b id="sCont">0</b></span></div>
+        <div id="sQ"></div>
+        <div id="sFeed"></div>
+        <div class="row"><button id="sNew">Nouvelle mission</button><button id="sHint">Indice</button></div>
+      </div>
+      <div class="row"><label for="sScen">Scénario</label>
+        <select id="sScen"><option value="inh">Inhalation, patient alité</option><option value="deb">Inhalation, patient assis</option><option value="rand">Aléatoire</option></select></div>
+      <div class="row"><label for="sNum">Nombre de bouchons</label><select id="sNum"><option>1</option><option selected>2</option><option>3</option></select></div>
+      <div class="row"><label><input type="checkbox" id="sMap"> Afficher le schéma</label><label><input type="checkbox" id="sLbl"> Étiquettes</label></div>
+      <div class="muted">Trouvez les bouchons muqueux, approchez-vous à moins d'1 cm en les gardant au centre de l'image, puis maintenez <kbd>E</kbd> ou le bouton Aspirer. Après chaque aspiration, identifiez le segment.</div>
+    </section>
+
+    <section id="mapSec">
+      <h2>Schéma (vue de face, convention radiologique)</h2>
+      <canvas id="map" width="340" height="300"></canvas>
+    </section>
+
+    <h2>Réglages</h2>
+    <div class="row"><label for="sConv">Position de l'opérateur</label>
+      <select id="sConv"><option value="head">À la tête du patient</option><option value="face">Face au patient</option></select></div>
+    <div class="row"><label for="sDrive">Pilotage</label>
+      <select id="sDrive"><option value="real">Réaliste (béquillage + rotation)</option><option value="free">Libre (avec lacet)</option></select></div>
+    <div class="row"><label for="sQual">Qualité d'image</label>
+      <select id="sQual"><option value="380">Basse</option><option value="560" selected>Moyenne</option><option value="820">Haute</option></select></div>
+    <div class="row"><label><input type="checkbox" id="sLabels" checked> Étiquettes</label><label><input type="checkbox" id="sSub"> Sous-segments</label></div>
+
+    <h2>Commandes</h2>
+    <ul class="keys">
+      <li><kbd>↑</kbd> <kbd>↓</kbd> ou molette : avancer / reculer (<kbd>Maj</kbd> = plus vite)</li>
+      <li><kbd>Z</kbd> <kbd>S</kbd> (W/S en QWERTY) : béquillage haut / bas</li>
+      <li><kbd>Q</kbd> <kbd>D</kbd> (A/D en QWERTY) : rotation de l'endoscope</li>
+      <li><kbd>←</kbd> <kbd>→</kbd> : rotation (réaliste) ou lacet (libre)</li>
+      <li>Glisser la souris : béquillage vertical, rotation horizontale</li>
+      <li><kbd>E</kbd> (maintenu) : aspirer</li>
+      <li><kbd>C</kbd> recentrer · <kbd>R</kbd> retour trachée · <kbd>L</kbd> étiquettes</li>
+    </ul>
+    <h2>À savoir</h2>
+    <p class="muted">Arbre bronchique schématique (nomenclature de Boyden, directions et calibres approximatifs), sans variantes anatomiques et non issu d'un scanner. Le triangle en haut de l'image est le repère d'orientation de l'endoscope. BSD/BSG : bronches souches ; LSD, LM, LID, LSG, LIG : bronches lobaires ; TI : tronc intermédiaire.</p>
+  </aside>
+</div>
+
+<script>
+{
+// ---------- maths ----------
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const len=a=>Math.hypot(a[0],a[1],a[2]);
+const norm=a=>{const l=len(a)||1;return [a[0]/l,a[1]/l,a[2]/l];};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const sstep=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+function rot(v,k,ang){const c=Math.cos(ang),s=Math.sin(ang),kv=cross(k,v),kd=dot(k,v)*(1-c);
+  return [v[0]*c+kv[0]*s+k[0]*kd,v[1]*c+kv[1]*s+k[1]*kd,v[2]*c+kv[2]*s+k[2]*kd];}
+function rotMin(v,a,b){let ax=cross(a,b);const s=len(ax);if(s<1e-6)return v.slice();ax=mul(ax,1/s);return rot(v,ax,Math.atan2(s,dot(a,b)));}
+const orthoUp=(u,f)=>norm(sub(u,mul(f,dot(u,f))));
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+// ---------- anatomie (repère patient : x = gauche, y = crânial, z = antérieur ; unités en cm) ----------
+const DEF=[
+ ['T',null,[0,-11,-1],11.05,0.9,'Trachée','Trachée',{rings:1,start:[0,11,1]}],
+ ['BSD','T',[-0.45,-0.89,-0.05],2.0,0.68,'BSD','Bronche souche droite',{rings:1}],
+ ['LSD','BSD',[-0.95,0.25,0.05],1.1,0.48,'LSD','Bronche lobaire supérieure droite'],
+ ['B1D','LSD',[-0.15,1,0.05],1.4,0.3,'B1 D','B1 D — segment apical du LSD',{seg:1}],
+ ['B2D','LSD',[-0.45,0.35,-0.8],1.4,0.3,'B2 D','B2 D — segment dorsal (postérieur) du LSD',{seg:1}],
+ ['B3D','LSD',[-0.45,-0.05,0.85],1.4,0.3,'B3 D','B3 D — segment ventral (antérieur) du LSD',{seg:1}],
+ ['TI','BSD',[-0.12,-0.99,0.05],2.2,0.55,'TI','Tronc intermédiaire',{rings:1}],
+ ['LM','TI',[-0.25,-0.35,0.9],1.4,0.38,'LM','Bronche lobaire moyenne'],
+ ['B4D','LM',[-0.85,-0.35,0.4],1.2,0.26,'B4 D','B4 D — segment latéral (externe) du lobe moyen',{seg:1}],
+ ['B5D','LM',[0.25,-0.45,0.85],1.2,0.26,'B5 D','B5 D — segment médial (interne) du lobe moyen',{seg:1}],
+ ['B6D','TI',[-0.1,-0.15,-1],1.3,0.33,'B6 D','B6 D — segment apical du LID (Nelson)',{seg:1}],
+ ['LID','TI',[-0.08,-1,-0.1],0.9,0.48,'LID','Bronche lobaire inférieure droite'],
+ ['B7D','LID',[0.4,-0.85,0.25],1.5,0.27,'B7 D','B7 D — segment paracardiaque (médio-basal)',{seg:1}],
+ ['PBD','LID',[-0.12,-1,-0.08],0.7,0.42,'Tronc basal D','Tronc des basales droit (B8–B10)'],
+ ['B8D','PBD',[-0.2,-0.8,0.6],1.5,0.28,'B8 D','B8 D — segment ventro-basal',{seg:1}],
+ ['T910D','PBD',[-0.25,-1,-0.25],0.6,0.34,'Tronc B9-B10 D','Tronc commun B9–B10 droit'],
+ ['B9D','T910D',[-0.7,-0.75,-0.05],1.4,0.27,'B9 D','B9 D — segment latéro-basal',{seg:1}],
+ ['B10D','T910D',[-0.15,-0.75,-0.65],1.4,0.27,'B10 D','B10 D — segment postéro-basal (terminobasal)',{seg:1}],
+ ['BSG','T',[0.72,-0.68,-0.08],4.5,0.62,'BSG','Bronche souche gauche',{rings:1}],
+ ['LSG','BSG',[0.55,0.4,0.72],0.9,0.48,'LSG','Bronche lobaire supérieure gauche'],
+ ['CUL','LSG',[0.15,0.9,0.4],0.9,0.4,'Culmen','Tronc culminal (division supérieure du LSG)'],
+ ['B12G','CUL',[0.25,0.85,-0.45],1.4,0.3,'B1+2 G','B1+2 G — segment apico-dorsal du culmen',{seg:1}],
+ ['B3G','CUL',[0.35,0.15,0.92],1.4,0.3,'B3 G','B3 G — segment ventral (antérieur) du culmen',{seg:1}],
+ ['LING','LSG',[0.45,-0.35,0.82],1.3,0.36,'Lingula','Tronc lingulaire'],
+ ['B4G','LING',[0.85,0.05,0.5],1.2,0.26,'B4 G','B4 G — segment lingulaire supérieur',{seg:1}],
+ ['B5G','LING',[0.3,-0.7,0.65],1.2,0.26,'B5 G','B5 G — segment lingulaire inférieur',{seg:1}],
+ ['LIG','BSG',[0.18,-0.97,-0.15],0.6,0.5,'LIG','Bronche lobaire inférieure gauche'],
+ ['B6G','LIG',[0.12,-0.15,-1],1.3,0.32,'B6 G','B6 G — segment apical du LIG (Nelson)',{seg:1}],
+ ['PBG','LIG',[0.15,-1,-0.05],1.0,0.44,'Tronc basal G','Tronc des basales gauche'],
+ ['B78G','PBG',[0.2,-0.75,0.62],1.5,0.29,'B7+8 G','B7+8 G — segment antéro-médio-basal',{seg:1}],
+ ['T910G','PBG',[0.25,-1,-0.25],0.6,0.35,'Tronc B9-B10 G','Tronc commun B9–B10 gauche'],
+ ['B9G','T910G',[0.75,-0.65,-0.05],1.4,0.27,'B9 G','B9 G — segment latéro-basal',{seg:1}],
+ ['B10G','T910G',[0.15,-0.75,-0.65],1.4,0.27,'B10 G','B10 G — segment postéro-basal (terminobasal)',{seg:1}],
+];
+const nodes={},list=[];
+for(const [id,parent,dir,L,r,code,name,o={}] of DEF){
+  const p=parent?nodes[parent]:null;
+  const n={id,parent,dir:norm(dir),len:L,r,rb:r*0.9,code,name,rings:!!o.rings,seg:!!o.seg,sub:false,children:[]};
+  n.start=p?p.end:o.start; n.end=add(n.start,mul(n.dir,L));
+  n.side=p?(p.side||(id==='BSD'?'D':'G')):null;
+  if(p)p.children.push(n);
+  nodes[id]=n;list.push(n);
+}
+for(const n of list.slice()) if(n.seg){
+  const ref=Math.abs(n.dir[1])<0.85?[0,1,0]:[1,0,0];
+  const perp=norm(cross(n.dir,ref));
+  const [a,b]=n.code.split(' ');
+  ['a','b'].forEach((s,i)=>{
+    const d=norm(rot(n.dir,perp,i?-0.5:0.5));
+    const c={id:n.id+s,parent:n.id,dir:d,len:1.3,r:n.rb*0.68,code:a+s+' '+b,name:'Sous-segment '+a+s+' '+b,sub:true,seg:false,rings:false,children:[],side:n.side};
+    c.rb=c.r*0.85;c.start=n.end;c.end=add(c.start,mul(d,c.len));
+    n.children.push(c);nodes[c.id]=c;list.push(c);
+  });
+}
+(function frames(n,up){n.up=orthoUp(up,n.dir);for(const c of n.children)frames(c,rotMin(n.up,n.dir,c.dir));})(nodes.T,[0,0,1]);
+for(const n of list) n.lp=add(n.start,mul(n.dir,Math.min(n.len*0.55,0.9)));
+const named=list.filter(n=>!n.sub);
+const NOTE={
+BSD:"La bronche souche droite est courte (2 cm environ), large et presque dans l'axe de la trachée (environ 25°). C'est pour cela que corps étrangers et inhalations vont plus souvent à droite. Elle se termine à l'orifice du LSD, sur sa face latérale.",
+BSG:"La bronche souche gauche est longue (4 à 5 cm), plus étroite et plus horizontale (environ 45°), car elle passe sous la crosse aortique. Au bout, l'éperon lobaire sépare le LSG (en avant et en haut) du LIG (dans l'axe, vers le bas).",
+LSD:"Le LSD naît de la face latérale de la bronche souche droite, 1,5 à 2 cm sous la carène. Il faut souvent tourner puis béquiller pour s'y engager. Sa division en trois orifices (B1, B2, B3) est un repère classique.",
+B1D:"B1 est le segment apical : dans la trifurcation du LSD, c'est l'orifice qui monte vers l'apex.",
+B2D:"B2 est le segment dorsal : c'est l'orifice postérieur de la trifurcation du LSD. Il est déclive en décubitus dorsal, donc souvent touché par l'inhalation.",
+B3D:"B3 est le segment ventral : c'est l'orifice antérieur de la trifurcation du LSD.",
+TI:"Le tronc intermédiaire prolonge la bronche souche droite sous l'orifice du LSD, sur environ 2 cm. Il se termine là où naissent le lobe moyen (en avant), B6 (en arrière) et le lobe inférieur droit (dans l'axe).",
+LM:"La bronche lobaire moyenne naît de la face antérieure du tronc intermédiaire, presque en face de l'orifice de B6, qui est postérieur. Elle se divise en B4 latéral et B5 médial.",
+B4D:"B4 est le segment latéral du lobe moyen : dans la bifurcation du LM, c'est l'orifice qui part en dehors.",
+B5D:"B5 est le segment médial du lobe moyen : c'est l'orifice qui part en dedans, vers le cœur.",
+B6D:"B6 (Nelson) est le premier segment du lobe inférieur droit. Il naît de la face postérieure, en face ou juste sous l'orifice du lobe moyen. Déclive en décubitus dorsal, c'est un site classique d'inhalation chez le patient alité.",
+LID:"La bronche lobaire inférieure droite descend dans l'axe du tronc intermédiaire. Elle donne d'abord B7 sur sa face médiale, puis se prolonge par le tronc des basales.",
+B7D:"B7 est le segment paracardiaque (médio-basal), le premier segment basal à naître, sur la face médiale du LID. À gauche, il n'existe pas séparément : il est fusionné avec B8.",
+PBD:"Le tronc des basales droit prolonge le LID après l'orifice de B7. Il donne B8 en avant, puis un tronc commun pour B9 et B10.",
+B8D:"B8 est le segment ventro-basal : dans la pyramide basale, c'est l'orifice antérieur.",
+T910D:"Le tronc commun B9-B10 est la partie la plus distale de la pyramide basale. Il se divise en B9, latéral, et B10, postérieur.",
+B9D:"B9 est le segment latéro-basal : l'orifice externe du tronc B9-B10.",
+B10D:"B10 est le segment postéro-basal (terminobasal) : l'orifice postérieur, presque dans l'axe, le plus déclive des bases.",
+LSG:"La bronche lobaire supérieure gauche naît de la face antéro-latérale de la bronche souche gauche. Elle se divise presque aussitôt en culmen (vers le haut) et lingula (vers l'avant et le bas). La lingula est l'équivalent gauche du lobe moyen.",
+CUL:"Le culmen est la division supérieure du LSG. Il se divise en B1+2 (apico-dorsal, en haut et en arrière) et B3 (ventral, en avant).",
+B12G:"B1+2 est le segment apico-dorsal : à gauche, apical et dorsal partent d'un tronc commun. C'est l'orifice crânial et postérieur du culmen.",
+B3G:"B3 gauche est le segment ventral du culmen : son orifice antérieur.",
+LING:"Le tronc lingulaire est la division inférieure du LSG. Il descend vers l'avant et se divise en B4 et B5. Attention : à gauche, B4 et B5 sont supérieur et inférieur, alors qu'à droite ils sont latéral et médial.",
+B4G:"B4 gauche est le segment lingulaire supérieur : l'orifice le plus haut et le plus externe de la lingula.",
+B5G:"B5 gauche est le segment lingulaire inférieur : l'orifice qui descend vers l'avant.",
+LIG:"La bronche lobaire inférieure gauche prolonge la bronche souche gauche après l'éperon du LSG. B6 naît tout de suite sur sa face postérieure.",
+B6G:"B6 (Nelson) gauche est le premier segment du LIG : il naît de la face postérieure, juste sous l'éperon LSG/LIG. Il est déclive en décubitus dorsal.",
+PBG:"Le tronc des basales gauche prolonge le LIG sous B6. Il donne B7+8 en avant, puis le tronc B9-B10. Il n'y a pas de B7 séparé à gauche.",
+B78G:"B7+8 est le segment antéro-médio-basal : à gauche, paracardiaque et ventro-basal partent ensemble. C'est l'orifice antérieur de la pyramide basale gauche.",
+T910G:"Le tronc commun B9-B10 gauche se divise en B9, latéral, et B10, postérieur.",
+B9G:"B9 gauche est le segment latéro-basal : l'orifice externe.",
+B10G:"B10 gauche est le segment postéro-basal : l'orifice postérieur, le plus déclive."
+};
+const noteOf=n=>NOTE[n.id]||'';
+const firstSentence=t=>{const i=t.indexOf('. ');return i>0?t.slice(0,i+1):t;};
+function dirWords(v){
+  const ax=[[v[0],'gauche','droite'],[v[1],'crâniale','caudale'],[v[2],'antérieure','postérieure']].map(([c,a,b])=>[Math.abs(c),c>0?a:b]).sort((a,b)=>b[0]-a[0]);
+  const w=ax.filter((a,i)=>i===0||a[0]>0.4).slice(0,2).map(a=>a[1]);
+  return w.join(' et ');
+}
+function clockText(pr){
+  if(Math.hypot(pr.x,pr.y)<0.12)return "au centre de l'image";
+  let h=Math.round(Math.atan2(pr.x,pr.y)*6/Math.PI);if(h<=0)h+=12;
+  return 'à '+h+' h dans l\u2019image';
+}
+function lobeOf(n){const L=['LSD','LM','LID','LSG','LIG'];while(n&&!L.includes(n.id))n=n.parent&&nodes[n.parent];return n;}
+const convLabel=()=>settings.conv==='head'?'opérateur à la tête':'opérateur face au patient';
+
+const caps=list.map(n=>{
+  const p=n.parent?nodes[n.parent]:null;
+  return {a:p?sub(n.start,mul(p.dir,0.5*p.rb)):n.start,
+          b:n.children.length?sub(n.end,mul(n.dir,0.5*n.rb)):n.end,
+          ra:n.r,rb:n.rb,f:n.rings?1:0,node:n};
+});
+
+// ---------- champ de distance (identique au shader) ----------
+const KS=0.07;
+const smin=(a,b,k)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*0.25;};
+function capD(p,c){
+  const pa=sub(p,c.a),ba=sub(c.b,c.a),bb=dot(ba,ba),s0=dot(pa,ba)/bb,h=clamp(s0,0,1);
+  const q=sub(pa,mul(ba,h)),l=len(q);let r=lerp(c.ra,c.rb,h);
+  if(c.f){const post=-q[2]/Math.max(l,1e-4),pp=Math.max(post,0);
+    r-=r*0.18*pp*pp;
+    const s=s0*Math.sqrt(bb),ring=Math.pow(0.5+0.5*Math.cos(6.2831853*s/0.42),6);
+    r-=r*0.06*ring*(1-sstep(-0.1,0.35,post));}
+  return l-r;
+}
+function mapJS(p){let d=1e3;for(const c of caps)d=smin(d,capD(p,c),KS);
+  for(const b of activeBlobs())d=Math.max(d,-(len(sub(p,b.c))-b.r));return d;}
+function gradJS(p){const e=0.01;return norm([mapJS(add(p,[e,0,0]))-mapJS(sub(p,[e,0,0])),mapJS(add(p,[0,e,0]))-mapJS(sub(p,[0,e,0])),mapJS(add(p,[0,0,e]))-mapJS(sub(p,[0,0,e]))]);}
+function locate(p){let best=list[0],bs=1e9,bt=0;
+  for(const n of list){const pa=sub(p,n.start),t=dot(pa,n.dir),tc=clamp(t,0,n.len);
+    const q=sub(pa,mul(n.dir,tc)),rr=lerp(n.r,n.rb,tc/n.len),out=Math.max(0,-t,t-n.len);
+    const sc=(len(q)+out*2)/rr;if(sc<bs){bs=sc;best=n;bt=t/n.len;}}
+  return {node:best,t:bt};}
+function lineOfSight(a,b){const v=sub(b,a),D=len(v),d=mul(v,1/D);let t=0;
+  for(let i=0;i<70;i++){const q=add(a,mul(d,t)),m=mapJS(q);if(m>-0.01&&t<D-0.08)return false;t+=Math.max(-m*0.8,0.01);if(t>=D)return true;}
+  return true;}
+
+// ---------- WebGL ----------
+const canvas=document.getElementById('gl');
+const gl=canvas.getContext('webgl',{antialias:false});
+const K=24,FOV=2.1;
+const FS=`precision highp float;
+uniform vec2 uRes;uniform vec3 uPos;uniform vec3 uFwd;uniform vec3 uUp;uniform vec3 uRight;uniform float uFov;
+uniform vec4 uA[${K}];uniform vec4 uB[${K}];uniform float uF[${K}];uniform int uN;uniform vec4 uS[3];uniform int uSn;
+float smin(float a,float b,float k){float h=max(k-abs(a-b),0.0)/k;return min(a,b)-h*h*k*0.25;}
+float capD(vec3 p,vec4 A,vec4 B,float f){
+ vec3 pa=p-A.xyz;vec3 ba=B.xyz-A.xyz;float bb=dot(ba,ba);float s0=dot(pa,ba)/bb;float h=clamp(s0,0.0,1.0);
+ vec3 q=pa-ba*h;float l=length(q);float r=mix(A.w,B.w,h);
+ if(f>0.5){float post=-q.z/max(l,1e-4);float pp=max(post,0.0);r-=r*0.18*pp*pp;
+  float s=s0*sqrt(bb);float ring=pow(0.5+0.5*cos(6.2831853*s/0.42),6.0);
+  r-=r*0.06*ring*(1.0-smoothstep(-0.1,0.35,post));}
+ return l-r;}
+float mapL(vec3 p){float d=1e3;for(int i=0;i<${K};i++){if(i>=uN)break;d=smin(d,capD(p,uA[i],uB[i],uF[i]),${KS.toFixed(3)});}return d;}
+float mapS(vec3 p){float d=1e3;for(int i=0;i<3;i++){if(i>=uSn)break;vec4 S=uS[i];
+ d=min(d,length(p-S.xyz)-S.w*(1.0+0.13*sin(p.x*23.0)*sin(p.y*19.0+1.0)*sin(p.z*21.0+2.0)));}return d;}
+float map(vec3 p){return max(mapL(p),-mapS(p));}
+vec3 grad(vec3 p){vec2 e=vec2(0.004,-0.004);
+ return normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));}
+float hash(vec3 p){p=fract(p*0.3183099+0.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float noise(vec3 x){vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.0-2.0*f);
+ return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+            mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+void main(){
+ vec2 uv=(gl_FragCoord.xy/uRes)*2.0-1.0;float rr=length(uv);
+ if(rr>1.0){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}
+ float th=rr*uFov*0.5;vec2 d2=rr>1e-5?uv/rr:vec2(0.0);
+ vec3 rd=normalize(uFwd*cos(th)+(uRight*d2.x+uUp*d2.y)*sin(th));
+ float t=0.0;float d=0.0;bool hit=false;vec3 p=uPos;
+ for(int i=0;i<96;i++){p=uPos+rd*t;d=map(p);if(d>-0.003){hit=true;break;}t+=max(-d*0.75,0.004);if(t>9.0)break;}
+ vec3 col=vec3(0.0);
+ if(hit){vec3 n=-grad(p);float diff=max(dot(n,-rd),0.0);float spec=pow(diff,48.0);
+  float n1=noise(p*2.2);float n2=noise(p*9.0+7.3);
+  vec3 base=vec3(0.84,0.38,0.34)*(0.8+0.4*n1);
+  float ves=1.0-smoothstep(0.0,0.018,abs(n2-0.5));base=mix(base,vec3(0.6,0.1,0.12),ves*0.35);
+  float att=1.0/(1.0+0.45*t*t);float sp=0.5;
+  if(uSn>0&&-mapS(p)>=mapL(p)-0.002){base=vec3(0.74,0.68,0.34)*(0.8+0.35*n1);spec=pow(diff,70.0);sp=0.7;}
+  col=base*(0.05+1.0*diff)*att*1.35+vec3(1.0,0.95,0.92)*spec*sp*att;}
+ col*=1.0-0.45*pow(rr,3.0);
+ gl_FragColor=vec4(pow(col,vec3(0.4545)),1.0);}`;
+const VS='attribute vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
+let U={},glOK=false;
+function initGL(){
+  if(!gl)return fail("WebGL n'est pas disponible dans ce navigateur.");
+  const sh=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;};
+  try{
+    const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);
+    if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(pr));
+    gl.useProgram(pr);
+    const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+    const loc=gl.getAttribLocation(pr,'aP');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    for(const n of ['uRes','uPos','uFwd','uUp','uRight','uFov','uA','uB','uF','uN','uS','uSn'])U[n]=gl.getUniformLocation(pr,n);
+    glOK=true;
+  }catch(e){fail('Erreur graphique : '+e.message);}
+}
+function fail(msg){const d=document.createElement('div');d.id='err';d.textContent=msg;document.getElementById('viewWrap').appendChild(d);}
+const UA=new Float32Array(K*4),UB=new Float32Array(K*4),UF=new Float32Array(K),US=new Float32Array(12);
+function segDist(p,c){const pa=sub(p,c.a),ba=sub(c.b,c.a),h=clamp(dot(pa,ba)/dot(ba,ba),0,1);return len(sub(pa,mul(ba,h)))-Math.max(c.ra,c.rb);}
+function render(){
+  if(!glOK)return;
+  const res=+settings.qual;if(canvas.width!==res){canvas.width=canvas.height=res;}
+  gl.viewport(0,0,res,res);
+  const arr=caps.map(c=>[segDist(cam.pos,c),c]).sort((a,b)=>a[0]-b[0]);
+  let n=0;for(const [d,c] of arr){if(n>=K||d>6)break;UA.set([c.a[0],c.a[1],c.a[2],c.ra],n*4);UB.set([c.b[0],c.b[1],c.b[2],c.rb],n*4);UF[n]=c.f;n++;}
+  const r=right();
+  gl.uniform2f(U.uRes,res,res);gl.uniform3fv(U.uPos,cam.pos);gl.uniform3fv(U.uFwd,cam.f);gl.uniform3fv(U.uUp,cam.up);gl.uniform3fv(U.uRight,r);
+  gl.uniform1f(U.uFov,FOV);gl.uniform4fv(U.uA,UA);gl.uniform4fv(U.uB,UB);gl.uniform1fv(U.uF,UF);gl.uniform1i(U.uN,n);
+  const bl=activeBlobs();bl.forEach((b,i)=>US.set([b.c[0],b.c[1],b.c[2],b.r],i*4));gl.uniform4fv(U.uS,US);gl.uniform1i(U.uSn,bl.length);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+
+// ---------- état ----------
+const $=id=>document.getElementById(id);
+const settings={conv:'head',drive:'real',qual:'560',labels:true,sub:false};
+const cam={pos:[0,0,0],f:[0,-1,0],up:[0,0,1]};
+const right=()=>norm(cross(cam.f,cam.up));
+const convUp=u=>settings.conv==='head'?u.slice():mul(u,-1);
+let mode='explore',loc={node:nodes.T,t:0},contacts=0,inContact=false;
+function resetCam(){const T=nodes.T;cam.pos=add(T.start,mul(T.dir,5));cam.f=T.dir.slice();cam.up=convUp(T.up);loc=locate(cam.pos);}
+function placeAt(n,back){cam.f=n.dir.slice();cam.up=convUp(n.up);cam.pos=sub(n.end,mul(n.dir,back));loc=locate(cam.pos);collide(true);}
+function recenter(){const n=loc.node,nf=n.dir;cam.up=orthoUp(rotMin(cam.up,cam.f,nf),nf);cam.f=nf.slice();
+  const tc=clamp(dot(sub(cam.pos,n.start),n.dir),0,n.len),ax=add(n.start,mul(n.dir,tc));cam.pos=add(cam.pos,mul(sub(ax,cam.pos),0.7));}
+
+// ---------- commandes ----------
+const keys=new Set();let wheel=0,dragX=0,dragY=0;
+addEventListener('keydown',e=>{
+  if(e.target.matches('input,select,textarea'))return;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+  keys.add(e.code);
+  if(e.repeat)return;
+  if(e.code==='KeyC')recenter();
+  if(e.code==='KeyR')resetCam();
+  if(e.code==='KeyL'){settings.labels=!settings.labels;$('sLabels').checked=settings.labels;}
+});
+addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>keys.clear());
+canvas.addEventListener('wheel',e=>{e.preventDefault();wheel+=-e.deltaY*0.003;},{passive:false});
+let drag=null;
+canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;dragX+=(e.clientX-drag.x)*0.005;dragY+=-(e.clientY-drag.y)*0.004;drag={x:e.clientX,y:e.clientY};});
+canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
+for(const b of document.querySelectorAll('#pad button[data-k]')){
+  const k=b.dataset.k,on=e=>{e.preventDefault();keys.add(k);},off=()=>keys.delete(k);
+  b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);
+}
+$('btnCenter').onclick=recenter;
+
+function updateControls(dt){
+  const k=c=>keys.has(c)?1:0,fast=(k('ShiftLeft')||k('ShiftRight'))?2.5:1;
+  const adv=(k('ArrowUp')-k('ArrowDown'))*1.6*fast*dt+wheel;wheel=0;
+  const flex=(k('KeyW')-k('KeyS'))*1.1*dt+dragY;
+  const lr=k('ArrowRight')-k('ArrowLeft');
+  let roll=(k('KeyD')-k('KeyA'))*1.6*dt,yaw=0;
+  if(settings.drive==='real')roll+=lr*1.6*dt+dragX;else yaw+=lr*1.1*dt+dragX;
+  dragX=dragY=0;
+  if(flex){const r=right();cam.f=rot(cam.f,r,flex);cam.up=rot(cam.up,r,flex);}
+  if(roll)cam.up=rot(cam.up,cam.f,roll);
+  if(yaw)cam.f=rot(cam.f,cam.up,-yaw);
+  cam.f=norm(cam.f);cam.up=orthoUp(cam.up,cam.f);
+  if(adv)cam.pos=add(cam.pos,mul(cam.f,adv));
+}
+function collide(silent){
+  const n=loc.node,rr=lerp(n.r,n.rb,clamp(loc.t,0,1)),margin=clamp(rr*0.3,0.04,0.16);
+  let touched=false;
+  for(let i=0;i<5;i++){const d=mapJS(cam.pos);if(d>-margin){touched=true;cam.pos=sub(cam.pos,mul(gradJS(cam.pos),d+margin));}else break;}
+  if(silent){inContact=touched;return;}
+  if(touched&&!inContact){contacts++;const w=$('viewWrap');w.classList.add('contact');setTimeout(()=>w.classList.remove('contact'),260);}
+  inContact=touched;
+}
+
+// ---------- projection & étiquettes ----------
+function project(P){const v=sub(P,cam.pos),r0=right(),z=dot(v,cam.f),x=dot(v,r0),y=dot(v,cam.up);
+  const rho=Math.hypot(x,y),r=Math.atan2(rho,z)/(FOV/2);if(r>0.92)return null;
+  return {x:rho>1e-6?x/rho*r:0,y:rho>1e-6?y/rho*r:0};}
+const lblBox=$('labels');let visible=[],lastVis=0;const pool=[];
+function labelsOn(){return settings.labels&&(mode==='explore'||(mode==='quiz'&&quiz.answered)||(mode==='run'&&(run.done||$('rLbl').checked))||(mode==='sec'&&(sec.done||$('sLbl').checked)));}
+function mapOn(){return mode==='explore'||(mode==='quiz'&&quiz.answered)||(mode==='run'&&(run.done||$('rMap').checked))||(mode==='sec'&&(sec.done||$('sMap').checked));}
+function computeVisible(){const out=[];
+  for(const n of list){if(n.id==='T'||n===loc.node)continue;if(mode==='quiz'&&quiz.cur&&quiz.cur.type==='ori'&&n===quiz.cur.node)continue;if(n.sub&&!settings.sub)continue;
+    if(len(sub(n.lp,cam.pos))>5)continue;if(!project(n.lp))continue;if(!lineOfSight(cam.pos,n.lp))continue;out.push(n);}
+  return out.slice(0,14);}
+function drawLabels(now){
+  const on=labelsOn();
+  if(on&&now-lastVis>110){visible=computeVisible();lastVis=now;}
+  const W=$('viewWrap').clientWidth,show=on?visible:[];
+  while(pool.length<show.length){const d=document.createElement('div');d.className='lbl';lblBox.appendChild(d);pool.push(d);}
+  pool.forEach((d,i)=>{const n=show[i];const pr=n&&project(n.lp);
+    if(!pr){d.style.display='none';return;}
+    d.style.display='';d.textContent=n.code;d.className='lbl'+(n.sub?' sub':'');
+    d.style.left=(W/2+pr.x*W/2)+'px';d.style.top=(W/2-pr.y*W/2)+'px';});
+  const m=$('mark');
+  if(mode==='quiz'&&quiz.cur&&quiz.cur.type==='ori'){const pr=project(quiz.cur.node.lp);
+    m.textContent=quiz.answered?quiz.cur.node.code:'?';m.style.width=quiz.answered?'auto':'';m.style.padding=quiz.answered?'0 8px':'';m.style.borderRadius=quiz.answered?'14px':'';
+    if(pr){m.classList.remove('hidden');m.style.left=(W/2+pr.x*W/2)+'px';m.style.top=(W/2-pr.y*W/2)+'px';}else m.classList.add('hidden');}
+  else m.classList.add('hidden');
+}
+
+// ---------- carte ----------
+const mapC=$('map'),mctx=mapC.getContext('2d');
+let mb=null;
+function drawMap(){
+  const W=mapC.clientWidth,H=mapC.clientHeight,dpr=devicePixelRatio||1;
+  if(mapC.width!==Math.round(W*dpr)){mapC.width=Math.round(W*dpr);mapC.height=Math.round(H*dpr);}
+  mctx.setTransform(dpr,0,0,dpr,0,0);mctx.clearRect(0,0,W,H);
+  if(!mb){mb={x0:1e9,x1:-1e9,y0:1e9,y1:-1e9};for(const n of list)for(const p of [n.start,n.end]){mb.x0=Math.min(mb.x0,p[0]);mb.x1=Math.max(mb.x1,p[0]);mb.y0=Math.min(mb.y0,p[1]);mb.y1=Math.max(mb.y1,p[1]);}}
+  const s=Math.min((W-30)/(mb.x1-mb.x0),(H-30)/(mb.y1-mb.y0)),ox=(W-(mb.x1-mb.x0)*s)/2,oy=(H-(mb.y1-mb.y0)*s)/2;
+  const P=p=>[ox+(p[0]-mb.x0)*s,oy+(mb.y1-p[1])*s];
+  mctx.lineCap='round';
+  for(const n of list){const a=P(n.start),b=P(n.end);
+    const tg=mode==='run'&&run.target&&(n===run.target||n.parent===run.target.id);
+    mctx.strokeStyle=n===loc.node?'#5fd4c4':tg?'#ffe066':(n.sub?'#39414b':'#5a6470');mctx.lineWidth=Math.max(1.2,n.r*s*1.1);
+    mctx.beginPath();mctx.moveTo(a[0],a[1]);mctx.lineTo(b[0],b[1]);mctx.stroke();}
+  if(mode==='sec')for(const b of sec.items)if(b.removed||sec.done){const q=P(b.c);mctx.fillStyle=b.removed?'#6fdc8c':'#e8d36a';mctx.beginPath();mctx.arc(q[0],q[1],5,0,7);mctx.fill();}
+  const c=P(cam.pos);mctx.strokeStyle='#ffe066';mctx.lineWidth=2;mctx.beginPath();mctx.moveTo(c[0],c[1]);mctx.lineTo(c[0]+cam.f[0]*14,c[1]-cam.f[1]*14);mctx.stroke();
+  mctx.fillStyle='#f2777a';mctx.beginPath();mctx.arc(c[0],c[1],4,0,7);mctx.fill();
+  mctx.fillStyle='#9aa4af';mctx.font='13px IBM Plex Sans, sans-serif';mctx.fillText('D',8,18);mctx.fillText('G',W-16,18);
+}
+
+// ---------- quiz ----------
+const quiz={score:0,total:0,streak:0,cur:null,answered:false};
+function mirror(n){const m=n.id.endsWith('D')?n.id.slice(0,-1)+'G':n.id.endsWith('G')?n.id.slice(0,-1)+'D':null;return m&&nodes[m];}
+function distractors(c){
+  const pool=[],push=x=>{if(x&&x!==c&&!x.sub&&x.id!=='T'&&!pool.includes(x))pool.push(x);};
+  const p=c.parent&&nodes[c.parent];
+  if(p)p.children.forEach(push);push(mirror(c));
+  if(p&&p.parent)nodes[p.parent].children.forEach(u=>u.children.forEach(push));
+  const res=shuffle(pool).slice(0,3);
+  const others=shuffle(named.filter(x=>x!==c&&x.id!=='T'&&!res.includes(x)));
+  while(res.length<3)res.push(others.pop());
+  return res;
+}
+function newQuestion(){
+  quiz.answered=false;$('qFeed').textContent='';
+  const types=[];if($('qLoc').checked)types.push('loc');if($('qOri').checked)types.push('ori');
+  if(!types.length){$('qLoc').checked=true;types.push('loc');}
+  let cur=null;
+  for(let i=0;i<25&&!cur;i++){
+    const type=rand(types);
+    if(type==='ori'){
+      const P=rand(named.filter(n=>n.children.filter(c=>!c.sub).length>=2));
+      placeAt(P,P.id==='T'?2.2:Math.min(Math.max(P.rb*2.6,0.9),P.len*0.8+0.3));
+      const vis=P.children.filter(c=>!c.sub&&project(c.lp)&&lineOfSight(cam.pos,c.lp));
+      if(vis.length){const tg=rand(vis),pr=project(tg.lp);
+        const v=norm(add(mul(right(),pr.x),mul(cam.up,pr.y)));
+        const others=vis.filter(c=>c!==tg).map(c=>c.code);
+        cur={type,node:tg,where:P,expl:`<p>L'orifice marqué est ${clockText(pr)}, c'est-à-dire vers la face ${dirWords(v)} du patient (${convLabel()}).</p><p>${noteOf(tg)}</p>`+(others.length?`<p>Les autres orifices visibles ici : ${others.join(', ')}. ${firstSentence(noteOf(P))}</p>`:'')};}
+    }else{
+      const N=rand(named.filter(n=>n.id!=='T'));
+      placeAt(N,Math.min(N.len*0.6,Math.max(N.rb*2.6,0.9)));
+      const kids=N.children.filter(c=>!c.sub).map(c=>c.code);
+      const div=kids.length?`On voit sa division distale en ${kids.join(', ')}.`:(N.seg?'On voit sa division en deux sous-segments (a et b).':'');
+      cur={type,node:N,expl:`<p>${noteOf(N)}</p><p>${div}</p>`};
+    }
+  }
+  quiz.cur=cur;
+  if(cur.type==='ori'){$('qText').textContent="Quel est l'orifice marqué « ? » ?";$('qSub').textContent='Vous êtes dans : '+cur.where.name+'.';}
+  else{$('qText').textContent="Dans quelle bronche se trouve l'extrémité de l'endoscope ?";$('qSub').textContent='Observez la division distale et l’orientation de l’image.';}
+  const ch=shuffle([cur.node,...distractors(cur.node)]);
+  $('qChoices').innerHTML='';
+  ch.forEach(n=>{const b=document.createElement('button');b.textContent=n.name;b.onclick=()=>answer(n,b);b.dataset.id=n.id;$('qChoices').appendChild(b);});
+  scoreText();
+}
+function answer(n,btn){
+  if(quiz.answered)return;quiz.answered=true;quiz.total++;
+  const ok=n===quiz.cur.node;if(ok){quiz.score++;quiz.streak++;}else quiz.streak=0;
+  for(const b of $('qChoices').children){if(b.dataset.id===quiz.cur.node.id)b.classList.add('ok');}
+  if(!ok)btn.classList.add('ko');
+  $('qFeed').innerHTML=(ok?'<span class="ok-t">Exact.</span>':'<span class="ko-t">Non</span> — réponse : <b>'+quiz.cur.node.name+'</b>.')
+    +'<div class="expl">'+quiz.cur.expl+(ok?'':`<p>Votre choix, ${n.code} : ${firstSentence(noteOf(n))}</p>`)+'<p class="muted">Les étiquettes sont affichées : explorez autour avant de passer à la suite.</p></div>';
+  scoreText();
+}
+function scoreText(){$('qScore').textContent=`Score ${quiz.score}/${quiz.total} · série ${quiz.streak}`;}
+$('qNext').onclick=newQuestion;
+
+// ---------- parcours ----------
+const run={target:null,t0:0,done:false,time:0,best:{}};
+try{run.best=JSON.parse(localStorage.getItem('fibro-best')||'{}');}catch(e){}
+const segs=named.filter(n=>n.seg);
+function startRun(newTarget){
+  if(newTarget||!run.target)run.target=rand(segs.filter(s=>s!==run.target));
+  resetCam();run.t0=performance.now();run.done=false;contacts=0;
+  $('rTarget').textContent=run.target.code;$('rName').textContent=run.target.name;$('rFeed').textContent='';bestText();
+}
+function bestText(){const b=run.best[run.target.id];$('rBest').textContent=b?`Meilleur temps pour ${run.target.code} : ${b.t.toFixed(1).replace('.',',')} s (${b.c} contact${b.c>1?'s':''})`:'';}
+$('rNew').onclick=()=>startRun(true);$('rRestart').onclick=()=>startRun(false);
+function checkRun(now){
+  if(run.done){return;}
+  run.time=(now-run.t0)/1000;
+  const n=loc.node,ok=(n===run.target&&loc.t>0.3)||(n.sub&&n.parent===run.target.id);
+  if(ok){run.done=true;
+    const b=run.best[run.target.id];if(!b||run.time<b.t){run.best[run.target.id]={t:run.time,c:contacts};try{localStorage.setItem('fibro-best',JSON.stringify(run.best));}catch(e){}}
+    $('rFeed').innerHTML=`<p class="ok-t">Cible atteinte en ${run.time.toFixed(1).replace('.',',')} s avec ${contacts} contact${contacts>1?'s':''}.</p>`;bestText();}
+}
+
+// ---------- sécrétions ----------
+const SCEN={
+  inh:{t:'Inhalation chez un patient alité',d:"En décubitus dorsal, les segments déclives sont les plus exposés : B6 des deux côtés, B2 D, B1+2 G et B10, plus souvent à droite.",ids:['B6D','B6G','B2D','B12G','B10D','B10G','B6D','B2D']},
+  deb:{t:'Inhalation chez un patient assis',d:"En position assise ou debout, la gravité conduit le liquide vers les pyramides basales, surtout à droite (bronche souche plus verticale).",ids:['B7D','B8D','B9D','B10D','B78G','B9G','B10G','B10D','B9D']},
+  rand:{t:'Encombrement diffus',d:"Bouchons répartis au hasard : faites une exploration systématique, lobe par lobe, des deux côtés.",ids:null}
+};
+const sec={items:[],t0:0,time:0,done:false,queue:[],cur:null,ident:0,hint:false};
+function activeBlobs(){return mode==='sec'?sec.items.filter(b=>!b.removed):[];}
+function makeBlob(n){
+  const t=n.len*(0.4+Math.random()*0.25),ax=add(n.start,mul(n.dir,t)),rr=lerp(n.r,n.rb,t/n.len);
+  const pd=rot(n.up,n.dir,Math.random()*6.283);
+  return {node:n,c:add(ax,mul(pd,rr*0.45)),r:rr*0.58,r0:rr*0.58,removed:false};
+}
+function newMission(){
+  const sc=SCEN[$('sScen').value],k=+$('sNum').value;
+  const pool=shuffle([...new Set(sc.ids||segs.map(s=>s.id))]).map(id=>nodes[id]);
+  sec.items=pool.slice(0,k).map(makeBlob);
+  sec.done=false;sec.queue=[];sec.cur=null;sec.ident=0;sec.hint=false;sec.t0=performance.now();sec.time=0;
+  contacts=0;resetCam();
+  $('sTitle').textContent=sc.t;$('sDesc').textContent=sc.d;$('sQ').innerHTML='';$('sFeed').innerHTML='';
+}
+$('sNew').onclick=newMission;$('sScen').onchange=newMission;$('sNum').onchange=newMission;
+$('sHint').onclick=()=>{if(sec.done)return;sec.hint=true;
+  const rest=sec.items.filter(b=>!b.removed).map(b=>lobeOf(b.node));
+  $('sFeed').innerHTML='<p class="muted">Indice : '+(rest.length?rest.map(l=>l.name.toLowerCase()).join(' ; '):'tous les bouchons sont aspirés')+'.</p>';};
+let aspMsg='';
+function updateSec(now,dt){
+  if(!sec.done)sec.time=(now-sec.t0)/1000;
+  aspMsg='';
+  if(keys.has('KeyE')){
+    const act=activeBlobs();let best=null,bd=1e9;
+    for(const b of act){const v=sub(b.c,cam.pos),d=len(v)-b.r,co=dot(norm(v),cam.f);if(d<1.0&&co>0.75&&d<bd){bd=d;best=b;}}
+    if(best){best.r-=best.r0*0.6*dt;aspMsg='Aspiration…';
+      if(best.r<best.r0*0.15){best.removed=true;sec.queue.push(best);if(!sec.cur)askSec();}}
+    else aspMsg=act.length?'Rien à aspirer : approchez et centrez le bouchon':'';
+  }
+}
+function askSec(){
+  sec.cur=sec.queue.shift();if(!sec.cur)return;
+  const n=sec.cur.node,ch=shuffle([n,...distractors(n)]);
+  $('sQ').innerHTML='<p class="big" style="margin:10px 0 0">Bouchon aspiré. Dans quel segment était-il ?</p><div class="choices"></div>';
+  const box=$('sQ').querySelector('.choices');
+  ch.forEach(c=>{const b=document.createElement('button');b.textContent=c.name;b.dataset.id=c.id;b.onclick=()=>answerSec(c,b);box.appendChild(b);});
+}
+function answerSec(c,btn){
+  const it=sec.cur;if(!it||it.answered)return;it.answered=true;
+  const n=it.node,ok=c===n;if(ok)sec.ident++;
+  for(const b of $('sQ').querySelectorAll('button'))if(b.dataset.id===n.id)b.classList.add('ok');
+  if(!ok)btn.classList.add('ko');
+  const sc=SCEN[$('sScen').value];
+  $('sFeed').innerHTML=(ok?'<span class="ok-t">Exact.</span>':'<span class="ko-t">Non</span> — c\u2019était <b>'+n.name+'</b>.')
+    +`<div class="expl"><p>${noteOf(n)}</p>${sc.ids?`<p>${sc.d}</p>`:''}</div>`;
+  sec.cur=null;
+  if(sec.queue.length){setTimeout(()=>{$('sQ').innerHTML='';askSec();},50);return;}
+  if(sec.items.every(b=>b.removed)){sec.done=true;
+    $('sFeed').innerHTML+=`<p class="ok-t">Mission terminée en ${sec.time.toFixed(1).replace('.',',')} s, ${contacts} contact${contacts>1?'s':''}, ${sec.ident}/${sec.items.length} segment${sec.items.length>1?'s':''} identifié${sec.ident>1?'s':''}${sec.hint?' (avec indice)':''}.</p>`;}
+}
+
+// ---------- interface ----------
+function setMode(m){
+  mode=m;
+  for(const b of document.querySelectorAll('.tabs button'))b.classList.toggle('on',b.dataset.mode===m);
+  $('pExplore').classList.toggle('hidden',m!=='explore');$('pQuiz').classList.toggle('hidden',m!=='quiz');$('pRun').classList.toggle('hidden',m!=='run');$('pSec').classList.toggle('hidden',m!=='sec');
+  if(m==='quiz')newQuestion();
+  if(m==='run')startRun(true);
+  if(m==='sec')newMission();
+}
+for(const b of document.querySelectorAll('.tabs button'))b.onclick=()=>setMode(b.dataset.mode);
+function convText(){$('conv').textContent=settings.conv==='head'
+  ?"Opérateur à la tête du patient : paroi postérieure (membraneuse) en bas de l'image, droite du patient à droite de l'écran."
+  :"Opérateur face au patient : paroi postérieure (membraneuse) en haut de l'image, droite du patient à gauche de l'écran.";}
+$('sConv').onchange=e=>{if(e.target.value!==settings.conv){settings.conv=e.target.value;cam.up=mul(cam.up,-1);convText();}};
+$('sDrive').onchange=e=>settings.drive=e.target.value;
+$('sQual').onchange=e=>settings.qual=e.target.value;
+$('sLabels').onchange=e=>settings.labels=e.target.checked;
+$('sSub').onchange=e=>{settings.sub=e.target.checked;lastVis=0;};
+
+let last=performance.now(),lastMap=0;
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  updateControls(dt);
+  loc=locate(cam.pos);collide(false);loc=locate(cam.pos);
+  render();drawLabels(now);
+  if(mode==='run'){checkRun(now);$('rTime').textContent=run.time.toFixed(1).replace('.',',')+' s';$('rCont').textContent=contacts;}
+  if(mode==='sec'){updateSec(now,dt);$('sTime').textContent=sec.time.toFixed(1).replace('.',',')+' s';$('sCont').textContent=contacts;$('sCount').textContent=sec.items.filter(b=>b.removed).length+'/'+sec.items.length;}
+  if(mode==='explore'){$('whereCode').textContent=loc.node.code;$('whereName').textContent=loc.node.name;}
+  const mo=mapOn();$('mapSec').classList.toggle('hidden',!mo);
+  if(mo&&now-lastMap>100){drawMap();lastMap=now;}
+  $('hud').textContent=mode==='explore'?`${loc.node.code} · contacts ${contacts}`:mode==='run'?`→ ${run.target.code}`:mode==='sec'?(aspMsg||`Bouchons ${sec.items.filter(b=>b.removed).length}/${sec.items.length}`):'';
+  requestAnimationFrame(frame);
+}
+initGL();resetCam();convText();requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>

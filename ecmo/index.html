@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECMO : flux et syndrome d'Arlequin</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinique, calme, précis : on regarde le sang circuler
+   IDEA un patient vu de face, ses vaisseaux et le circuit d'ECMO, avec le sang coloré par sa saturation
+   PICTURE le corps entier, aorte, veines caves, troncs supra-aortiques, canules en place, pompe qui tourne, zone de mélange qui se déplace
+   COLOUR fond bleu nuit ; saturation du sang du violet sombre (désaturé) au rouge vif (saturé) ; canules blanches
+   TYPE Barlow Condensed pour chiffres et titres, Barlow pour le texte, comme les autres simulateurs
+   LAYOUT schéma du corps à gauche, réglages et moniteur à droite ; explications dessous ; empilé sous 900px */
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--red:#ff5a4e;--ok:#5fe0a6}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1320px;margin:0 auto;padding:clamp(14px,2.4vw,30px) max(2.4vw,16px)}
+h1{font:600 clamp(30px,3.6vw,44px)/1.05 "Barlow Condensed",Barlow,sans-serif;margin:0;text-wrap:balance}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 10px}
+h3{font:600 18px/1.25 Barlow,sans-serif;margin:0 0 6px}
+p{margin:0 0 10px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.top{margin-bottom:14px}.top p{color:var(--mut);margin:4px 0 0}
+.grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.mut{color:var(--mut)}.small{font-size:14px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{min-height:44px;padding:6px 16px;background:var(--panel2);border:0;border-right:1px solid var(--line);font-weight:600}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.seg button small{display:block;font-weight:500;font-size:12px;opacity:.8}
+select{min-height:44px;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:16px}
+label.f{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+label.f span{color:var(--mut)}
+label.f output{font:600 20px "Barlow Condensed",sans-serif;white-space:nowrap;text-align:right}
+label.f input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--cy);height:28px}
+label.chk{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+label.chk input{width:20px;height:20px;accent-color:var(--cy)}
+.fig{position:relative;background:#04090b;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.fig svg{display:block;width:100%;height:auto}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.fl{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.an{stroke-dasharray:3 9;animation:flow linear infinite;stroke:rgba(255,255,255,.55);stroke-width:2}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rot{animation:spin linear infinite}
+@keyframes pulse{50%{opacity:.35}}
+.ws{animation:pulse 1.4s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.an,.rot,.ws{animation:none}}
+.mon{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.6em,1fr));gap:8px;margin-top:12px}
+.m{background:#070d10;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.m small{display:block;color:var(--mut);font-size:13px;line-height:1.25}
+.m b{font:600 28px/1.1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.m i{font-style:normal;color:var(--mut);font-size:13px;margin-left:3px}
+.m.lo{border-color:#7a2a24}.m.lo b{color:#ff8a7a}.m.mid b{color:var(--amb)}
+.flags{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px}
+.flags li{padding:8px 12px;border-radius:8px;font-size:15px;background:var(--panel2);border-left:3px solid var(--line)}
+.flags li.bad{border-left-color:var(--red)}.flags li.warn{border-left-color:var(--amb)}.flags li.ok{border-left-color:var(--ok)}
+.presets{display:grid;gap:6px;margin:8px 0 6px}
+.pre{text-align:left;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);min-height:44px}
+.pre:hover{border-color:#3b5862}
+.pre b{display:block;font-weight:600}.pre span{font-size:14px;color:var(--mut)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:14px;color:var(--mut);margin-top:8px}
+.bar{display:inline-block;width:140px;height:10px;border-radius:5px;vertical-align:middle;margin:0 6px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.cn{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.cn li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.cn b.k{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-size:13px}
+.note{font-size:15px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
+.note b{color:var(--ink)}
+footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.refs{padding-left:18px;margin:6px 0 0}
+.vopts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.vopts .seg button{min-height:40px;padding:4px 14px}
+.tg{min-height:40px;padding:4px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.tg[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.vsw{display:none!important}
+.figs{display:grid;grid-template-columns:minmax(0,0.7fr) minmax(0,1fr);gap:10px;align-items:start}
+.dots{stroke:rgba(255,255,255,.9);stroke-width:4;stroke-dasharray:0.1 16;stroke-linecap:round;animation:flow2 linear infinite}
+@keyframes flow2{to{stroke-dashoffset:-32.2}}
+.jet{stroke:#fff;stroke-width:5}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+@keyframes flap{0%,55%{transform:rotate(0)}70%,90%{transform:rotate(-22deg)}}
+.aov line{transform-box:fill-box;transform-origin:bottom;animation:flap 0.85s ease-in-out infinite}
+.aov line:last-child{animation-name:flap2}
+@keyframes flap2{0%,55%{transform:rotate(0)}70%,90%{transform:rotate(22deg)}}
+@media(prefers-reduced-motion:reduce){.dots,.aov line{animation:none}}
+@media(max-width:1100px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.vsw{display:inline-flex!important}.figs{grid-template-columns:minmax(0,1fr)}.figs[data-view=heart] #figBody,.figs[data-view=body] #figHeart{display:none}
+ .left{position:sticky;top:0;z-index:2;background:var(--bg);padding:4px 0 6px}.left .orient{display:none}.fig svg{height:42vh;width:auto;margin:0 auto}.vopts{gap:6px;margin-bottom:6px}.vopts .seg button,.tg{min-height:36px;padding:2px 10px;font-size:14px}.leg{font-size:13px;margin-top:4px}}
+@media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div class="wrap">
+  <header class="top">
+    <h1>ECMO : où va le sang ?</h1>
+    <p>ECMO veino-artérielle et veino-veineuse, canulation périphérique. Réglez le débit d'ECMO, le débit cardiaque et les poumons : le sang prend la couleur de sa saturation, et la zone de mélange se déplace.</p>
+  </header>
+  <div class="grid">
+    <div class="left">
+      <div class="vopts" id="vopts"></div>
+      <div class="figs" id="figs" data-view="heart"><div class="fig" id="figBody"></div><div class="fig" id="figHeart"></div></div>
+      <div class="leg" id="legend"></div>
+      <p class="orient small mut" style="margin:4px 0 0">Le patient est vu de face : sa droite est à gauche du schéma.</p>
+    </div>
+    <div class="card">
+      <div class="seg" id="mode" role="group" aria-label="Configuration"></div>
+      <h3 style="margin-top:14px">Situations</h3>
+      <div class="presets" id="presets"></div>
+      <div id="inputs"></div>
+      <div class="mon" id="mon"></div>
+      <ul class="flags" id="flags"></ul>
+    </div>
+  </div>
+  <div class="two">
+    <div class="card"><h2>Les canules</h2><ul class="cn" id="cann"></ul><p class="note" id="explain"></p></div>
+    <div class="card" id="teach"></div>
+  </div>
+  <footer>
+    <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Modèle simplifié : consommation d'O₂ 250 mL/min, hémoglobine 10 g/dL, répartition fixe du débit entre les territoires, saturation de sortie de membrane fonction de la FdO₂.</p>
+    <ol class="refs">
+      <li>Extracorporeal Life Support Organization (ELSO). Guidelines for adult cardiac failure (VA ECMO) and adult respiratory failure (VV ECMO), 2021.</li>
+      <li>Rao P et al. Venoarterial extracorporeal membrane oxygenation for cardiogenic shock and cardiac arrest. Circ Heart Fail 2018.</li>
+      <li>Combes A et al. EOLIA : ECMO for severe ARDS. N Engl J Med 2018.</li>
+    </ol>
+  </footer>
+</div>
+<script>
+{
+/* ===== Modèle des flux ECMO ===== */
+/* Territoires artériels, dans l'ordre depuis la valve aortique. f : part du débit systémique. b : point de branchement (indice fractionnaire sur le tracé aortique). */
+const TERR=[
+ {k:"coro",n:"Coronaires",f:0.05,b:0.15},
+ {k:"bct",n:"Tronc brachiocéphalique (bras droit, cerveau droit)",f:0.12,b:2.3},
+ {k:"lcc",n:"Carotide gauche (cerveau gauche)",f:0.08,b:3.5},
+ {k:"lsc",n:"Sous-clavière gauche (bras gauche)",f:0.05,b:4.6},
+ {k:"thor",n:"Aorte thoracique (moelle, intercostales)",f:0.05,b:7.5},
+ {k:"spl",n:"Tronc cœliaque et mésentérique (foie, tube digestif)",f:0.25,b:9},
+ {k:"ren",n:"Artères rénales",f:0.20,b:10},
+ {k:"rleg",n:"Membre inférieur droit",f:0.10,b:11},
+ {k:"lleg",n:"Membre inférieur gauche",f:0.10,b:13}
+];
+const VO2=250,HB=10; // mL/min, g/dL
+const CAP=1.34*HB*10; // mL O2 par litre de sang saturé à 100 %
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function sevSat(p){return 1/(23400/(p*p*p+150*p)+1);}
+function pO2(s){s=clamp(s,0.05,0.999);let lo=1,hi=700;for(let i=0;i<60;i++){const m=(lo+hi)/2;if(sevSat(m)<s)lo=m;else hi=m;}return (lo+hi)/2;}
+
+/* S : {mode:"VA"|"VV"|"VAV", qe, co, lung (0..1), fdo2 (0.21..1), split (VAV, 0..0.5)} */
+function compute(S){
+  const r={mode:S.mode};
+  const L=clamp(S.lung,0,1),k=clamp(0.86+(S.fdo2-0.21)/0.3*0.14,0.86,1);
+  let Sv=0.65;
+  if(S.mode==="VV"){
+    const co=Math.max(S.co,0.3),ratio=S.qe/co;
+    const R=clamp(0.05+0.55*Math.max(0,ratio-0.6)+(S.close?0.25:0),0.05,0.8);
+    let Sdr,Se,Sra,Spv,Qeff;
+    for(let it=0;it<200;it++){
+      Sdr=(1-R)*Sv+R*(Se??Sv);
+      Se=S.qe>0?Sdr+(0.995-Sdr)*k:Sdr;
+      Qeff=Math.min(S.qe*(1-R),co*0.95);
+      Sra=(Qeff*Se+(co-Qeff)*Sv)/co;
+      Spv=Sra+(0.99-Sra)*L;
+      const E=VO2/(CAP*co);
+      const nSv=clamp(Spv-E,0.12,0.95);
+      Sv+=(nSv-Sv)*0.3;
+    }
+    Object.assign(r,{qtot:co,co,qe:S.qe,R,Qeff,Sdr,Se,Sra,Spv,Sv,ratio});
+    r.sat={};TERR.forEach(t=>r.sat[t.k]=Spv);
+    r.eLV=Qeff/co;r.e={};TERR.forEach(t=>r.e[t.k]=r.eLV);r.eDr=R;
+    r.E=VO2/(CAP*co);
+    r.ws=null;
+    return finish(r);
+  }
+  // VA ou VAV
+  const g=S.mode==="VAV"?clamp(S.split,0,0.6):0;
+  const qa=S.qe*(1-g),qv=S.qe*g,co=Math.max(S.co,0),qtot=co+qa;
+  let Se,Sra,Spv,sat={},ws=0,lvFrac=0,e={},eLV=0;
+  for(let it=0;it<200;it++){
+    Se=S.qe>0?Sv+(0.995-Sv)*k:Sv;
+    const qvIn=Math.min(qv,co);
+    Sra=co>0?(qvIn*Se+(co-qvIn)*Sv)/co:Sv;
+    Spv=Sra+(0.99-Sra)*L;
+    // le VG remplit les territoires depuis la racine, l'ECMO depuis l'artère fémorale
+    lvFrac=qtot>0?co/qtot:0;eLV=co>0?qvIn/co:0;
+    let left=lvFrac,prevB=0;ws=null;sat={};e={};
+    for(const t of TERR){
+      if(left>=t.f-1e-9){sat[t.k]=Spv;e[t.k]=eLV;left-=t.f;prevB=t.b;}
+      else if(left>0){const p=left/t.f;sat[t.k]=p*Spv+(1-p)*Se;e[t.k]=p*eLV+(1-p);ws=prevB+p*(t.b-prevB);left=0;prevB=t.b;}
+      else{sat[t.k]=Se;e[t.k]=1;if(ws===null)ws=prevB;}
+    }
+    if(ws===null)ws=13;
+    const Sa=TERR.reduce((a,t)=>a+t.f*sat[t.k],0);
+    const E=qtot>0?VO2/(CAP*qtot):0.6;
+    const nSv=clamp(Sa-E,0.12,0.95);
+    Sv+=(nSv-Sv)*0.3;
+  }
+  Object.assign(r,{qtot,co,qe:S.qe,qa,qv,Se,Sra,Spv,Sv,sat,ws,lvFrac,e,eLV,eDr:0,E:qtot>0?VO2/(CAP*qtot):0.6,Sdr:Sv});
+  return finish(r);
+}
+function finish(r){
+  r.sv={};for(const t of TERR)r.sv[t.k]=clamp(r.sat[t.k]-r.E,0.1,0.95);
+  r.pao2R=pO2(r.sat.bct);
+  r.pp=r.mode==="VV"?40:Math.round(4+11*r.co);
+  r.zone=r.ws===null?null:r.ws<1.6?"racine de l'aorte":r.ws<2.6?"aorte ascendante":r.ws<5?"crosse de l'aorte":r.ws<8.6?"aorte thoracique descendante":r.ws<11?"aorte abdominale":"axe iliaque et fémoral";
+  return r;
+}
+
+/* ===== Vue du cœur et des gros vaisseaux (coupe frontale schématique) ===== */
+/* aorte de la vue cœur : points et indice correspondant sur le tracé aortique du corps */
+const HA=[[372,322],[356,250],[338,170],[350,95],[420,52],[505,66],[560,130],[572,240],[572,470],[572,700]];
+const HAI=[0,1,2,3,4,5,6,7,8,8.6];
+function haPoint(ws){for(let i=0;i<HAI.length-1;i++)if(ws<=HAI[i+1]){const f=(ws-HAI[i])/(HAI[i+1]-HAI[i]);return {i,f:clamp(f,0,1)};}return {i:HAI.length-2,f:1};}
+function haSplit(ws){const {i,f}=haPoint(ws);const p=[HA[i][0]+(HA[i+1][0]-HA[i][0])*f,HA[i][1]+(HA[i+1][1]-HA[i][1])*f];return {lv:[...HA.slice(0,i+1),p],ec:[p,...HA.slice(i+1)],p};}
+const curve=pts=>{let d=`M${pts[0][0]} ${pts[0][1]}`;for(let i=1;i<pts.length-1;i++){const m=[(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2];d+=` Q${pts[i][0]} ${pts[i][1]} ${m[0]} ${m[1]}`;}const l=pts[pts.length-1];return d+` L${l[0]} ${l[1]}`;};
+function tubeH(pts,c,w,flow,smooth=true,dir=1,art=false){
+  const P=dir>0?pts:[...pts].reverse(),d=smooth?curve(P):D(P);
+  const dur=flow>0.02?clamp(3.2/flow,0.45,9):0;
+  return `<path class="fl" d="${d}" stroke="${art?"#f3c9c2":"#0a1016"}" stroke-width="${w+5}"/><path class="fl" d="${d}" stroke="${c}" stroke-width="${w}"/><path class="fl" d="${d}" stroke="url(#tb)" stroke-width="${w}" opacity=".9"/>`+(dur?`<path class="fl dots" d="${d}" style="animation-duration:${dur.toFixed(2)}s"/>`:"");
+}
+function particles(pts,flow,smooth=true){const d=smooth?curve(pts):D(pts);const dur=flow>0.02?clamp(3.2/flow,0.45,9):0;return dur?`<path class="fl dots" d="${d}" style="animation-duration:${dur.toFixed(2)}s"/>`:"";}
+function hcan(pts,c,tipHoles){const d=curve(pts);let s=`<path class="fl" d="${d}" stroke="#f4f7f8" stroke-width="16"/><path class="fl" d="${d}" stroke="${c}" stroke-width="8"/>`;
+  if(tipHoles){const t=pts[pts.length-1],u=pts[pts.length-2];for(let k=1;k<=3;k++){const x=t[0]+(u[0]-t[0])*k*0.12,y=t[1]+(u[1]-t[1])*k*0.12;s+=`<circle cx="${x}" cy="${y}" r="2.6" fill="#0b1215"/>`;}}
+  return s;}
+function lab(x,y,t,c="#e9f1f3",s=15){return `<text x="${x}" y="${y}" fill="${c}" font-size="${s}" font-weight="600" text-anchor="middle" font-family="Barlow Condensed,sans-serif" style="paint-order:stroke;stroke:#1a0a0e;stroke-width:3px">${t}</text>`;}
+
+function drawHeart(r){
+  const va=r.mode!=="VV",ej=r.co>0.3;
+  const vRA=r.mode==="VA"?C(r.Sv,0,true):C(r.Sra,r.eLV,true);
+  const cLV=r.co>0.05?C(r.Spv,r.eLV,false):"#3d3438";
+  const cSVC=r.mode==="VA"?C(r.svUp,0,true):C(r.svcSat,r.svcE,true);
+  const cIVC=C(r.svLow,0,true);
+  const cE=C(r.Se,1,false);
+  let g=`<svg viewBox="0 0 600 700" role="img" aria-label="Cœur et gros vaisseaux sous ECMO ${r.mode}"><defs>
+   <radialGradient id="myo" cx="58%" cy="55%" r="65%"><stop offset="0" stop-color="#a4434b"/><stop offset=".7" stop-color="#7c2a32"/><stop offset="1" stop-color="#55171e"/></radialGradient>
+   <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
+   <linearGradient id="tb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset=".45" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>
+  </defs><rect width="600" height="700" fill="#04090b"/>`;
+  // plan postérieur : veines pulmonaires, artère pulmonaire droite
+  g+=tubeH([[0,300],[120,302],[400,318]],cLV,18,r.co/4,true,1,true)+tubeH([[0,346],[120,346],[404,346]],cLV,18,r.co/4,true,1,true);
+  g+=tubeH([[600,296],[540,300],[505,310]],cLV,18,r.co/4,true,1,true)+tubeH([[600,342],[548,342],[512,346]],cLV,18,r.co/4,true,1,true);
+  g+=tubeH([[395,205],[300,214],[160,218],[0,222]],vRA,28,r.co/2);
+  // aorte et troncs supra-aortiques
+  const br=[["bct",[[352,92],[332,40],[324,0]]],["lcc",[[420,54],[422,20],[422,0]]],["lsc",[[482,60],[494,24],[498,0]]]];
+  for(const [k,p] of br)g+=tubeH(p,C(r.sat[k],r.e[k],false),k==="bct"?24:19,TERR.find(t=>t.k===k).f*r.qtot,true,1,true);
+  const showWs=va&&r.qe>0.02;
+  const split=showWs&&r.ws<8.6?haSplit(Math.max(r.ws,0.02)):null;
+  if(split){g+=tubeH(split.ec,cE,48,r.qa,true,-1,true)+tubeH(split.lv,cLV,48,r.co,true,1,true);}else g+=tubeH(HA,cLV,48,r.co,true,1,true);
+  // veines caves
+  g+=tubeH([[192,0],[192,150],[194,300]],cSVC,46,r.svcQ);
+  g+=tubeH([[176,700],[176,600],[174,500]],cIVC,52,r.ivcQ);
+  // masse cardiaque
+  g+=`<path d="M132 290 C96 360 100 470 146 516 C200 562 270 604 330 642 C384 676 440 700 482 690 C548 664 560 560 554 460 C550 398 532 344 504 304 C476 272 420 276 392 300 L340 300 C300 288 268 278 228 274 C188 270 156 274 132 290 Z" fill="url(#myo)" stroke="#3e0f15" stroke-width="3"/>`;
+  g+=`<path d="M150 296 C200 286 250 288 300 300" stroke="#d9b25a" stroke-width="6" fill="none" opacity=".55" stroke-linecap="round"/><path d="M288 470 C320 560 380 640 470 682" stroke="#d9b25a" stroke-width="7" fill="none" opacity=".35" stroke-linecap="round"/>`;
+  // cavités
+  const cav=(d,c)=>`<path d="${d}" fill="${c}"/><path d="${d}" fill="url(#sh)" stroke="#f4c6c1" stroke-width="2" stroke-opacity=".6"/>`;
+  const RA="M146 304 C118 350 120 448 156 494 C190 532 252 520 276 478 L280 440 C280 380 272 334 250 308 C222 288 176 288 146 304 Z";
+  const RV="M262 458 C276 548 330 610 398 640 C388 596 372 520 364 446 C358 404 346 366 334 340 L300 336 C292 372 284 408 278 440 Z";
+  const LA="M402 330 C392 302 428 284 474 288 C514 292 528 326 516 354 C500 380 446 384 414 368 Z";
+  const LV="M414 386 C402 466 410 556 430 626 C440 652 456 664 470 656 C514 620 534 528 526 448 C520 404 500 382 470 382 C446 382 428 382 414 386 Z";
+  const LVOT="M416 392 L392 344 L372 322 L398 316 L432 384 Z";
+  g+=cav(RA,vRA)+cav(LA,cLV)+cav(LV,cLV)+cav(LVOT,cLV)+cav(RV,vRA);
+  if(va&&r.co<0.5&&r.qe>0.02)g+=`<path d="${LV}" fill="none" stroke="#ffe066" stroke-width="3" stroke-dasharray="7 6"/>`+`<text x="470" y="600" fill="#ffe066" font-size="16" font-weight="600" text-anchor="middle" font-family="Barlow Condensed,sans-serif" style="paint-order:stroke;stroke:#04090b;stroke-width:4px">stase</text>`;
+  // tronc pulmonaire et artère pulmonaire gauche (en avant)
+  g+=tubeH([[316,338],[340,262],[395,205]],vRA,36,r.co);
+  g+=tubeH([[395,205],[480,200],[600,194]],vRA,28,r.co/2);
+  // valves
+  const L=(x1,y1,x2,y2,cls="")=>`<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#f9e7df" stroke-width="5" stroke-linecap="round"/>`;
+  g+=L(262,446,286,462)+L(278,500,288,474); // tricuspide
+  g+=L(430,378,450,398)+L(490,380,472,398); // mitrale
+  g+=L(300,342,310,326)+L(334,344,326,328); // pulmonaire
+  g+=ej?`<g class="aov">${L(366,330,372,304)}${L(398,322,394,298)}</g>`:`<g>${L(362,322,382,318).replace("#f9e7df","#ffe066")}${L(402,316,382,318).replace("#f9e7df","#ffe066")}</g>`;
+  // coronaires
+  const cc=C(r.sat.coro,r.e.coro,false);
+  g+=`<path d="M362 318 C300 332 262 380 250 440 C246 500 268 560 300 600" stroke="#3e0f15" stroke-width="6" fill="none" stroke-linecap="round" opacity=".8"/><path d="M362 318 C300 332 262 380 250 440 C246 500 268 560 300 600" stroke="${cc}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  g+=`<path d="M392 314 C412 360 404 440 412 520 C418 580 440 630 462 664" stroke="#3e0f15" stroke-width="6" fill="none" stroke-linecap="round" opacity=".8"/><path d="M392 314 C412 360 404 440 412 520 C418 580 440 630 462 664" stroke="${cc}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  // flux dans les cavités
+  g+=particles([[193,0],[194,300],[205,400],[262,470],[306,546],[360,606],[364,540],[350,440],[330,370],[316,338]],r.co*0.65);
+  g+=particles([[176,700],[175,505],[205,460],[262,470]],r.co*0.35);
+  g+=particles([[600,300],[512,316],[470,336],[456,392],[464,500],[470,610],[448,540],[424,440],[400,360],[372,322]],r.co);
+  // canules
+  if(va)g+=hcan([[176,700],[176,580],[178,500],[196,420]],C(r.Sv,0,true),true);
+  if(r.mode==="VV")g+=hcan([[176,700],[176,650],[176,610]],C(r.Sdr,r.eDr,true),true);
+  if(r.mode!=="VA"){
+    g+=hcan([[192,0],[192,150],[196,282]],cE,false);
+    const qj=r.mode==="VV"?r.qe:r.qv;
+    if(qj>0.02)g+=`<path class="fl dots jet" d="${curve([[198,292],[214,380],[262,466]])}" style="animation-duration:${clamp(2.4/qj,0.4,6).toFixed(2)}s"/>`;
+  }
+  // zone de mélange
+  const tx=(x,y,t,c,a="start",sz=18)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${sz}" font-weight="600" text-anchor="${a}" font-family="Barlow Condensed,sans-serif" style="paint-order:stroke;stroke:#04090b;stroke-width:4px">${t}</text>`;
+  if(showWs){
+    if(split){g+=`<circle class="ws" cx="${split.p[0]}" cy="${split.p[1]}" r="34" fill="none" stroke="#ffe066" stroke-width="4"/>`;
+      const right=split.p[0]>480;
+      if(r.co<0.3)g+=tx(590,split.p[1]-50,"valve aortique fermée","#ffe066","end");
+      else g+=tx(right?split.p[0]-42:split.p[0]+42,split.p[1]+6,"zone de mélange","#ffe066",right?"end":"start");
+      if(split.p[1]<640)g+=tx(590,690,"↑ sang de l'ECMO",cE,"end",16);}
+    else g+=tx(590,690,`mélange plus bas : ${r.zone} ↓`,"#ffe066","end",16);
+  }
+  if(T.labels){const lb=(x,y,t)=>tx(x,y,t,"#f4f7f8","middle",19);g+=lb(200,410,"OD")+lb(328,560,"VD")+lb(466,344,"OG")+lb(474,540,"VG")+lb(318,160,"Ao")+lb(362,262,"AP")+lb(232,80,"VCS")+lb(226,660,"VCI");}
+  return g+"</svg>";
+}
+
+/* ===== Interface ===== */
+const $=id=>document.getElementById(id);
+const pc=x=>Math.round(x*100);
+const nf=(x,d=1)=>Number(x).toFixed(d).replace(".",",");
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* couleur selon la saturation : violet sombre à 50 %, rouge vif à 100 % */
+function col(s){const t=clamp((s-0.5)/0.5,0,1);const h=255+105*t,l=34+18*t,sa=55+35*t;return `hsl(${h%360} ${sa}% ${l}%)`;}
+const ORI={heart:[79,216,234],ecmo:[255,170,60],ven:[86,98,112]};
+const mixc=(a,b,t)=>`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")})`;
+function C(sat,e,venous){if(T.color==="sat")return col(sat);e=clamp(e||0,0,1);return venous?mixc(ORI.ven,ORI.ecmo,e*0.85):mixc(ORI.heart,ORI.ecmo,e);}
+let T={view:"heart",color:"sat",labels:true};
+
+
+let S={mode:"VA",qe:4,co:1,lung:0.9,fdo2:1,split:0.3,close:false};
+const PRESETS=[
+ {m:"VA",t:"Choc cardiogénique, poumons sains",d:"Le cœur éjecte peu, l'ECMO assure presque tout le débit.",s:{qe:4,co:1,lung:0.9,fdo2:1}},
+ {m:"VA",t:"Le cœur récupère, les poumons non",d:"Syndrome d'Arlequin : le haut du corps reçoit le sang du cœur, mal oxygéné.",s:{qe:3,co:3.5,lung:0.15,fdo2:1}},
+ {m:"VA",t:"Ventricule gauche qui n'éjecte plus",d:"Tout le débit vient de l'ECMO, la valve aortique reste fermée.",s:{qe:5,co:0.2,lung:0.8,fdo2:1}},
+ {m:"VAV",t:"Corriger l'Arlequin : configuration VAV",d:"Une partie du sang oxygéné est réinjectée dans la jugulaire.",s:{qe:4,co:3.5,lung:0.15,fdo2:1,split:0.35}},
+ {m:"VV",t:"SDRA sévère",d:"Le cœur fonctionne, l'ECMO remplace les poumons en série.",s:{qe:4.5,co:6,lung:0.1,fdo2:1,close:false}},
+ {m:"VV",t:"Recirculation",d:"Débit d'ECMO élevé et canules trop proches : l'ECMO réaspire son propre sang.",s:{qe:6,co:5,lung:0.1,fdo2:1,close:true}}
+];
+const MODES=[["VA","VA","fémoro-fémorale"],["VAV","VAV","VA + jugulaire"],["VV","VV","fémoro-jugulaire"]];
+
+/* ---------- géométrie ---------- */
+const AO=[[270,318],[266,282],[262,250],[268,229],[284,225],[296,236],[296,270],[293,330],[291,400],[289,455],[287,490],[283,540],[300,575],[318,615]];
+function at(P,u){const i=clamp(Math.floor(u),0,P.length-2),f=clamp(u-i,0,1);return [P[i][0]+(P[i+1][0]-P[i][0])*f,P[i][1]+(P[i+1][1]-P[i][1])*f];}
+function sub(P,a,b){const pts=[at(P,a)];for(let i=Math.ceil(a+1e-6);i<=Math.floor(b-1e-6);i++)pts.push(P[i]);pts.push(at(P,b));return pts;}
+const D=pts=>pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join("");
+const rev=p=>[...p].reverse();
+function vessel(pts,c,w,flow,dir=1,dots=true){
+  if(pts.length<2)return "";
+  const d=D(dir>0?pts:rev(pts));
+  const dur=flow>0.02?clamp(2.2/flow,0.35,8):0;
+  return `<path class="fl" d="${d}" stroke="#04090b" stroke-width="${w+3}"/><path class="fl" d="${d}" stroke="${c}" stroke-width="${w}"/>`+(dur&&dots&&w>=6?`<path class="fl dots" d="${d}" style="animation-duration:${dur.toFixed(2)}s"/>`:"");
+}
+function cannula(pts,c){const d=D(pts);return `<path class="fl" d="${d}" stroke="#e9f1f3" stroke-width="8"/><path class="fl" d="${d}" stroke="${c}" stroke-width="4"/>`;}
+function tube(pts,c,flow){const d=D(pts);const dur=flow>0.02?clamp(2.2/flow,0.35,8):0;return `<path class="fl" d="${d}" stroke="#cfd8dc" stroke-width="9"/><path class="fl" d="${d}" stroke="${c}" stroke-width="5.5"/>`+(dur?`<path class="fl dots" d="${d}" style="animation-duration:${dur.toFixed(2)}s"/>`:"");}
+const badge=(x,y,t)=>`<g><circle cx="${x}" cy="${y}" r="12" fill="#e9f1f3"/><text x="${x}" y="${y+4.5}" text-anchor="middle" font-size="13" font-weight="700" fill="#0b1215" font-family="Barlow,sans-serif">${t}</text></g>`;
+const txt=(x,y,t,c="#93a8af",a="middle",s=13)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${s}" text-anchor="${a}" font-family="Barlow,sans-serif" style="paint-order:stroke;stroke:#04090b;stroke-width:3px">${t}</text>`;
+
+/* veines */
+const V={
+ rleg:[[234,905],[240,820],[247,720],[251,640],[256,600],[262,578]],
+ lleg:[[306,905],[308,820],[310,720],[306,640],[290,595],[262,578]],
+ ivc:[[262,578],[255,540],[252,490],[252,455],[251,400],[248,368],[247,354]],
+ rarm:[[88,545],[113,400],[138,300],[166,226],[200,218],[244,220]],
+ rij:[[226,118],[230,170],[244,220]],
+ larm:[[434,545],[409,400],[384,300],[354,226],[300,222],[262,232]],
+ lij:[[294,118],[290,175],[282,214],[262,232]],
+ lbc:[[262,232],[250,240]],
+ svc:[[244,220],[250,240],[252,300],[251,335]],
+ renR:[[230,494],[252,494]],renL:[[326,500],[252,500]],
+ hep:[[232,440],[252,442]]
+};
+/* artères (hors aorte) */
+const A={
+ coroR:[[268,314],[255,322],[247,340],[250,362]],coroL:[[272,313],[290,322],[302,342],[300,366]],
+ bct:[[262,246],[250,222],[240,210]],
+ rcc:[[240,210],[236,170],[234,118]],
+ rsc:[[240,210],[210,206],[180,214],[150,300],[125,400],[100,545]],
+ lcc:[[276,227],[279,180],[284,118]],
+ lsc:[[291,229],[312,213],[342,212],[372,300],[397,400],[422,545]],
+ spl:[[289,455],[255,448],[232,446]],
+ renR:[[287,488],[232,488]],renL:[[287,488],[324,488]],
+ rleg:[[283,540],[262,575],[240,615],[232,720],[226,820],[220,905]],
+ lleg:[[318,615],[322,720],[320,820],[318,905]]
+};
+const SIL=`<g fill="#13212a" stroke="#2b4350" stroke-width="1.5">
+ <circle cx="260" cy="72" r="46"/><path d="M240 112 L280 112 L284 160 L236 160 Z"/>
+ <path d="M188 168 Q260 150 332 168 Q352 178 354 210 L346 470 Q346 560 302 592 L218 592 Q174 560 174 470 L166 210 Q168 178 188 168 Z"/>
+ <path d="M176 182 Q150 186 144 220 L104 410 L80 552 Q78 582 100 582 L114 572 L132 430 L176 262 Z"/>
+ <path d="M344 182 Q370 186 376 220 L416 410 L440 552 Q442 582 420 582 L406 572 L388 430 L344 262 Z"/>
+ <path d="M196 560 L272 580 L252 905 Q248 930 226 930 L208 930 Q196 905 200 880 Z"/>
+ <path d="M324 560 L248 580 L268 905 Q272 930 294 930 L312 930 Q324 905 320 880 Z"/>
+</g>`;
+
+function draw(r){
+  const va=r.mode!=="VV",q=r.qtot;
+  const s=r.sat,sv=r.sv,f=k=>TERR.find(t=>t.k===k).f*q;
+  let g=`<svg viewBox="0 0 520 960" role="img" aria-label="Schéma du patient sous ECMO ${r.mode}"><rect width="520" height="960" fill="#04090b"/>`+SIL;
+  // poumons
+  const op=(1-S.lung)*0.85;
+  g+=`<g><ellipse cx="206" cy="300" rx="44" ry="88" fill="#22343d"/><ellipse cx="318" cy="302" rx="40" ry="84" fill="#22343d"/>
+     <ellipse cx="206" cy="300" rx="44" ry="88" fill="#dfe6e9" opacity="${op.toFixed(2)}"/><ellipse cx="318" cy="302" rx="40" ry="84" fill="#dfe6e9" opacity="${op.toFixed(2)}"/></g>`;
+  g+=`<path d="M222 425 Q205 470 240 470 Q275 468 280 440 Q262 418 222 425Z" fill="#2a2024"/>`;
+  g+=`<ellipse cx="224" cy="492" rx="10" ry="18" fill="#2a2024"/><ellipse cx="330" cy="492" rx="10" ry="18" fill="#2a2024"/>`;
+  // flux veineux
+  let upperV=(sv.bct*f("bct")+sv.lcc*f("lcc")+sv.lsc*f("lsc"))/(f("bct")+f("lcc")+f("lsc")||1);if(!q)upperV=r.Sv;
+  const lowK=["thor","spl","ren","rleg","lleg"],lowQ=lowK.reduce((a,k)=>a+f(k),0);
+  const lowerV=lowQ>0?lowK.reduce((a,k)=>a+sv[k]*f(k),0)/lowQ:r.Sv;
+  let svcC=C(upperV,0,true),svcQ=f("bct")+f("lcc")+f("lsc");
+  r.svcSat=upperV;r.svcE=0;
+  if(r.mode!=="VA"&&r.qe>0){const qr=r.mode==="VV"?r.qe:r.qv;svcC=C((qr*r.Se+svcQ*upperV)/(qr+svcQ),qr/(qr+svcQ),true);r.svcSat=(qr*r.Se+svcQ*upperV)/(qr+svcQ);r.svcE=qr/(qr+svcQ);svcQ+=qr;}r.svUp=upperV;r.svLow=lowerV;r.svcQ=svcQ;r.ivcQ=lowQ;
+  g+=vessel(V.rleg,C(sv.rleg,0,true),7,f("rleg"))+vessel(V.lleg,C(sv.lleg,0,true),7,f("lleg"));
+  g+=vessel(V.renR,C(sv.ren,0,true),5,f("ren")/2)+vessel(V.renL,C(sv.ren,0,true),5,f("ren")/2)+vessel(V.hep,C(sv.spl,0,true),6,f("spl"));
+  g+=vessel(V.ivc,C(lowerV,0,true),11,lowQ);
+  g+=vessel(V.rarm,C(sv.bct,0,true),4,f("bct")*0.3,1,false)+vessel(V.larm,C(sv.lsc,0,true),4,f("lsc"),1,false);
+  g+=vessel(r.mode==="VV"||r.mode==="VAV"?V.rij.slice(0,2):V.rij,C(sv.bct,0,true),6,f("bct")*0.7)+vessel(V.lij,C(sv.lcc,0,true),6,f("lcc"));
+  g+=vessel(V.svc,svcC,10,svcQ);
+  // cœur
+  const lvC=r.co>0.05?C(r.Spv,r.eLV,false):"#3a3f44",raC=r.mode==="VA"?C(r.Sv,0,true):C(r.Sra,r.eLV,true);
+  g+=`<path d="M244 318 Q262 296 300 304 Q326 320 318 360 Q306 392 276 396 Q246 388 240 360 Z" fill="#1d1418" stroke="#55333c" stroke-width="2"/>`;
+  g+=`<circle cx="247" cy="345" r="14" fill="${raC}"/><circle cx="268" cy="370" r="16" fill="${raC}"/><circle cx="292" cy="318" r="12" fill="${lvC}"/><circle cx="294" cy="356" r="18" fill="${lvC}"/>`;
+  if(r.co<0.5&&va)g+=`<circle cx="294" cy="356" r="18" fill="none" stroke="#ffc53d" stroke-width="2" stroke-dasharray="4 3"/>`;
+  // circulation pulmonaire
+  const qp=r.co;
+  g+=vessel([[268,358],[272,300],[240,290],[214,298]],raC,6,qp/2)+vessel([[272,300],[300,288],[322,298]],raC,6,qp/2);
+  g+=vessel([[214,320],[250,322],[282,318]],lvC,5,qp/2)+vessel([[322,322],[296,320]],lvC,5,qp/2);
+  // aorte
+  if(va&&r.qe>0){
+    const ws=clamp(r.ws,0.05,13);
+    g+=vessel(sub(AO,0,ws),C(r.Spv,r.eLV,false),11,r.co);
+    g+=vessel(rev(sub(AO,ws,13)),C(r.Se,1,false),11,r.qa);
+  }else g+=vessel(AO,C(r.Spv,r.eLV,false),11,r.co);
+  // branches artérielles
+  g+=vessel(A.coroR,C(s.coro,r.e.coro,false),3.5,f("coro")/2)+vessel(A.coroL,C(s.coro,r.e.coro,false),3.5,f("coro")/2);
+  g+=vessel(A.bct,C(s.bct,r.e.bct,false),7,f("bct"))+vessel(A.rcc,C(s.bct,r.e.bct,false),5,f("bct")*0.7)+vessel(A.rsc,C(s.bct,r.e.bct,false),4.5,f("bct")*0.3);
+  g+=vessel(A.lcc,C(s.lcc,r.e.lcc,false),5,f("lcc"))+vessel(A.lsc,C(s.lsc,r.e.lsc,false),4.5,f("lsc"));
+  g+=vessel(A.spl,C(s.spl,r.e.spl,false),5,f("spl"))+vessel(A.renR,C(s.ren,r.e.ren,false),4,f("ren")/2)+vessel(A.renL,C(s.ren,r.e.ren,false),4,f("ren")/2);
+  g+=vessel(A.rleg,C(s.rleg,r.e.rleg,false),6,f("rleg"))+vessel(A.lleg,C(s.lleg,r.e.lleg,false),6,f("lleg"));
+  g+=`<rect x="200" y="200" width="130" height="210" rx="10" fill="none" stroke="#93a8af" stroke-dasharray="5 5" opacity=".6"/>`;
+  // tête : deux moitiés de cerveau
+  g+=`<path d="M260 40 A30 30 0 0 0 260 100 Z" fill="${C(s.bct,r.e.bct,false)}" opacity=".85"/><path d="M260 40 A30 30 0 0 1 260 100 Z" fill="${C(s.lcc,r.e.lcc,false)}" opacity=".85"/><line x1="260" y1="38" x2="260" y2="102" stroke="#04090b" stroke-width="2"/>`;
+  // mains
+  g+=`<circle cx="94" cy="562" r="11" fill="${C(s.bct,r.e.bct,false)}"/><circle cx="426" cy="562" r="11" fill="${C(s.lsc,r.e.lsc,false)}"/>`;
+  // circuit ECMO
+  const drC=r.mode==="VV"?C(r.Sdr,r.eDr,true):C(r.Sv,0,true),reC=C(r.Se,1,false),on=r.qe>0.02;
+  const tipDr=r.mode==="VV"?[[249,660],[251,640],[256,600],[262,578],[255,540],[252,490],[252,455],[252,425]]:[[249,660],[251,640],[256,600],[262,578],[255,540],[252,490],[252,455],[251,400],[248,368],[247,356]];
+  g+=tube([[249,660],[215,700],[150,745],[112,778]],drC,r.qe);
+  g+=cannula(tipDr,drC);
+  g+=`<g transform="translate(90 795)"><circle r="26" fill="#0d171b" stroke="#cfd8dc" stroke-width="3"/><g class="rot" style="animation-duration:${on?clamp(3/r.qe,0.25,3).toFixed(2):0}s"><path d="M0 -18 L5 0 L0 18 L-5 0Z M-18 0 L0 5 L18 0 L0 -5Z" fill="#cfd8dc"/></g></g>`;
+  g+=tube([[90,769],[92,738]],reC,r.qe);
+  g+=`<rect x="58" y="664" width="70" height="74" rx="10" fill="#0d171b" stroke="#cfd8dc" stroke-width="3"/>`;
+  for(let i=0;i<6;i++)g+=`<line x1="${66+i*11}" y1="672" x2="${66+i*11}" y2="730" stroke="${reC}" stroke-width="3" opacity=".7"/>`;
+  g+=`<path d="M14 722 L58 722" stroke="#9fd3ff" stroke-width="3" stroke-dasharray="4 4"/>`+txt(8,754,`gaz, FdO₂ ${Math.round(S.fdo2*100)} %`,"#9fd3ff","start",13);
+  g+=txt(90,840,"Pompe",undefined,"middle",13)+txt(93,654,"Oxygénateur",undefined,"middle",13);
+  if(r.mode==="VV"||r.mode==="VAV"){
+    const qv=r.mode==="VV"?r.qe:r.qv;
+    g+=tube([[58,690],[30,640],[26,300],[60,175],[150,145],[227,150]],reC,qv);
+    g+=cannula([[227,150],[230,170],[244,220],[250,240],[252,300],[251,332]],reC);
+    g+=badge(205,132,"R"+(r.mode==="VAV"?"v":""));
+  }
+  if(va){
+    g+=tube([[128,700],[160,860],[300,868],[334,730],[322,668]],reC,r.qa);
+    g+=cannula([[322,668],[320,640],[318,622]],reC);
+    g+=tube([[331,742],[346,760],[323,778]],reC,0.3);
+    g+=badge(352,668,r.mode==="VAV"?"Ra":"R")+badge(362,770,"P");
+  }
+  g+=badge(222,648,"D");
+  g+=txt(260,958-6,`ECMO ${nf(r.qe)} L/min · débit cardiaque ${nf(r.co)} L/min`,"#e9f1f3","middle",15);
+  // zone de mélange
+  if(va&&r.qe>0){
+    const p=at(AO,clamp(r.ws,0.05,13));
+    g+=`<circle class="ws" cx="${p[0]}" cy="${p[1]}" r="13" fill="none" stroke="#ffe066" stroke-width="3"/>`;
+    const lx=p[0]>250?p[0]+22:p[0]-22;
+    g+=`<line x1="${p[0]+13}" y1="${p[1]}" x2="${400}" y2="${p[1]}" stroke="#ffe066" stroke-width="1.5" stroke-dasharray="3 3"/>`+txt(404,p[1]-2,"zone de mélange","#ffe066","start",14)+txt(404,p[1]+14,r.co<0.3?"valve aortique fermée":r.zone,"#ffe066","start",12);
+  }
+  // repères
+  g+=txt(206,402,"poumon droit","#93a8af","middle",12)+txt(318,398,"poumon gauche","#93a8af","middle",12);
+  return g+"</svg>";
+}
+
+function render(){
+  const r=compute(S);
+  $("figBody").innerHTML=draw(r);
+  $("figHeart").innerHTML=drawHeart(r);
+  legend();
+  // moniteur
+  const M=[];
+  const sat=(lab,v)=>M.push([lab,pc(v),"%",v<0.85?"lo":v<0.92?"mid":""]);
+  sat("SpO₂ main droite",r.sat.bct);sat("SpO₂ main gauche",r.sat.lsc);
+  sat("Cerveau droit",r.sat.bct);sat("Cerveau gauche",r.sat.lcc);sat("Coronaires",r.sat.coro);sat("Membres inférieurs",r.sat.rleg);
+  M.push(["PaO₂ radiale droite",r.sat.bct>0.985?"> 150":Math.round(r.pao2R),"mmHg",r.pao2R<60?"lo":""]);
+  M.push([r.mode==="VV"?"Saturation drainée":"SvO₂ (ligne de drainage)",pc(r.mode==="VV"?r.Sdr:r.Sv),"%",""]);
+  if(r.mode!=="VV")M.push(["Pression pulsée",r.pp,"mmHg",r.pp<10?"lo":""]);
+  if(r.mode==="VV")M.push(["Recirculation",pc(r.R),"%",r.R>0.3?"lo":r.R>0.15?"mid":""],["ECMO / débit cardiaque",nf(r.ratio,2),"",""]);
+  $("mon").innerHTML=M.map(m=>`<div class="m ${m[3]}"><small>${m[0]}</small><b>${m[1]}</b><i>${m[2]}</i></div>`).join("");
+  // messages
+  const F=[];
+  if(r.mode!=="VV"){
+    const up=r.sat.bct,low=r.sat.rleg;
+    if(r.qe<0.1)F.push(["warn","ECMO à l'arrêt : seul le cœur perfuse le corps."]);
+    else if(r.co<0.3)F.push(["bad",`Le ventricule gauche n'éjecte plus : la valve aortique reste fermée, la pression pulsée s'effondre (${r.pp} mmHg). Risque de stase et de thrombus dans le VG et la racine aortique, et d'œdème pulmonaire par distension. Il faut décharger le VG : réduire le débit d'ECMO si possible, inotrope, Impella ou atrioseptostomie.`]);
+    if(r.qe>0.1&&r.co>0.3&&up<0.9&&low-up>0.08)F.push(["bad",`Syndrome d'Arlequin : ${pc(up)} % au bras droit et au cerveau droit, ${pc(low)} % aux membres inférieurs. Le haut du corps reçoit le sang éjecté par le cœur, qui a traversé des poumons qui n'oxygènent pas. La SpO₂ et les gaz doivent être mesurés à droite (radiale droite) : c'est le territoire le plus exposé.`]);
+    else if(r.qe>0.1&&r.co>0.3&&r.ws<5)F.push(["ok",`Le sang de l'ECMO remonte jusqu'à la ${r.zone} : les troncs supra-aortiques sont en partie perfusés par l'ECMO.`]);
+    else if(r.qe>0.1&&r.co>0.3)F.push(["ok",`Le mélange se fait dans l'${r.zone.replace(/^aorte /,"aorte ")} : en amont, coronaires et cerveau reçoivent le sang du cœur. Tant que les poumons oxygènent, ce n'est pas un problème.`]);
+    if(r.mode==="VAV")F.push(["ok",`Configuration VAV : ${Math.round(S.split*100)} % du débit (${nf(r.qv)} L/min) est réinjecté dans la jugulaire. Le sang qui entre dans les poumons, puis dans le VG, est déjà oxygéné : le haut du corps passe à ${pc(up)} %. Le débit artériel de l'ECMO baisse d'autant (${nf(r.qa)} L/min).`]);
+  }else{
+    if(r.qe<0.1)F.push(["warn","ECMO à l'arrêt : le patient dépend de ses poumons."]);
+    if(r.R>0.3)F.push(["bad",`Recirculation de ${pc(r.R)} % : une partie du sang oxygéné réinjecté est aussitôt réaspirée par la canule de drainage. La saturation de la ligne de drainage monte (${pc(r.Sdr)} %) et le débit utile n'est que de ${nf(r.Qeff)} L/min. Éloigner les canules, ou ne pas augmenter le débit au-delà de ce qui apporte un bénéfice.`]);
+    if(r.qe>0.1&&r.Spv<0.88)F.push(["warn",`SaO₂ ${pc(r.Spv)} % : le débit d'ECMO ne couvre que ${Math.round(Math.min(r.Qeff/r.co,1)*100)} % du débit cardiaque. Le reste du sang veineux traverse des poumons qui n'oxygènent pas. Augmenter le débit d'ECMO (sans recirculer), réduire un débit cardiaque excessif (fièvre, agitation), corriger l'anémie.`]);
+    if(r.qe>0.1&&r.Spv>=0.88)F.push(["ok",`SaO₂ ${pc(r.Spv)} % : tout le corps reçoit le même sang, car l'ECMO VV travaille en série avec les poumons. Pas de syndrome d'Arlequin possible.`]);
+  }
+  $("flags").innerHTML=F.map(x=>`<li class="${x[0]}">${x[1]}</li>`).join("");
+  // canules
+  const C=r.mode==="VA"?[["D","Drainage : veine fémorale droite, canule longue (21 à 25 Fr) dont la pointe est dans l'oreillette droite."],["R","Réinjection : artère fémorale gauche (15 à 19 Fr). Le sang remonte l'aorte à contre-courant."],["P","Reperfusion distale (6 à 8 Fr) : protège la jambe en aval de la canule artérielle."]]
+   :r.mode==="VAV"?[["D","Drainage : veine fémorale droite, pointe dans l'oreillette droite."],["Ra","Réinjection artérielle : artère fémorale gauche."],["Rv","Réinjection veineuse : jugulaire interne droite, pointe dans l'oreillette droite. Une pince et un débitmètre sur la branche règlent la répartition."],["P","Reperfusion distale du membre."]]
+   :[["D","Drainage : veine fémorale droite, pointe dans la veine cave inférieure, au niveau du foie."],["R","Réinjection : jugulaire interne droite, pointe dans l'oreillette droite."]];
+  $("cann").innerHTML=C.map(c=>`<li><b class="k">${c[0]}</b><span>${c[1]}</span></li>`).join("");
+  $("explain").innerHTML=r.mode==="VV"
+   ?`<b>En série.</b> L'ECMO prélève du sang veineux, l'oxygène et le rend à l'oreillette droite. Ce sang traverse ensuite le cœur droit, les poumons et le cœur gauche : c'est le cœur du patient qui assure le débit. L'ECMO VV n'apporte aucun soutien circulatoire.`
+   :`<b>En parallèle.</b> L'ECMO court-circuite le cœur et les poumons : elle prélève le sang veineux et le rend dans l'aorte. Le corps reçoit deux sangs : celui que le VG éjecte (passé par les poumons du patient) et celui de l'ECMO (passé par la membrane). Ils se rencontrent dans l'aorte, là où leurs pressions s'équilibrent.`;
+  $("teach").innerHTML=r.mode==="VV"?`<h2>À retenir en VV</h2>
+   <p>La saturation artérielle dépend surtout du rapport entre le débit d'ECMO et le débit cardiaque : plus le cœur pompe de sang qui ne passe pas par la membrane, plus la SaO₂ baisse. Une SaO₂ de 85 à 90 % est souvent acceptée si le transport en O₂ est suffisant.</p>
+   <p>La recirculation augmente avec le débit d'ECMO et la proximité des pointes de canules. Signes : saturation de la ligne de drainage élevée, SaO₂ qui ne monte plus quand on augmente le débit, sang de couleur proche dans les deux lignes.</p>
+   <p>Le cœur droit reçoit du sang oxygéné : la vasoconstriction hypoxique pulmonaire diminue, ce qui soulage le ventricule droit.</p>`
+   :`<h2>À retenir en VA périphérique</h2>
+   <p>La position de la zone de mélange dépend du rapport entre le débit éjecté par le VG et le débit d'ECMO. Quand le cœur récupère, il repousse le sang de l'ECMO vers le bas.</p>
+   <p>Si les poumons sont atteints, le sang éjecté par le VG est désaturé : coronaires et cerveau sont hypoxiques alors que les jambes sont roses. C'est le syndrome d'Arlequin (ou syndrome nord-sud). On le dépiste par la SpO₂ et les gaz à la radiale droite, voire une NIRS cérébrale.</p>
+   <p>Que faire : optimiser la ventilation (FiO₂, PEP), augmenter le débit d'ECMO (la zone de mélange remonte, mais la postcharge du VG augmente), ajouter une réinjection jugulaire (VAV), ou changer de configuration (canulation axillaire ou centrale ; ECMO VV si le cœur a récupéré).</p>`;
+}
+function inputs(){
+  const F=[["qe","Débit d'ECMO",0,7,0.1,"L/min"],["co",S.mode==="VV"?"Débit cardiaque":"Débit éjecté par le ventricule gauche",0,7,0.1,"L/min"],["lung","Échanges gazeux pulmonaires",0,1,0.05,"%"],["fdo2","FdO₂ de la membrane",0.21,1,0.01,"%"]];
+  if(S.mode==="VAV")F.push(["split","Part du débit vers la jugulaire",0,0.5,0.05,"%"]);
+  const fmt=(k,v)=>F.find(x=>x[0]===k)[5]==="%"?Math.round(v*100)+" %":nf(v)+" L/min";
+  $("inputs").innerHTML=F.map(f=>`<label class="f"><span>${f[1]}</span><output id="o-${f[0]}">${fmt(f[0],S[f[0]])}</output><input type="range" data-k="${f[0]}" min="${f[2]}" max="${f[3]}" step="${f[4]}" value="${S[f[0]]}"></label>`).join("")
+   +(S.mode==="VV"?`<label class="chk"><input type="checkbox" id="close" ${S.close?"checked":""}><span>Pointes des canules trop proches</span></label>`:"");
+  inputs.fmt=fmt;
+}
+function full(){
+  $("mode").innerHTML=MODES.map(m=>`<button type="button" data-m="${m[0]}" aria-pressed="${m[0]===S.mode}">${m[1]}<small>${m[2]}</small></button>`).join("");
+  $("presets").innerHTML=PRESETS.map((p,i)=>`<button class="pre" type="button" data-p="${i}"><b>${p.m} · ${p.t}</b><span>${p.d}</span></button>`).join("");
+  inputs();render();
+}
+$("mode").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;S.mode=b.dataset.m;full();});
+$("presets").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(!b)return;const p=PRESETS[+b.dataset.p];S={...S,mode:p.m,...p.s};full();});
+$("inputs").addEventListener("input",e=>{const k=e.target.dataset.k;if(k){S[k]=+e.target.value;$("o-"+k).textContent=inputs.fmt(k,S[k]);render();}else if(e.target.id==="close"){S.close=e.target.checked;render();}});
+$("inputs").addEventListener("change",e=>{if(e.target.id==="close"){S.close=e.target.checked;render();}});
+function legend(){
+  $("legend").innerHTML=T.color==="sat"?`<span>Saturation du sang :</span><span>50 %<span class="bar" style="background:linear-gradient(90deg,${[0.5,0.6,0.7,0.8,0.9,1].map(col).join(",")})"></span>100 %</span>`
+   :`<span><i class="sw" style="background:${mixc(ORI.heart,ORI.heart,0)}"></i>sang éjecté par le cœur</span><span><i class="sw" style="background:${mixc(ORI.ecmo,ORI.ecmo,0)}"></i>sang de l'ECMO</span><span><i class="sw" style="background:${mixc(ORI.ven,ORI.ven,0)}"></i>sang veineux</span><span>Les teintes intermédiaires sont des mélanges.</span>`;
+}
+$("vopts").addEventListener("click",e=>{const b=e.target.closest("[data-c],[data-v],[data-l]");if(!b)return;
+  if(b.dataset.c){T.color=b.dataset.c;}if(b.dataset.v){T.view=b.dataset.v;}if(b.dataset.l){T.labels=!T.labels;}
+  vopts();render();});
+function vopts(){
+  $("vopts").innerHTML=`<div class="seg vsw" role="group" aria-label="Vue"><button type="button" data-v="heart" aria-pressed="${T.view==="heart"}">Cœur</button><button type="button" data-v="body" aria-pressed="${T.view==="body"}">Corps entier</button></div>
+  <div class="seg" role="group" aria-label="Couleur du sang"><button type="button" data-c="sat" aria-pressed="${T.color==="sat"}">Saturation</button><button type="button" data-c="ori" aria-pressed="${T.color==="ori"}">Origine du sang</button></div>
+  <button type="button" class="tg" data-l="1" aria-pressed="${T.labels}">Repères</button>`;
+  $("figs").dataset.view=T.view;
+}
+vopts();
+full();
+
+}
+</script>
+</body>
+</html>

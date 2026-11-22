@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choc cardiogénique</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinique, calme, précis : une salle de simulation de réanimation
+   IDEA le box de réanimation : scope au-dessus du lit, échographe à côté, pousse-seringues en bas
+   PICTURE le scope (ECG, PA sanglante, pléthysmographie) qui défile en haut, l'échographie générée à côté du dossier
+   COLOUR boîtier bleu nuit, ECG vert, PA rouge, SpO₂ cyan, lactate ambre ; codes de décision vert, cyan, ambre, rouge
+   TYPE Barlow Condensed pour chiffres et titres, Barlow pour le texte, comme les autres simulateurs
+   LAYOUT scope pleine largeur ; dessous, le dossier (cas, examens, décision) à gauche, l'échographe à droite ; empilé sous 900px */
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--red:#ff5a4e;--ok:#5fe0a6;--li:#b4a0ff}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1320px;margin:0 auto;padding:clamp(14px,2.4vw,30px) max(2.4vw,16px)}
+h1{font:600 clamp(30px,3.6vw,44px)/1.05 "Barlow Condensed",Barlow,sans-serif;margin:0;text-wrap:balance}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 10px}
+h3{font:600 18px/1.2 Barlow,sans-serif;margin:0 0 8px}
+p{margin:0 0 10px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}
+.top p{color:var(--mut);margin:4px 0 0}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mode{min-height:44px;padding:8px 14px;background:var(--panel2);border:0;font-weight:500}
+.mode[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.btn{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:500}
+.btn:hover{border-color:#3b5862}
+.scope{display:grid;grid-template-columns:minmax(0,1fr) 300px;background:#04090b;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.waves{position:relative;height:230px}
+#mon{position:absolute;inset:0;width:100%;height:100%}
+.wl{position:absolute;left:10px;font:600 13px "Barlow Condensed",sans-serif}
+.nums{display:grid;grid-template-columns:1fr 1fr;border-left:1px solid var(--line)}
+.num{padding:8px 12px;border-bottom:1px solid var(--line)}
+.num:nth-child(odd){border-right:1px solid var(--line)}
+.num small{display:block;font-size:13px;color:var(--mut)}
+.num b{font:600 36px/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.num i{font-style:normal;font:500 18px "Barlow Condensed",sans-serif;margin-left:4px}
+.num.wide{grid-column:span 2;border-right:0}
+.status{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px;background:var(--panel);border-top:1px solid var(--line);grid-column:1/-1}
+#scai{font:600 18px "Barlow Condensed",sans-serif;padding:4px 12px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+#scai[data-s=B]{color:var(--amb)}#scai[data-s=C]{color:#ff9a5c}#scai[data-s=D],#scai[data-s=E]{color:var(--red);border-color:#5b2a26}
+#tNow{font:600 20px "Barlow Condensed",sans-serif}
+.pumps{display:flex;flex-wrap:wrap;gap:6px}
+.pump{display:flex;align-items:baseline;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);font-size:14px;white-space:nowrap}
+.pump span{color:var(--mut)}.pump b{font:600 18px "Barlow Condensed",sans-serif}.pump small{color:var(--mut)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.stephead{display:flex;gap:12px;align-items:baseline;margin-bottom:8px}
+.stephead time{white-space:nowrap;font:600 20px "Barlow Condensed",sans-serif;color:var(--amb)}
+#stepText p{color:#d3dee1}
+.sub{font:600 15px Barlow,sans-serif;color:var(--mut);margin:16px 0 8px}
+.exams{display:flex;flex-wrap:wrap;gap:6px}
+.exam{min-height:40px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:15px}
+.exam:hover:not(:disabled){border-color:var(--cy)}
+.exam:disabled{opacity:.45;cursor:not-allowed}
+.exam small{color:var(--amb);font-weight:600;margin-left:6px;white-space:nowrap}
+.exam.done{border-color:#3b5862}
+.exam.done small{color:var(--mut)}
+.ecgBox{margin:12px 0 0;padding:10px;background:var(--panel2);border-radius:12px}
+.ecgBox figcaption{font-size:15px;margin-bottom:8px}
+.scroll{overflow-x:auto}
+#ecg12{display:block;border-radius:6px;width:100%;min-width:620px;height:auto;aspect-ratio:256/124}
+.clockNote{font-size:15px;color:var(--mut);margin:-4px 0 8px}
+.clockNote b{color:var(--amb)}
+.confirm{margin-top:10px;padding:10px 12px;border:1px solid #5b4320;background:#1d1a10;border-radius:10px;font-size:15px}
+.confirm p{margin:0 0 8px}
+.confirm .row{display:flex;flex-wrap:wrap;gap:8px}
+.flash{min-height:1.5em;margin:8px 0 0;font-size:15px;color:var(--amb);font-weight:600}
+.transit{border-left:3px solid var(--ok);padding:6px 10px;background:#0f2019;border-radius:0 8px 8px 0;color:#cfeee0}
+.ba td.mid{color:var(--ok)}
+#res{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:6px;max-height:220px;overflow:auto}
+#res li{font-size:15px;padding:6px 10px;border-left:3px solid var(--cy);background:var(--panel2);border-radius:0 8px 8px 0}
+#res time{font:600 14px "Barlow Condensed",sans-serif;color:var(--cy);margin-right:8px}
+#res li.mut{border-left-color:var(--line);color:var(--mut)}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;min-height:52px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.choice:hover{border-color:var(--ink)}
+.choice b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-weight:700}
+.dur{font:600 16px "Barlow Condensed",sans-serif;color:var(--amb)}
+.grade{display:inline-block;font:600 15px Barlow,sans-serif;padding:2px 10px;border-radius:6px;margin:0 0 8px;font-style:normal}
+.g-opt{color:#06251a;background:var(--ok)}.g-acc{color:#062228;background:var(--cy)}.g-dis{color:#2a1d00;background:var(--amb)}.g-del{color:#fff;background:#c9362c}
+.ba{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:15px}
+.ba th,.ba td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.ba th:first-child{text-align:left;color:var(--mut);font-weight:500}
+.ba thead th{color:var(--mut);font-weight:500}
+.ba td{font-variant-numeric:tabular-nums;font-weight:600}
+.ba small{color:var(--mut);font-weight:400}
+.go{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;border:0}
+.go::after{content:"→"}
+.mut{color:var(--mut)}
+.echoBox{position:relative;height:380px;background:#000;border-radius:12px;overflow:hidden}
+#echo{position:absolute;inset:0;width:100%;height:100%}
+.vtabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.vtab{min-height:40px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);font-size:15px}
+.vtab[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.vtab.tg[aria-pressed=true]{background:var(--amb);color:#2a1d00;border-color:var(--amb)}
+.meas{width:100%;border-collapse:collapse;font-size:15px}
+.meas th{text-align:left;font-weight:500;color:var(--mut);padding:5px 0;border-bottom:1px solid var(--line)}
+.meas td{text-align:right;padding:5px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.meas b{font:600 20px "Barlow Condensed",sans-serif;color:var(--cy)}
+.calc{font-size:14px;color:var(--mut);margin-top:10px;padding:8px 10px;background:var(--panel2);border-radius:8px}
+.calc b{color:var(--cy)}
+#echoOff{display:grid;place-items:center;min-height:200px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:12px;padding:20px}
+.debrief{display:grid;gap:14px}
+#outT{font:600 clamp(34px,4vw,48px)/1.05 "Barlow Condensed",sans-serif;margin:0 0 6px}
+#outT[data-c=good]{color:var(--ok)}#outT[data-c=mid]{color:var(--amb)}#outT[data-c=bad]{color:var(--red)}
+.tally{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.tally div{border-radius:10px;padding:8px 12px;background:var(--panel2)!important;color:var(--ink)!important;border-top:4px solid}
+.tally .g-opt{border-color:var(--ok)}.tally .g-acc{border-color:var(--cy)}.tally .g-dis{border-color:var(--amb)}.tally .g-del{border-color:var(--red)}
+.tally b{display:block;font:600 32px/1 "Barlow Condensed",sans-serif}
+.tally span{font-size:14px;color:var(--mut)}
+.charts{display:grid;gap:4px}
+.charts h3{margin:8px 0 0;font-size:15px;color:var(--mut);font-weight:500}
+.charts svg{width:100%;height:140px;display:block}
+.gl{stroke:rgba(147,168,175,.12)}.ref{stroke:rgba(147,168,175,.5);stroke-dasharray:4 4}.mk{stroke:rgba(233,241,243,.35)}
+.ax{fill:var(--mut);font:13px Barlow,sans-serif}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--mut);margin-top:6px}
+.legend time{font-weight:600;color:var(--ink)}
+#decs{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+#decs li{padding:12px 14px;background:var(--panel2);border-radius:12px}
+.dh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline}
+.dh time{font:600 16px "Barlow Condensed",sans-serif;color:var(--amb)}
+.dh .grade{margin:0}
+.dl{font-weight:600;margin:6px 0 4px}
+.keys{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;padding-left:18px;margin:0}
+.refs{font-size:15px;color:var(--mut);padding-left:18px;margin:0}
+footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.keys{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){.scope{grid-template-columns:minmax(0,1fr)}.nums{grid-template-columns:repeat(3,minmax(0,1fr));border-left:0;border-top:1px solid var(--line)}.num:nth-child(odd){border-right:0}.num{border-right:1px solid var(--line)}.num.wide{grid-column:span 3}.waves{height:180px}.num b{font-size:28px}}
+@media(max-width:520px){.tally{grid-template-columns:repeat(2,minmax(0,1fr))}.echoBox{height:260px}}
+</style>
+</head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Choc cardiogénique</h1>
+      <p>Scénario adaptatif pour interne de DES de médecine intensive-réanimation.</p>
+    </div>
+    <div class="ctl">
+      <div class="seg" role="group" aria-label="Mode">
+        <button class="mode" type="button" data-m="learn" id="mLearn">Apprentissage</button>
+        <button class="mode" type="button" data-m="exam" id="mExam">Évaluation</button>
+      </div>
+      <button class="btn" type="button" id="restart">Recommencer</button>
+    </div>
+  </header>
+
+  <section class="scope" aria-label="Moniteur">
+    <div class="waves">
+      <canvas id="mon" aria-label="Courbes ECG, pression artérielle et pléthysmographie"></canvas>
+      <span class="wl" style="top:6px;color:#5fe0a6">II</span>
+      <span class="wl" style="top:36%;color:#ff5a4e">PA</span>
+      <span class="wl" style="top:72%;color:#4fd8ea">SpO₂</span>
+    </div>
+    <div class="nums">
+      <div class="num" style="color:#5fe0a6"><small>FC <span id="vHRr"></span></small><b id="vHR">–</b></div>
+      <div class="num" style="color:#4fd8ea"><small>SpO₂ %</small><b id="vSpO2">–</b></div>
+      <div class="num wide" style="color:#ff5a4e"><small id="vPAl">PA</small><b id="vPA">–</b><i id="vPAM"></i></div>
+      <div class="num"><small>FR</small><b id="vFR">–</b></div>
+      <div class="num" style="color:#b4a0ff"><small>PVC mmHg</small><b id="vPVC">–</b></div>
+    </div>
+    <div class="status"><span id="tNow">H0</span><span id="scai">SCAI</span><div class="pumps" id="pumps"></div></div>
+  </section>
+
+  <div id="main" class="grid">
+    <section class="card" aria-live="polite">
+      <div class="stephead"><time id="stepH">H0</time><h2 id="stepT"></h2></div>
+      <div id="stepText"></div>
+      <p class="sub">Examens</p>
+      <p class="clockNote">Chaque examen fait avancer l'horloge du <b>temps indiqué sur le bouton</b> (3 à 10 minutes). Pendant ce temps, le patient continue d'évoluer.</p>
+      <div class="exams" id="exams"></div>
+      <div id="confirm" class="confirm" hidden></div>
+      <p id="flash" class="flash" aria-live="polite"></p>
+      <ul id="res"></ul>
+      <figure id="ecgBox" class="ecgBox" hidden><figcaption><b>ECG 12 dérivations</b> <span id="ecgMeta" class="mut"></span></figcaption><div class="scroll"><canvas id="ecg12" aria-label="Tracé ECG 12 dérivations"></canvas></div></figure>
+      <p class="sub" id="decH">Votre décision</p>
+      <div class="choices" id="choices"></div>
+      <div id="conseq" hidden></div>
+    </section>
+    <section class="card">
+      <h2>Échographie</h2>
+      <div id="echoOff"><p>Aucune échographie à cette étape.<br>Demandez « Échographie cardiaque et pulmonaire » dans les examens.</p></div>
+      <div id="echoOn" hidden>
+        <div class="echoBox"><canvas id="echo" aria-label="Boucle d'échographie générée selon l'état du patient"></canvas></div>
+        <div class="vtabs" role="group" aria-label="Coupe">
+          <button class="vtab" type="button" data-v="4c">Apicale 4 cavités</button>
+          <button class="vtab" type="button" data-v="psga">Parasternale grand axe</button>
+          <button class="vtab" type="button" data-v="itv">Doppler ITV</button>
+          <button class="vtab" type="button" data-v="dti">Onde S′ (VD)</button>
+          <button class="vtab" type="button" data-v="vci">VCI</button>
+          <button class="vtab" type="button" data-v="poumon">Poumon</button>
+        </div>
+        <div class="vtabs" role="group" aria-label="Options">
+          <button class="vtab tg" type="button" id="cfmBtn" aria-pressed="false">Doppler couleur (4 cavités)</button>
+          <button class="vtab tg" type="button" id="lgBtn" aria-pressed="false">Légendes</button>
+        </div>
+        <table class="meas"><tbody id="echoMeas"></tbody></table>
+        <p class="calc" id="echoCalc"></p>
+      </div>
+    </section>
+  </div>
+
+  <div id="debrief" class="debrief" hidden>
+    <section class="card">
+      <p class="mut">Bilan à 24 heures</p>
+      <h2 id="outT"></h2>
+      <p id="outX"></p>
+      <div class="tally" id="tally"></div>
+    </section>
+    <section class="card">
+      <h2>L'évolution, décision par décision</h2>
+      <div class="charts">
+        <h3>PAM (mmHg), objectif 65</h3><svg id="chMap"></svg>
+        <h3>Index cardiaque total (L/min/m²), seuil de bas débit 2,1</h3><svg id="chIc"></svg>
+        <h3>Lactate (mmol/L), seuils 2 et 4</h3><svg id="chLac"></svg>
+      </div>
+      <div class="legend" id="mkLegend"></div>
+    </section>
+    <section class="card">
+      <h2>Vos décisions</h2>
+      <ol id="decs"></ol>
+    </section>
+    <section class="card">
+      <h2>Messages clés</h2>
+      <ul class="keys">
+        <li>Reconnaître le pré-choc (SCAI B) : hypotension relative et tachycardie sans hypoperfusion franche. C'est le moment d'agir.</li>
+        <li>Un patient congestif n'est pas précharge-dépendant : VCI dilatée et peu compliante, lignes B, plateau de Frank-Starling.</li>
+        <li>Mesurer le débit : ITV sous-aortique et index cardiaque (DC = ITV × S<sub>CCVG</sub> × FC ; IC = DC / SC). Un IC inférieur à 2,1 L/min/m² signe le bas débit.</li>
+        <li>Noradrénaline pour la pression de perfusion, dobutamine pour le débit. L'adrénaline n'est pas un premier choix.</li>
+        <li>Revasculariser vite, et seulement la lésion coupable (CULPRIT-SHOCK).</li>
+        <li>Avant de choisir une assistance, évaluer le VD : TAPSE &lt; 17 mm, onde S′ tricuspide &lt; 9,5 cm/s, VD dilaté (VD ≥ VG), PVC élevée et VCI non compliante. L'Impella seul dépend du VD ; une défaillance biventriculaire appelle l'ECMO VA (ou une assistance biventriculaire).</li>
+        <li>Sous ECMO VA, surveiller la pulsatilité et l'ouverture de la valve aortique, et décharger le VG s'il se distend.</li>
+        <li>Induire un patient en choc se prépare : agents à faible retentissement hémodynamique, vasopresseur prêt.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Références</h2>
+      <ol class="refs">
+        <li>Naidu SS et al. SCAI SHOCK Stage Classification Expert Consensus Update. J Am Coll Cardiol 2022.</li>
+        <li>McDonagh TA et al. 2021 ESC Guidelines for heart failure. Eur Heart J 2021.</li>
+        <li>Byrne RA et al. 2023 ESC Guidelines for acute coronary syndromes. Eur Heart J 2023.</li>
+        <li>Hochman JS et al. SHOCK trial. N Engl J Med 1999.</li>
+        <li>Thiele H et al. CULPRIT-SHOCK. N Engl J Med 2017.</li>
+        <li>Levy B et al. OptimaCC : épinéphrine versus norépinéphrine dans le choc cardiogénique. J Am Coll Cardiol 2018.</li>
+        <li>Thiele H et al. ECLS-SHOCK. N Engl J Med 2023.</li>
+        <li>Møller JE et al. DanGer Shock. N Engl J Med 2024.</li>
+      </ol>
+      <p style="margin-top:14px"><button class="go" type="button" id="again">Rejouer le cas</button></p>
+    </section>
+  </div>
+
+  <footer><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Le patient, ses valeurs et les boucles d'échographie sont simulés par un modèle simplifié.</footer>
+</div>
+<script>
+{
+/* ===== Modèle physiologique ===== */
+const PAT={poids:80,taille:176,sc:1.96,ccvg:2.1};
+const CSA=Math.PI*(PAT.ccvg/2)**2; // cm²
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+function newState(){
+  return {t:0,contr:0.33,rv:0.95,pre:24,svrBase:1.03,hrBase:108,rhythm:"sinus",
+    dobu:0,nad:0,adr:0,vaso:false,levo:0,furo:0,o2:"lunettes",
+    ecmo:0,imp:0,lac:1.9,creat:135,revasc:false,arrest:false,dead:false,
+    kta:false,cvc:false,hemolyse:false,thrombus:false,contrast:false,
+    hist:[],marks:[]};
+}
+
+function hemo(s){
+  const levoOn=s.levo>0;
+  let contr=s.contr*(1+0.02*s.dobu)*(1+0.15*s.nad)*(1+1.2*s.adr)*(levoOn?1.12:1);
+  if(s.arrest)contr=0;
+  const fa=s.rhythm==="fa";
+  const hr=s.arrest?0:fa?142:Math.round(s.hrBase+1.6*s.dobu+8*s.nad+45*s.adr+(s.pre>26?4:0));
+  const svrDrug=(1+1.0*s.nad)*(1+0.9*s.adr)*(s.vaso?1.35:1)*(1-0.012*s.dobu)*(levoOn?0.8:1)*(s.propofol?0.6:1);
+  const pre=s.pre;
+  const pf=pre<8?pre/8*0.6:pre<16?0.6+0.4*(pre-8)/8:1;
+  const rvF=Math.min(1,0.35+0.75*s.rv);
+  const cvp=clamp(4+(pre-10)*0.35+(1-s.rv)*14-(s.ecmo>0?3:0)-(s.imp>0?1:0),2,26);
+  const impEff=s.imp>0?Math.min(s.imp,4.2*s.rv)*(pre>8?1:pre/8):0;
+  let svrEndo=1.15,svN=0,co=4,map=70,svr=1.15;
+  for(let i=0;i<8;i++){
+    svr=s.svrBase*svrDrug*svrEndo;
+    const k=0.2+0.6*Math.max(0,1-contr);
+    const ecmoAft=1+s.ecmo*0.6;
+    svN=hr>0?120*contr*pf*rvF*(fa?0.78:1)/Math.pow(svr*ecmoAft,k):0;
+    if(hr>120)svN*=Math.max(0.6,1-(hr-120)/120);
+    if(impEff>0)svN=Math.max(0,svN-impEff*1000/Math.max(hr,60)*0.6);
+    const coN=svN*hr/1000;
+    co=coN+impEff+s.ecmo;
+    map=co*svr*1000/80+cvp;
+    svrEndo=clamp(1+0.55*(1-co/5.5),0.85,1.45);
+  }
+  if(s.ecmo>0&&svN<12){svN=0;co=impEff+s.ecmo;map=co*svr*1000/80+cvp;}
+  if(s.arrest&&!s.ecmo)map=18;
+  const coN=svN*hr/1000;
+  const ic=co/PAT.sc, icN=coN/PAT.sc;
+  const itv=svN/CSA;
+  const pp=s.arrest?2:Math.max(3,svN*0.85+impEff*1.5);
+  const pas=Math.round(map+pp*2/3), pad=Math.round(map-pp/3);
+  const edv=140+(pre-12)*3+(1-s.contr)*30;
+  const fevg=clamp(svN/edv+(impEff>0?0.02:0),0.03,0.6);
+  const c=Math.max(0,pre-16);
+  const lungs=s.o2==="iot"?97-c*0.55:s.o2==="vni"?96-c*0.6:95-c*0.6+(s.o2==="lunettes"?1:0);
+  let spo2=clamp(lungs,68,100);
+  const arleq=s.ecmo>0&&(svN*hr/1000+impEff)>1.8&&spo2<92;
+  if(s.ecmo>0&&!arleq)spo2=Math.max(spo2,96);
+  const fr=s.o2==="iot"?20:Math.round(16+c*1.2-(s.o2==="vni"?4:0));
+  const rpp=map-cvp;
+  let urine=clamp((rpp-40)*2.2*Math.min(1.2,ic/2.4),0,150)+(s.furo>0&&rpp>45?90:0);
+  if(s.creat>300)urine*=0.5;
+  const scvo2=clamp(70-(2.5-ic)*25-(s.arrest?20:0)+(s.o2==="iot"?2:0),30,80);
+  const im=s.pre>27?3:s.pre>21&&s.contr<0.38?2:1;
+  const avOpen=svN>0&&(svN>12||!s.ecmo);
+  const smoke=svN<10&&s.ecmo>0&&impEff<1;
+  const tapse=Math.round(clamp(5+18*s.rv,6,25));
+  const sprime=+clamp(4+9*s.rv,3,14).toFixed(1);
+  const rvBas=Math.round(34+(1-s.rv)*30),lvBas=Math.round(48*(1+clamp((s.pre-12)/45+(1-s.contr)*0.25,0,0.5)*0.7));
+  const ivc=Math.round(clamp(10+cvp*1.1,8,26));
+  const ivcVar=cvp>14?5:cvp>9?15:40;
+  const blines=Math.round(clamp((pre-14)/2,0,8));
+  const mott=s.arrest?5:ic<1.5||map<55?3:ic<1.9||map<62?2:ic<2.3?1:0;
+  return {hr,map,pas,pad,cvp,svN,co,coN,ic,icN,itv,svr:svr*1000,impEff,spo2,fr,urine,scvo2,im,avOpen,smoke,
+    fevg,tapse,sprime,rvBas,lvBas,ivc,ivcVar,blines,mott,arleq,pp};
+}
+
+function lacTarget(s,d){
+  return 1.0+Math.max(0,2.5-d.ic)*4+Math.max(0,65-d.map)*0.10+s.adr*12+(s.arrest?6:0)+(s.hemolyse?0.4:0);
+}
+
+function evolve(s,dt){
+  const steps=Math.max(1,Math.round(dt/0.1));const h=dt/steps;
+  for(let i=0;i<steps;i++){
+    const d=hemo(s);
+    s.lac+=(lacTarget(s,d)-s.lac)*(1-Math.exp(-h/1.0));
+    s.dose=(s.dose||0)+Math.max(0,s.lac-2.5)*h;
+    if(s.lac>2.5)s.hypoH=(s.hypoH||0)+h;
+    if(!s.revasc){s.contr-=0.012*h;if(s.dobu>10||s.adr>0)s.contr-=0.006*h;}
+    s.contr-=0.0015*Math.max(0,65-d.map)*h;
+    if(s.revasc&&s.t>14)s.contr+=0.004*h;
+    s.contr=clamp(s.contr,0.08,0.7);
+    if(s.pre>26&&!s.revasc)s.rv-=0.01*h;
+    if(s.lac>4)s.svrBase=Math.max(0.7,s.svrBase-0.015*h);
+    // volume
+    s.pre-=Math.max(0,d.urine-50)*h/1000*20;
+    if(d.urine<30)s.pre+=0.5*h;
+    if(s.ecmo>0&&d.svN<12&&d.impEff<1)s.pre+=1.6*h*(s.ecmo/3.5);
+    if(s.ecmo>=4.8&&s.pre>31)s.thrTime=(s.thrTime||0)+h;if(s.thrTime>2)s.thrombus=true;
+    if(d.impEff>0&&s.pre>12)s.pre-=Math.min(s.pre-12,d.impEff*0.9*h);
+    s.pre=clamp(s.pre,6,34);
+    // rein
+    s.creat+=(d.urine<10?12:d.urine<30?7:d.urine<60?2:-2)*h;s.creat=clamp(s.creat,60,700);
+    if(s.furo>0)s.furo=Math.max(0,s.furo-h);
+    if(s.levo>0)s.levo=Math.max(0,s.levo-h);
+    // arythmie
+    if(s.rhythm==="sinus"&&!s.faDone&&(s.dobu>=12||s.adr>=0.1)&&d.hr>125){s.rhythm="fa";s.faDone=true;s.faAt=s.t;}
+    if(s.nadAuto&&s.nad>0&&!s.arrest){if(d.map<65)s.nad=Math.min(0.8,+(s.nad+0.02).toFixed(2));else if(d.map>72)s.nad=Math.max(0.02,+(s.nad-0.02).toFixed(2));}
+    s.t+=h;
+    record(s);
+  }
+}
+
+function record(s){
+  const d=hemo(s);
+  s.hist.push({t:+s.t.toFixed(2),map:Math.round(d.map),lac:+s.lac.toFixed(1),ic:+d.ic.toFixed(2)});
+}
+
+function titrateNad(s,target){
+  for(let i=0;i<40;i++){if(hemo(s).map>=target)return;s.nad=+(s.nad+0.02).toFixed(2);if(s.nad>=0.8)return;}
+}
+
+function scai(s,d){
+  if(s.dead)return "E";
+  const drugs=(s.dobu>0)+(s.nad>0)+(s.adr>0)+(s.vaso?1:0);
+  if(s.arrest||s.lac>=8||d.map<50)return "E";
+  if((drugs>=2||s.ecmo>0||s.imp>0)&&(s.lac>=3||d.map<60||d.urine<15))return "D";
+  if(s.lac>=2||d.mott>=2||d.urine<30||drugs>=1||s.ecmo>0||s.imp>0)return "C";
+  if(d.map<70||d.hr>100)return "B";
+  return "A";
+}
+
+
+/* ===== Scénario adaptatif ===== */
+function setNad(s,target){
+  s.nadAuto=true;if(s.nad<0.02)s.nad=0.02;
+  for(let i=0;i<60;i++){const m=hemo(s).map;if(m<target&&s.nad<0.8)s.nad=+(s.nad+0.02).toFixed(2);else break;}
+  for(let i=0;i<60;i++){const m=hemo(s).map;if(m>target+8&&s.nad>0.02)s.nad=+(s.nad-0.02).toFixed(2);else break;}
+}
+function noReflow(s){
+  s.revasc=true;s.revT=s.t;s.contr*=0.9;
+  s.rv=Math.max(0.3,s.rv-(0.5+(s.pre>24?0.08:0)+(s.lac>3?0.07:0)));s.rvIsch=true;
+  s.svrBase*=0.9;
+}
+const fmtNad=s=>s.nad>0?`noradrénaline ${s.nad.toFixed(2).replace(".",",")} µg/kg/min`:"";
+function treatments(s){
+  const t=[];
+  if(s.nad>0)t.push(fmtNad(s));
+  if(s.dobu>0)t.push(`dobutamine ${String(s.dobu).replace(".",",")} µg/kg/min`);
+  if(s.adr>0)t.push(`adrénaline ${s.adr.toFixed(2).replace(".",",")} µg/kg/min`);
+  if(s.vaso)t.push("vasopressine");
+  if(s.ecmo>0)t.push(`ECMO VA ${String(s.ecmo).replace(".",",")} L/min`);
+  if(s.imp>0)t.push(`Impella CP ${String(s.imp).replace(".",",")} L/min`);
+  return t.length?t.join(", "):"aucun traitement vasoactif";
+}
+const n1=x=>x.toFixed(1).replace(".",",");
+function tropo(s){let v=18400*(1+0.12*Math.min(s.t,s.revT??s.t));if(s.revT!=null)v*=1+0.6*Math.min(1,(s.t-s.revT)/6);return Math.round(v/100)*100;}
+
+const STEPS={
+ s1:{h:"H0",title:"Admission en réanimation",
+  text:(s,d)=>`<p>M. D., 64 ans, 80 kg, 1,76 m (SC 1,96 m²). HTA, diabète de type 2, tabagisme actif. Douleur thoracique il y a 36 h, n'a pas consulté. Adressé par les urgences pour dyspnée et malaise.</p>
+  <p>PA ${d.pas}/${d.pad} mmHg (PAM ${Math.round(d.map)}), FC ${d.hr}/min sinusal, FR ${d.fr}/min, SpO₂ ${Math.round(d.spo2)} % sous 3 L/min. Extrémités tièdes, marbrures aux genoux, crépitants à mi-champs, turgescence jugulaire. Diurèse ${Math.round(d.urine)} mL/h.</p>
+  <p>ECG : QS de V1 à V4 avec sus-décalage persistant. Troponine I hs ${tropo(s).toLocaleString("fr-FR")} ng/L (norme du laboratoire du centre : &lt; 26 ng/L).</p>`,
+  choices:[
+   {id:"A",label:"Remplissage par 500 mL de cristalloïdes pour corriger l'hypotension",grade:"deletere",
+    why:"Le patient est congestif (crépitants, turgescence jugulaire, VCI dilatée peu compliante, lignes B) : il est sur le plateau de Frank-Starling. Le remplissage aggrave l'œdème pulmonaire sans gain de débit.",
+    apply:s=>{s.pre+=6;}},
+   {id:"B",label:"Furosémide IV, VNI, appel du cardiologue pour une coronarographie",grade:"acceptable",
+    why:"Bonne lecture de la congestion et bonne priorité à la revascularisation. Mais le bas débit (ITV et IC bas) n'est pas traité : l'hypoperfusion progresse.",
+    apply:s=>{s.furo=2;s.o2="vni";s.pre-=2;s.coro=true;}},
+   {id:"C",label:"Dobutamine 5 µg/kg/min, furosémide, VNI, cathéter artériel et voie veineuse centrale, coronarographie urgente",grade:"optimal",
+    why:"Pré-choc (SCAI B) associant bas débit et congestion : inotrope à faible dose, déplétion prudente, monitorage invasif et revascularisation urgente de la lésion coupable.",
+    apply:s=>{s.dobu=5;s.furo=2;s.o2="vni";s.pre-=2;s.kta=s.cvc=true;s.coro=true;}},
+   {id:"D",label:"Noradrénaline seule en attendant le bilan",grade:"deletere",
+    why:"La PAM est supérieure à 65 mmHg : pas d'indication à un vasopresseur seul. La hausse de post-charge sur un VG défaillant diminue le volume d'éjection.",
+    apply:s=>{s.nad=0.15;s.kta=true;}}
+  ],
+  next:s=>{evolve(s,1.5);s.contr*=0.9;evolve(s,0.5);return "s2";}},
+
+ s2:{h:"H2",title:"Réévaluation : le choc s'installe",
+  text:(s,d)=>`<p>Sous ${treatments(s)}${s.o2==="vni"?", VNI":""}. Le patient est plus gris, marbrures ${d.mott>=2?"remontant aux cuisses":"aux genoux"}. PA ${d.pas}/${d.pad} mmHg (PAM ${Math.round(d.map)}), FC ${d.hr}/min, FR ${d.fr}/min, SpO₂ ${Math.round(d.spo2)} %. Diurèse ${Math.round(d.urine)} mL/h.</p>
+  <p>${s.coro?"Le cardiologue interventionnel prépare la salle.":"La coronarographie n'a pas encore été demandée."}</p>`,
+  choices:[
+   {id:"A",label:"Noradrénaline titrée (PAM ≥ 65 mmHg) et dobutamine 7,5 µg/kg/min, alerte de la shock team, coronarographie immédiate",grade:"optimal",
+    why:"Association recommandée : la noradrénaline restaure la pression de perfusion, la dobutamine le débit. Activer tôt la shock team permet d'anticiper une assistance circulatoire.",
+    apply:s=>{s.dobu=Math.max(s.dobu,7.5);setNad(s,65);s.coro=true;s.team=true;s.kta=s.cvc=true;if(s.o2==="lunettes")s.o2="vni";}},
+   {id:"B",label:"Dobutamine augmentée à 15 µg/kg/min, sans vasopresseur",grade:"deletere",
+    why:"Fortes doses de dobutamine sans vasopresseur : vasodilatation, tachycardie et hausse de la consommation d'O₂ d'un myocarde ischémique, avec un risque arythmique élevé.",
+    apply:s=>{s.dobu=15;s.nad=0;s.nadAuto=false;s.cvc=true;}},
+   {id:"C",label:"Bolus de levosimendan",grade:"deletere",
+    why:"Le bolus est déconseillé chez le patient hypotendu : la vasodilatation est immédiate, l'effet inotrope retardé.",
+    apply:s=>{s.levo=6;}},
+   {id:"D",label:"Adrénaline 0,1 µg/kg/min",grade:"discutable",
+    why:"Efficace sur la pression, mais l'adrénaline a été associée à plus de chocs réfractaires que la noradrénaline dans le choc cardiogénique sur infarctus (OptimaCC). L'hyperlactatémie induite brouille le monitorage.",
+    apply:s=>{s.adr=0.1;s.cvc=true;}}
+  ],
+  next:s=>{evolve(s,0.3);return s.rhythm==="fa"?"fa":"coro";}},
+
+ fa:{h:"H2+",title:"Fibrillation atriale rapide",
+  text:(s,d)=>`<p>Le scope montre une tachycardie irrégulière à ${d.hr}/min, sans onde P. PA ${d.pas}/${d.pad} mmHg (PAM ${Math.round(d.map)}). Le patient est conscient, plus dyspnéique.</p>`,
+  choices:[
+   {id:"A",label:"Cardioversion électrique synchronisée sous sédation brève, et baisse de la dobutamine",grade:"optimal",
+    why:"Arythmie responsable d'une instabilité hémodynamique : la cardioversion électrique synchronisée est la règle. Réduire la catécholamine pro-arythmogène.",
+    apply:s=>{s.rhythm="sinus";if(s.dobu>7.5)s.dobu=7.5;if(s.adr>0)s.adr=0.05;}},
+   {id:"B",label:"Amiodarone IV",grade:"acceptable",
+    why:"Option valable, surtout en cas d'échec ou de récidive après cardioversion. Effet plus lent, hypotension possible lors de la charge.",
+    apply:s=>{s.amio=true;}},
+   {id:"C",label:"Bêtabloquant IV pour ralentir",grade:"deletere",
+    why:"Contre-indiqué dans le choc cardiogénique : effondrement de l'inotropisme et du débit.",
+    apply:s=>{s.contr*=0.7;}},
+   {id:"D",label:"Digoxine IV",grade:"discutable",
+    why:"Effet lent et modeste, ne règle pas l'instabilité. Prudence avec l'insuffisance rénale.",
+    apply:s=>{s.dig=true;}}
+  ],
+  next:s=>{evolve(s,0.5);if(s.amio){s.rhythm="sinus";}if(s.dig){evolve(s,0.5);s.rhythm="sinus";}return "coro";}},
+
+ coro:{h:"Coro",title:"Coronarographie",
+  pre:s=>{if(!s.coro){s.waited=true;evolve(s,2);}},
+  text:(s,d)=>`<p>${s.waited?"La coronarographie n'avait pas été demandée : la salle n'est disponible qu'après deux heures d'attente. ":""}Le patient arrive en salle sous ${treatments(s)}. PAM ${Math.round(d.map)} mmHg.</p>
+  <p>Résultat : IVA proximale occluse (TIMI 0), lésion coupable. Coronaire droite moyenne sténosée à 80 %. Circonflexe sans lésion significative.</p>`,
+  choices:[
+   {id:"A",label:"Angioplastie de la seule lésion coupable (IVA), revascularisation de la CD différée",grade:"optimal",
+    why:"CULPRIT-SHOCK : dans le choc cardiogénique, traiter la seule lésion coupable réduit le critère décès ou EER à J30 par rapport à la revascularisation multitronculaire immédiate. La CD sténosée reste à surveiller : en cas d'hypotension prolongée, le VD peut devenir ischémique.",
+    apply:s=>{s.revType="culprit";}},
+   {id:"B",label:"Revascularisation complète dans le même temps (IVA et CD)",grade:"deletere",
+    why:"Non recommandée en routine dans le choc (CULPRIT-SHOCK) : procédure plus longue, plus de contraste, plus d'insuffisance rénale.",
+    apply:s=>{s.revType="complete";}},
+   {id:"C",label:"Différer : patient trop instable, stabiliser d'abord en réanimation",grade:"deletere",
+    why:"La revascularisation précoce de la lésion coupable est le seul traitement qui améliore la survie dans le choc cardiogénique sur infarctus (SHOCK). L'instabilité est une raison de plus de revasculariser.",
+    apply:s=>{s.revType="none";}}
+  ],
+  next:s=>{
+    if(s.revType==="culprit"){evolve(s,1.5);noReflow(s);}
+    else if(s.revType==="complete"){evolve(s,2.5);s.creat+=40;s.contr*=0.93;noReflow(s);}
+    else{evolve(s,3);s.contr*=0.75;s.rv=Math.max(0.35,s.rv-0.4);s.svrBase*=0.9;}
+    if(s.nad>0||hemo(s).map<65)setNad(s,65);
+    evolve(s,0.5);return "s3";}},
+
+ s3:{h:"H5",title:"Retour en réanimation : le choc s'aggrave",
+  text:(s,d)=>`<p>${s.revType==="none"?"Pas de revascularisation : l'ischémie se poursuit.":"Stent sur l'IVA, mais flux TIMI 2 (no-reflow partiel)."} Sous ${treatments(s)}${s.o2==="vni"?", VNI":""}.</p>
+  <p>PA ${d.pas}/${d.pad} mmHg (PAM ${Math.round(d.map)}), FC ${d.hr}/min, SpO₂ ${Math.round(d.spo2)} %. Marbrures ${d.mott>=3?"étendues":"aux genoux et aux cuisses"}, diurèse ${Math.round(d.urine)} mL/h.</p>
+  ${s.rv<0.6?`<p>Turgescence jugulaire majeure avec reflux hépato-jugulaire, hépatomégalie douloureuse. PVC ${Math.round(d.cvp)} mmHg alors que les crépitants n'ont pas progressé.${s.revType==="culprit"?" Rappel : la coronaire droite, sténosée à 80 %, n'a pas été traitée.":""}</p>`:""}
+  <p>La shock team est réunie : chirurgien cardiaque, cardiologue interventionnel, réanimateur.</p>`,
+  choices:[
+   {id:"A",label:"ECMO VA périphérique fémoro-fémorale, avec intubation prudente (kétamine, vasopresseur prêt)",grade:s=>s.rv<0.6?"optimal":"acceptable",
+    why:"SCAI D malgré deux catécholamines, avec une défaillance biventriculaire : l'ECMO VA est la seule option de cette liste qui supplée les deux ventricules. Elle restaure le débit systémique mais augmente la post-charge du VG. ECLS-SHOCK : l'ECMO VA systématique n'a pas réduit la mortalité à J30 et augmentait les saignements. Elle reste une option au cas par cas.",
+    apply:s=>{s.ecmo=4;s.o2="iot";s.dobu=Math.min(Math.max(s.dobu,5),7.5);s.adr=0;s.vaso=false;setNad(s,65);}},
+   {id:"B",label:"Impella CP par voie fémorale",grade:s=>s.rv<0.6?"deletere":"acceptable",
+    why:s=>{const d=hemo(s);return s.rv<0.6?`L'Impella CP ne soutient que le VG : il ne peut éjecter que ce que le VD lui apporte. Ici, le VD est défaillant (TAPSE ${d.tapse} mm, onde S′ ${String(d.sprime).replace(".",",")} cm/s, VD basal ${d.rvBas} mm pour un VG à ${d.lvBas} mm, PVC ${Math.round(d.cvp)} mmHg, VCI ${d.ivc} mm non compliante). Une défaillance biventriculaire appelle une assistance biventriculaire. DanGer Shock montre un bénéfice de l'Impella CP dans le choc sur infarctus ST+, mais chez des patients sélectionnés.`:`VD préservé (TAPSE ${d.tapse} mm, onde S′ ${String(d.sprime).replace(".",",")} cm/s) : l'Impella CP est défendable (DanGer Shock : bénéfice dans le choc cardiogénique sur infarctus ST+, au prix de plus de complications).`;},
+    apply:s=>{s.imp=3.5;setNad(s,65);}},
+   {id:"C",label:"Ajout d'adrénaline et de vasopressine, sans assistance",grade:"deletere",
+    why:"L'escalade des catécholamines sans assistance augmente la consommation d'O₂ myocardique et la post-charge, sans restaurer le débit. Le choc devient réfractaire.",
+    apply:s=>{s.adr=0.2;s.vaso=true;}},
+   {id:"D",label:"Intuber d'abord (propofol, curare), puis réévaluer",grade:"deletere",
+    why:"Collapsus d'induction : le propofol supprime le tonus sympathique et la ventilation en pression positive réduit le retour veineux d'un VD défaillant. En choc, l'induction se prépare (kétamine ou étomidate à dose réduite, vasopresseur prêt) et se discute après ou pendant la canulation.",
+    apply:s=>{s.propofol=true;s.o2="iot";}}
+  ],
+  next:s=>{
+    if(s.ecmo>0){evolve(s,6);return "s4";}
+    if(s.imp>0){evolve(s,4);return "s4b";}
+    if(s.propofol){evolve(s,0.2);s.propofol=false;s.arrest=true;s.arrestCause="induction";return "acr";}
+    evolve(s,1);s.arrest=true;s.arrestCause="réfractaire";return "acr";}},
+
+ acr:{h:"ACR",title:"Arrêt cardiaque : fibrillation ventriculaire",
+  text:(s,d)=>`<p>${s.arrestCause==="induction"?"Deux minutes après l'induction, la PA s'effondre, puis":"Malgré l'escalade des catécholamines, le lactate monte, puis"} le scope montre une fibrillation ventriculaire. Massage cardiaque débuté, premier choc délivré sans succès. L'équipe d'ECMO est joignable.</p>`,
+  choices:[
+   {id:"A",label:"Poursuivre la RCP et demander une ECMO VA de sauvetage (ECPR)",grade:"acceptable",
+    why:"Arrêt intrahospitalier, témoin, avec cause identifiée et potentiellement réversible : l'ECPR se discute en centre expert. Le pronostic reste lourd.",
+    apply:s=>{s.ecpr=true;}},
+   {id:"B",label:"RCP spécialisée prolongée, sans assistance circulatoire",grade:"deletere",
+    why:"FV réfractaire sur choc cardiogénique : sans assistance, les chances de retour à une circulation efficace sont très faibles.",
+    apply:s=>{s.dead=true;}},
+   {id:"C",label:"Arrêter la réanimation",grade:"discutable",
+    why:"Patient de 64 ans sans comorbidité limitante, cause réversible : une limitation n'est pas justifiée à ce stade sans discussion collégiale.",
+    apply:s=>{s.dead=true;}}
+  ],
+  next:s=>{
+    if(s.dead){s.arrest=true;return "end";}
+    s.arrest=false;s.ecmo=4;s.o2="iot";s.adr=0;s.vaso=false;s.lac+=3;s.contr*=0.85;s.dobu=5;s.cvc=s.kta=true;setNad(s,65);
+    if(!s.revasc){s.revasc=true;s.revLate=true;s.contr*=0.9;}
+    evolve(s,6);return "s4";}},
+
+ s4:{h:"H12",title:"Sous ECMO VA : la pulsatilité disparaît",
+  text:(s,d)=>`<p>ECMO VA à ${String(s.ecmo).replace(".",",")} L/min, ${treatments(s).replace(/, ECMO VA [^,]*/,"")}. Intubé, FiO₂ 60 %. PAM ${Math.round(d.map)} mmHg, mais la courbe artérielle est ${d.pp<8?"presque plate":"peu pulsée"} (PA différentielle ${Math.round(d.pas-d.pad)} mmHg). Lactate en baisse.</p>
+  <p>La radiographie montre un œdème pulmonaire bilatéral qui s'aggrave. Sécrétions rosées dans la sonde d'intubation.</p>`,
+  choices:[
+   {id:"A",label:"Décharger le VG par un Impella (ECPELLA)",grade:"optimal",
+    why:"Distension du VG sous ECMO (valve aortique fermée, stase, œdème pulmonaire) : la décharge active du VG est la stratégie de référence, avec un Impella le plus souvent.",
+    apply:s=>{s.imp=3.5;}},
+   {id:"B",label:"Réduire le débit d'ECMO à 3 L/min et augmenter la dobutamine à 10 µg/kg/min",grade:"acceptable",
+    why:"Diminuer la post-charge imposée au VG et soutenir sa contractilité peut suffire à rouvrir la valve aortique. À surveiller : débit systémique, lactate.",
+    apply:s=>{s.ecmo=3;s.dobu=10;}},
+   {id:"C",label:"Augmenter le débit d'ECMO à 5 L/min pour mieux perfuser",grade:"deletere",
+    why:"Plus de débit d'ECMO, c'est plus de post-charge pour le VG : la distension et la stase s'aggravent, avec un risque de thrombus intracavitaire.",
+    apply:s=>{s.ecmo=5;}},
+   {id:"D",label:"Ne rien changer, le lactate s'améliore",grade:"deletere",
+    why:"Le lactate s'améliore, mais le VG se distend : œdème pulmonaire, stase et risque de thrombose. La pulsatilité et l'ouverture de la valve aortique se surveillent à chaque échographie.",
+    apply:s=>{}}
+  ],
+  next:s=>{evolve(s,12);return "end";}},
+
+ s4b:{h:"H9",title:"Sous Impella CP : alarmes de succion",
+  text:(s,d)=>`<p>Impella CP en place, sous ${treatments(s).replace(/, Impella CP [^,]*/,"")}. Alarmes de succion répétées, débit Impella instable. PVC ${Math.round(d.cvp)} mmHg, PAM ${Math.round(d.map)} mmHg, diurèse ${Math.round(d.urine)} mL/h. Urines plus foncées.</p>`,
+  choices:[
+   {id:"A",label:"Ajouter une ECMO VA (ECPELLA)",grade:"optimal",
+    why:"Défaillance biventriculaire : l'Impella seul dépend du VD, qui ne lui apporte plus assez de sang. L'ECMO VA prend en charge la circulation, l'Impella décharge le VG.",
+    apply:s=>{s.ecmo=3.5;s.o2="iot";}},
+   {id:"B",label:"Dobutamine 10 µg/kg/min et monoxyde d'azote inhalé pour soutenir le VD",grade:"acceptable",
+    why:"Soutien du VD et baisse de sa post-charge : amélioration partielle. Option d'attente si l'ECMO n'est pas disponible.",
+    apply:s=>{s.dobu=10;s.rv=Math.min(1,s.rv+0.12);s.o2="iot";}},
+   {id:"C",label:"Augmenter le niveau de performance de l'Impella",grade:"deletere",
+    why:"Le VG est vide : plus de vitesse, c'est plus de succion et d'hémolyse, sans plus de débit.",
+    apply:s=>{s.imp=4.5;s.hemolyse=true;}},
+   {id:"D",label:"Ne rien changer",grade:"deletere",
+    why:"Les alarmes de succion signent un VG mal rempli : il faut traiter la défaillance du VD.",
+    apply:s=>{}}
+  ],
+  next:s=>{evolve(s,12);return "end";}}
+};
+
+const GRADES={optimal:["Optimal","g-opt"],acceptable:["Acceptable","g-acc"],discutable:["Discutable","g-dis"],deletere:["Délétère","g-del"]};
+
+function outcome(s){
+  if(s.dead)return {cls:"bad",title:"Décès",text:"Le patient décède en arrêt cardiaque réfractaire."};
+  const d=hemo(s);const comp=[];
+  if(s.thrombus)comp.push("thrombus dans le VG");
+  if(s.hemolyse)comp.push("hémolyse");
+  if(s.creat>300)comp.push(`insuffisance rénale aiguë KDIGO 3 (créatinine ${Math.round(s.creat)} µmol/L) : EER à discuter`);
+  else if(s.creat>200)comp.push(`insuffisance rénale aiguë (créatinine ${Math.round(s.creat)} µmol/L)`);
+  if(d.arleq)comp.push("syndrome d'Arlequin");
+  if(s.pre>28)comp.push("œdème pulmonaire persistant");
+  const c=comp.length?` Complications : ${comp.join(", ")}.`:"";
+  if(!s.revasc)return {cls:"bad",title:"Pas de récupération possible",text:`Sans revascularisation, le myocarde ischémique ne récupère pas : le patient reste dépendant de son assistance (IC total ${n1(d.ic)} L/min/m², lactate ${n1(s.lac)} mmol/L).${c} Seules restent la revascularisation tardive ou une stratégie de pont.`};
+  const dose=s.dose||0,burden=`Lactate supérieur à 2,5 mmol/L pendant environ ${Math.round(s.hypoH||0)} h.`;
+  if(dose>40)return {cls:"bad",title:"Défaillance multiviscérale",text:`PAM ${Math.round(d.map)} mmHg, IC total ${n1(d.ic)} L/min/m², lactate ${n1(s.lac)} mmol/L. ${burden} L'hypoperfusion a duré trop longtemps.${c} Pronostic très réservé.`};
+  if(dose>20)return {cls:"mid",title:"Survie, au prix de défaillances d'organes",text:`PAM ${Math.round(d.map)} mmHg, IC total ${n1(d.ic)} L/min/m², lactate ${n1(s.lac)} mmol/L. ${burden}${c}`};
+  if(s.lac<2.5&&d.map>=65&&!s.thrombus&&s.pre<=28)return {cls:"good",title:"Stabilisation",text:`Lactate ${n1(s.lac)} mmol/L, PAM ${Math.round(d.map)} mmHg, IC total ${n1(d.ic)} L/min/m².${c} La discussion du sevrage de l'assistance ou d'une stratégie de pont peut commencer.`};
+  if(s.lac<5)return {cls:"mid",title:"Situation encore précaire",text:`Lactate ${n1(s.lac)} mmol/L, PAM ${Math.round(d.map)} mmHg, IC total ${n1(d.ic)} L/min/m².${c}`};
+  return {cls:"bad",title:"Défaillance multiviscérale",text:`Lactate ${n1(s.lac)} mmol/L, PAM ${Math.round(d.map)} mmHg, IC total ${n1(d.ic)} L/min/m².${c} Pronostic très sombre.`};
+}
+
+
+/* ===== Interface ===== */
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtT=t=>{const h=Math.floor(t+1e-6),m=Math.round((t-h)*60);return m===60?`H${h+1}`:`H${h}${m?" "+String(m).padStart(2,"0"):""}`;};
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let ecgPending=false,stepCache=null,S,cur,phase,decisions,results,echoStep,mode="learn",lastSnap,pendingNext,view="4c",done={},pendingExam=null,legend=false,cfm=false;
+try{mode=localStorage.getItem("choc-mode")||"learn"}catch(e){}
+
+function snap(s){const d=hemo(s);return {map:Math.round(d.map),ic:d.ic,lac:s.lac,spo2:Math.round(d.spo2),urine:Math.round(d.urine),scai:scai(s,d),hr:d.hr};}
+
+function start(){
+  stepCache=null;S=newState();record(S);cur="s1";phase="decide";decisions=[];results=[];echoStep=null;
+  S.marks=[];done={};ecgPending=false;$("ecgBox").hidden=true;pendingExam=null;S.improved=null;$("debrief").hidden=true;$("flash").textContent="";$("main").hidden=false;
+  render();
+}
+
+/* ---- Moniteur : chiffres ---- */
+function renderVitals(){
+  const d=hemo(S),sc=scai(S,d);
+  $("vHR").textContent=S.arrest&&!S.ecmo?"FV":d.hr;
+  $("vHRr").textContent=S.arrest?"":S.rhythm==="fa"?"FA":"sinusal";
+  $("vPA").textContent=`${d.pas}/${d.pad}`;
+  $("vPAM").textContent=`(${Math.round(d.map)})`;
+  $("vPAl").textContent=S.kta?"PA sanglante":"PA non invasive";
+  $("vSpO2").textContent=Math.round(d.spo2);
+  $("vFR").textContent=d.fr;
+  $("vPVC").textContent=S.cvc?Math.round(d.cvp):"–";
+  $("tNow").textContent=fmtT(S.t);
+  const b=$("scai");b.textContent=`SCAI ${sc}`;b.dataset.s=sc;
+  const pumps=[];
+  if(S.nad>0)pumps.push(["Noradrénaline",S.nad.toFixed(2).replace(".",","),"µg/kg/min"]);
+  if(S.dobu>0)pumps.push(["Dobutamine",String(S.dobu).replace(".",","),"µg/kg/min"]);
+  if(S.adr>0)pumps.push(["Adrénaline",S.adr.toFixed(2).replace(".",","),"µg/kg/min"]);
+  if(S.vaso)pumps.push(["Vasopressine","0,03","UI/min"]);
+  if(S.levo>0)pumps.push(["Levosimendan","bolus",""]);
+  if(S.ecmo>0)pumps.push(["ECMO VA",String(S.ecmo).replace(".",","),"L/min"]);
+  if(S.imp>0)pumps.push(["Impella CP",n1(d.impEff),"L/min"]);
+  pumps.push(["Oxygène",S.o2==="iot"?"IOT":S.o2==="vni"?"VNI":"3 L/min",S.o2==="iot"?"FiO₂ 60 %":S.o2==="vni"?"FiO₂ 50 %":"lunettes"]);
+  $("pumps").innerHTML=pumps.map(p=>`<div class="pump"><span>${p[0]}</span><b>${p[1]}</b><small>${p[2]}</small></div>`).join("");
+}
+
+/* ---- Examens ---- */
+const EXAMS=[
+ {id:"echo",label:"Échographie cardiaque et pulmonaire",min:10},
+ {id:"gds",label:"Gaz du sang artériel et lactate",min:3},
+ {id:"scv",label:"ScvO₂",min:3,need:s=>s.cvc,needTxt:"voie veineuse centrale nécessaire"},
+ {id:"bio",label:"Biologie : troponine, NT-proBNP, créatinine, K⁺",min:10},
+ {id:"clin",label:"Examen clinique et diurèse",min:5},
+ {id:"ecg",label:"ECG 12 dérivations",min:3}
+];
+function askExam(id){
+  if(phase!=="decide")return;
+  if(done[id]){pendingExam=id;const e=EXAMS.find(x=>x.id===id);$("confirm").innerHTML=`<p><b>${e.label}</b> a déjà été fait à ${done[id]}. Le refaire fera avancer l'horloge de ${e.min} minutes supplémentaires (${fmtT(S.t)} → ${fmtT(S.t+e.min/60)}).</p><div class="row"><button class="go" type="button" id="cfYes">Refaire (+${e.min} min)</button><button class="btn" type="button" id="cfNo">Annuler</button></div>`;$("confirm").hidden=false;return;}
+  doExam(id);
+}
+function doExam(id){
+  $("confirm").hidden=true;pendingExam=null;
+  const t0=fmtT(S.t),ex=EXAMS.find(x=>x.id===id);
+  evolve(S,ex.min/60);done[id]=fmtT(S.t);
+  $("flash").textContent=`+${ex.min} min : ${t0} → ${fmtT(S.t)}`;
+  const d=hemo(S),t=fmtT(S.t);
+  let r;
+  if(id==="echo"){echoStep=cur;r=`ETT : FEVG ≈ ${Math.max(5,Math.round(d.fevg*20)*5)} %, ITV ${n1(d.itv)} cm, IC ${S.ecmo||S.imp?"natif ":""}${n1(d.icN)} L/min/m². VD basal ${d.rvBas} mm (VG ${d.lvBas} mm), TAPSE ${d.tapse} mm, onde S′ ${n1(d.sprime)} cm/s. VCI ${d.ivc} mm, ${d.blines} lignes B par champ.`;}
+  if(id==="gds"){const ph=clamp(7.42-0.035*(S.lac-1)-(S.creat>250?0.03:0),6.85,7.48);r=`GDS : pH ${ph.toFixed(2).replace(".",",")}, PaO₂ ${Math.round(40+d.spo2*0.6-(d.spo2<90?20:0))} mmHg, PaCO₂ ${S.o2==="iot"?38:Math.round(36-S.lac*1.2)} mmHg, HCO₃⁻ ${Math.round(clamp(24-(S.lac-1)*2.2,8,26))} mmol/L, lactate ${n1(S.lac)} mmol/L.`;}
+  if(id==="scv")r=`ScvO₂ ${Math.round(d.scvo2)} %${d.scvo2<60?" : extraction élevée, transport en O₂ insuffisant":""}.`;
+  if(id==="bio"){const k=clamp(4.2+(S.creat-135)/120+(S.lac>5?0.4:0),3.6,7);r=`Troponine I hs ${tropo(S).toLocaleString("fr-FR")} ng/L (norme du centre < 26 ng/L), NT-proBNP ${Math.round((8500+S.t*350+(S.pre-18)*200)/100)*100} pg/mL, créatinine ${Math.round(S.creat)} µmol/L, K⁺ ${n1(k)} mmol/L${S.hemolyse?", LDH très élevées, haptoglobine effondrée (hémolyse)":""}.`;}
+  if(id==="clin"){const m=["absentes","discrètes aux genoux","aux genoux","jusqu'aux cuisses","étendues","généralisées"][d.mott];r=`Marbrures ${m}, TRC ${d.mott>=2?"> 3 s":"≈ 3 s"}, extrémités ${d.mott>=2?"froides":"tièdes"}. Diurèse ${Math.round(d.urine)} mL/h.${d.arleq?" SpO₂ main droite plus basse que la SpO₂ au pied.":""}`;}
+  if(id==="ecg"){r=`ECG 12 dérivations enregistré à ${fmtT(S.t)} (tracé ci-dessous).`;ecgPending=true;}
+  results.unshift({t,txt:r});
+  render();
+}
+
+/* ---- ECG 12 dérivations ---- */
+function ecgLeads(s){
+  const k=clamp(4.2+(s.creat-135)/120+(s.lac>5?0.4:0),3.6,7);
+  const sinceRev=s.revT!=null?s.t-s.revT:-1;
+  const stF=sinceRev<0?1:Math.max(0.35,1-sinceRev/8);
+  const tInv=sinceRev<0?0:Math.min(1,sinceRev/6);
+  const tk=k>5.8?1+(k-5.8)*1.2:1;
+  const L={
+    I:[.1,-.04,.55,-.1,.05,.2],II:[.15,-.05,.85,-.12,-.05,.25],III:[.06,-.03,.45,-.15,-.07,.1],
+    aVR:[-.12,0,.12,-.6,0,-.2],aVL:[.04,-.04,.35,-.2,.1,.1],aVF:[.1,-.04,.65,-.12,-.06,.15],
+    V1:[.06,-1.0,0,0,.25,.3],V2:[.08,-1.25,0,0,.35,.42],V3:[.08,-1.05,0,0,.32,.42],V4:[.08,-.75,0,0,.22,.32],
+    V5:[.08,-.05,.6,-.15,.1,.22],V6:[.08,-.05,.55,-.08,.05,.2]};
+  const out={};
+  for(const n in L){const [p,q,r,sw,st,t]=L[n];const ant=/^V[1-4]$/.test(n);
+    out[n]={p,q,r,s:sw,st:st*stF,t:(ant?t*(1-tInv)-0.28*tInv:t)*tk};}
+  return out;
+}
+function ecgBeat(l,u,fa){
+  let v=0;if(!fa)v+=l.p*G(u,0.08,0.022);
+  v+=l.q*G(u,0.17,0.009)+l.r*G(u,0.19,0.009)+l.s*G(u,0.215,0.01);
+  v+=l.st*clamp((u-0.22)/0.02,0,1)*clamp((0.47-u)/0.09,0,1);
+  v+=l.t*G(u,0.4,0.05);
+  return v;
+}
+function showEcg(){
+  const box=$("ecgBox"),cv=$("ecg12"),ctx=cv.getContext("2d"),d=hemo(S);
+  box.hidden=false;$("ecgMeta").textContent=`${fmtT(S.t)} · 25 mm/s · 10 mm/mV · FC ${d.hr}/min${S.rhythm==="fa"?" · rythme irrégulier":""}`;
+  const mm=3.6,W=Math.round(256*mm),H=Math.round(124*mm),dp=devicePixelRatio||1;
+  cv.width=W*dp;cv.height=H*dp;ctx.setTransform(dp,0,0,dp,0,0);
+  ctx.fillStyle="#fff7f6";ctx.fillRect(0,0,W,H);
+  for(let x=0;x<=256;x++){ctx.strokeStyle=x%5?"#f6cfcf":"#e89a9a";ctx.lineWidth=x%5?0.5:1;ctx.beginPath();ctx.moveTo(x*mm,0);ctx.lineTo(x*mm,H);ctx.stroke();}
+  for(let y=0;y<=124;y++){ctx.strokeStyle=y%5?"#f6cfcf":"#e89a9a";ctx.lineWidth=y%5?0.5:1;ctx.beginPath();ctx.moveTo(0,y*mm);ctx.lineTo(W,y*mm);ctx.stroke();}
+  const fa=S.rhythm==="fa",hr=Math.max(d.hr,40);let sd=Math.round(S.t*100)+3;const r=()=>(sd=sd*16807%2147483647)/2147483647;
+  const beats=[];let t=0.15;while(t<10.5){beats.push(t);t+=fa?60/hr*(0.6+0.8*r()):60/hr;}
+  const leads=ecgLeads(S);
+  const val=(name,tt)=>{let i=0;while(i+1<beats.length&&beats[i+1]<=tt)i++;let v=ecgBeat(leads[name],tt-beats[i],fa);
+    if(i>0)v+=ecgBeat(leads[name],tt-beats[i-1],fa);
+    if(fa)v+=0.04*Math.sin(2*Math.PI*6.3*tt)+0.03*Math.sin(2*Math.PI*9.1*tt+1);return v;};
+  const rows=[["I","aVR","V1","V4"],["II","aVL","V2","V5"],["III","aVF","V3","V6"]];
+  const x0=6*mm,colW=62.5*mm,mmPerS=25;
+  ctx.strokeStyle="#111";ctx.lineWidth=1.3;ctx.font="600 13px Barlow,sans-serif";ctx.fillStyle="#111";ctx.lineJoin="round";
+  const trace=(name,yb,ts,te,xs)=>{ctx.beginPath();for(let tt=ts;tt<=te;tt+=0.004){const x=xs+(tt-ts)*mmPerS*mm,y=yb-val(name,tt)*10*mm;tt===ts?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();};
+  const cal=yb=>{ctx.beginPath();ctx.moveTo(1*mm,yb);ctx.lineTo(2*mm,yb);ctx.lineTo(2*mm,yb-10*mm);ctx.lineTo(4.5*mm,yb-10*mm);ctx.lineTo(4.5*mm,yb);ctx.lineTo(5.5*mm,yb);ctx.stroke();};
+  rows.forEach((row,i)=>{const yb=(20+i*30)*mm;cal(yb);row.forEach((n,j)=>{trace(n,yb,j*2.5,j*2.5+2.5,x0+j*colW);ctx.fillText(n,x0+j*colW+4,yb-14*mm);if(j){ctx.beginPath();ctx.moveTo(x0+j*colW,yb-4*mm);ctx.lineTo(x0+j*colW,yb+4*mm);ctx.stroke();}});});
+  const yb=110*mm;cal(yb);trace("II",yb,0,10,x0);ctx.fillText("II",x0+4,yb-14*mm);
+}
+
+/* ---- Rendu de l'étape ---- */
+function render(){
+  renderVitals();
+  const st=STEPS[cur];
+  if(cur==="end"){return finish();}
+  $("stepH").textContent=fmtT(S.t);
+  $("stepT").textContent=st.title;
+  const d=hemo(S);
+  if(!stepCache||stepCache.k!==cur)stepCache={k:cur,h:(S.improved?`<p class="transit">${S.improved}</p>`:"")+st.text(S,d)};
+  $("stepText").innerHTML=stepCache.h;
+  $("exams").innerHTML=EXAMS.map(e=>{const ok=!e.need||e.need(S);return `<button class="exam${done[e.id]?" done":""}" type="button" data-x="${e.id}" ${ok&&phase==="decide"?"":"disabled"} title="${ok?"":esc(e.needTxt||"")}">${e.label}<small>${done[e.id]?`fait · +${e.min} min`:`+${e.min} min`}</small></button>`}).join("");
+  $("res").innerHTML=results.length?results.slice(0,8).map(r=>`<li><time>${r.t}</time>${esc(r.txt)}</li>`).join(""):`<li class="mut">Aucun examen demandé.</li>`;
+  if(phase==="decide"){
+    $("choices").innerHTML=st.choices.map(c=>`<button class="choice" type="button" data-c="${c.id}"><b>${c.id}</b><span>${esc(c.label)}</span></button>`).join("");
+    $("conseq").hidden=true;$("choices").hidden=false;$("decH").textContent="Votre décision";
+  }
+  renderEchoPanel();
+  if(ecgPending){ecgPending=false;showEcg();}
+}
+
+function choose(id){
+  const st=STEPS[cur],c0=st.choices.find(x=>x.id===id);
+  const c={...c0,grade:typeof c0.grade==='function'?c0.grade(S):c0.grade,why:typeof c0.why==='function'?c0.why(S):c0.why};
+  const before=snap(S),t0=S.t;
+  S.marks.push({t:S.t,label:`${st.h} ${c.id}`});
+  c.apply(S);
+  evolve(S,0.5);const mid=snap(S),tMid=fmtT(S.t);
+  const better=mid.ic>before.ic+0.12||(before.map<65&&mid.map>=before.map+4)||mid.lac<before.lac-0.3;
+  const nx=st.next(S);
+  S.improved=better&&!S.dead?`Réponse initiale à votre décision : à ${tMid}, PAM ${mid.map} mmHg, IC ${n1(mid.ic)} L/min/m², lactate ${n1(mid.lac)} mmol/L. Le traitement a fonctionné, puis la situation s'est de nouveau dégradée.`:null;
+  if(STEPS[nx]&&STEPS[nx].pre)STEPS[nx].pre(S);
+  const after=snap(S);
+  decisions.push({step:st.title,h:fmtT(t0),label:c.label,grade:c.grade,why:c.why});
+  phase="conseq";pendingNext=nx;
+  const g=GRADES[c.grade];
+  const rows=[["PAM","map","mmHg",v=>v],["IC total","ic","L/min/m²",n1],["Lactate","lac","mmol/L",n1],["SpO₂","spo2","%",v=>v],["Diurèse","urine","mL/h",v=>v],["Stade SCAI","scai","",v=>v]];
+  $("conseq").innerHTML=`
+    <p class="dur">${fmtT(t0)} → ${fmtT(S.t)}</p>${better&&!S.dead?`<p class="transit">Le patient répond d'abord au traitement (colonne « réponse à 30 min »). La dégradation qui suit vient de l'évolution de la maladie, pas de l'inefficacité de votre choix.</p>`:""}
+    ${mode==="learn"?`<p class="grade ${g[1]}">${g[0]}</p><p>${esc(c.why)}</p>`:`<p class="mut">Mode évaluation : la correction s'affiche au débriefing.</p>`}
+    <table class="ba"><thead><tr><th></th><th>Avant</th><th>Réponse à 30 min</th><th>${fmtT(S.t)}</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><th>${r[0]}</th><td>${r[3](before[r[1]])} <small>${r[2]}</small></td><td class="${better?"mid":""}">${r[3](mid[r[1]])} <small>${r[2]}</small></td><td>${r[3](after[r[1]])} <small>${r[2]}</small></td></tr>`).join("")}
+    </tbody></table>
+    <button class="go" type="button" id="next">${nx==="end"?"Voir le bilan à H24":"Continuer"}</button>`;
+  $("conseq").hidden=false;$("choices").hidden=true;$("decH").textContent=`Décision ${c.id}`;
+  renderVitals();
+  $("exams").querySelectorAll("button").forEach(b=>b.disabled=true);
+  $("conseq").scrollIntoView({block:"nearest",behavior:reduce?"auto":"smooth"});
+}
+
+function next(){stepCache=null;cur=pendingNext;phase="decide";done={};$("confirm").hidden=true;$("flash").textContent="";if(cur!=="end"&&echoStep!==cur)echoStep=null;render();window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});}
+
+/* ---- Échographie ---- */
+function renderEchoPanel(){
+  const live=echoStep===cur&&cur!=="end";
+  $("echoOff").hidden=live;$("echoOn").hidden=!live;
+  if(!live)return;
+  const d=hemo(S);
+  const fe=Math.max(5,Math.round(d.fevg*20)*5);
+  const dc=d.svN*d.hr/1000;
+  const rows=[
+   ["FEVG visuelle",`≈ ${fe} %`],
+   ["ITV sous-aortique",S.imp>0&&d.impEff>0.5?"non interprétable (Impella)":!d.avOpen?"0 cm (pas d'éjection)":`${n1(d.itv)} cm`],
+   ["Débit natif du VG",`${n1(dc)} L/min`],
+   ["Index cardiaque natif",`<b>${n1(d.icN)}</b> L/min/m²`]
+  ];
+  if(S.ecmo>0||S.imp>0)rows.push(["IC total (natif + assistance)",`<b>${n1(d.ic)}</b> L/min/m²`]);
+  rows.push(["Diamètre basal du VD",`${d.rvBas>41?`<b style="color:var(--red);font-size:16px">${d.rvBas} mm</b>`:d.rvBas+" mm"} <small class="mut">(N ≤ 41 ; VG ${d.lvBas} mm)</small>`],["TAPSE",`${d.tapse<17?`<b style="color:var(--red);font-size:16px">${d.tapse} mm</b>`:d.tapse+" mm"} <small class="mut">(N ≥ 17)</small>`],["Onde S′ tricuspide",`${d.sprime<9.5?`<b style="color:var(--red);font-size:16px">${n1(d.sprime)} cm/s</b>`:n1(d.sprime)+" cm/s"} <small class="mut">(N ≥ 9,5)</small>`],["IM",["","minime","modérée","sévère"][d.im]],["VCI",`${d.ivc} mm, variation ${d.ivcVar<10?"< 10":"≈ "+d.ivcVar} %`],["Lignes B",`${d.blines} par champ`],["Valve aortique",d.avOpen?"s'ouvre à chaque cycle":"reste fermée"]);
+  $("echoMeas").innerHTML=rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("");
+  $("echoCalc").innerHTML=S.imp>0&&d.impEff>0.5?"":`DC = ITV × S<sub>CCVG</sub> × FC = ${n1(d.itv)} cm × 3,46 cm² × ${d.hr}/min = ${n1(dc)} L/min. IC = DC / SC = ${n1(dc)} / 1,96 = <b>${n1(d.icN)}</b> L/min/m² ${d.icN<2.1?"(bas débit : IC < 2,1)":"(au-dessus du seuil de bas débit de 2,1)"}.`;
+  document.querySelectorAll(".vtab[data-v]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===view?"true":"false"));
+}
+
+/* ---- Horloge cardiaque partagée ---- */
+const clock={beats:[],rr:0.55};
+let seed=7;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+function tickBeats(now){
+  const d=hemo(S);
+  const last=clock.beats[clock.beats.length-1];
+  if(!last){clock.beats.push({t:now,rr:60/Math.max(d.hr,40)});return;}
+  while(now>last.t+last.rr&&clock.beats.length<400){
+    const tt=clock.beats[clock.beats.length-1];
+    const hr=Math.max(d.hr,40);
+    const rr=S.rhythm==="fa"?60/hr*(0.6+0.8*rnd()):60/hr;
+    clock.beats.push({t:tt.t+tt.rr,rr});
+    if(now<=tt.t+tt.rr+rr)break;
+  }
+  if(clock.beats.length>60)clock.beats.splice(0,clock.beats.length-60);
+}
+function beatAt(t){
+  const b=clock.beats;for(let i=b.length-1;i>=0;i--)if(b[i].t<=t)return b[i];return b[0]||{t:0,rr:0.6};
+}
+const G=(x,m,s)=>Math.exp(-((x-m)**2)/(2*s*s));
+
+/* ---- Courbes du moniteur ---- */
+const mon=$("mon"),mctx=mon.getContext("2d");let mW=0,mH=0,lastX=0,lastNow=0;
+function sizeMon(){const r=mon.getBoundingClientRect(),dp=devicePixelRatio||1;mW=r.width;mH=r.height;mon.width=r.width*dp;mon.height=r.height*dp;mctx.setTransform(dp,0,0,dp,0,0);mctx.fillStyle="#04090b";mctx.fillRect(0,0,mW,mH);lastX=0;}
+const roM=new ResizeObserver(sizeMon);roM.observe(mon);
+function ecgV(t){
+  if(S.arrest&&!S.ecmo)return 0.5+0.3*Math.sin(2*Math.PI*4.8*t)*(0.6+0.4*Math.sin(2*Math.PI*0.7*t))+0.08*Math.sin(2*Math.PI*8.1*t);
+  if(S.arrest)return 0.5+0.25*Math.sin(2*Math.PI*5*t);
+  const b=beatAt(t),u=t-b.t;let v=0.35;
+  if(S.rhythm==="fa")v+=0.025*Math.sin(2*Math.PI*6.3*t)+0.02*Math.sin(2*Math.PI*9.7*t);
+  else v+=0.05*G(u,0.08,0.025);
+  v-=0.05*G(u,0.17,0.008);v+=0.4*G(u,0.19,0.009);v-=0.12*G(u,0.215,0.01);
+  v+=0.09*G(u,0.4,0.05);
+  return v;
+}
+function artV(t,d){
+  if(S.arrest&&!S.ecmo)return d.map;
+  const b=beatAt(t),u=t-b.t-0.17;
+  if(u<0)return d.pad+(d.pas-d.pad)*0.0;
+  const up=u<0.09?Math.sin(Math.PI/2*u/0.09):1;
+  const decay=Math.exp(-Math.max(0,u-0.09)/0.33);
+  const notch=0.12*G(u,0.32,0.02);
+  return d.pad+(d.pas-d.pad)*(up*decay*(u<0.09?1:1)+(u>0.3?notch:0));
+}
+function plethV(t,d){
+  if(S.arrest&&!S.ecmo)return 0.5;
+  const b=beatAt(t),u=t-b.t-0.28,amp=Math.min(1,d.pp/30)+0.05;
+  return 0.25+amp*(0.6*G(u,0.12,0.07)+0.22*G(u,0.33,0.06));
+}
+function drawMon(now){
+  if(!mW)return;
+  const win=6,px=mW/win;
+  const d=hemo(S);
+  if(!lastNow)lastNow=now;
+  let x0=lastX,x1=lastX+(now-lastNow)*px;lastNow=now;
+  if(x1-x0>mW){x0=0;x1=mW;}
+  const lanes=[{f:t=>ecgV(t),y:0,h:mH*0.36,c:"#5fe0a6",min:0,max:1},{f:t=>artV(t,d),y:mH*0.36,h:mH*0.36,c:"#ff5a4e",min:20,max:140},{f:t=>plethV(t,d),y:mH*0.72,h:mH*0.28,c:"#4fd8ea",min:0,max:1}];
+  const seg=(a,b)=>{
+    mctx.fillStyle="#04090b";mctx.fillRect(a,0,Math.min(b-a+14,mW-a),mH);
+    for(const L of lanes){mctx.strokeStyle=L.c;mctx.lineWidth=1.8;mctx.beginPath();
+      const xs=[];for(let x=Math.max(0,a-1.5);x<b;x+=1)xs.push(x);xs.push(b);xs.forEach((x,i)=>{const t=now-(b-x)/px;const v=(L.f(t)-L.min)/(L.max-L.min);const y=L.y+L.h-6-clamp(v,0,1)*(L.h-12);i?mctx.lineTo(x,y):mctx.moveTo(x,y);});
+      mctx.stroke();}
+  };
+  if(x1>=mW){seg(x0,mW);x1-=mW;x0=0;}
+  seg(x0,x1);lastX=x1;
+}
+
+function contraction(t){const b=beatAt(t),p=(t-b.t)/Math.max(b.rr,0.3);const sys=0.38*Math.min(1,0.9/b.rr*0.6+0.4);if(p<0.12)return 0;const q=p-0.12;if(q<sys)return Math.sin(Math.PI/2*q/sys);if(q<sys+0.15)return Math.cos(Math.PI/2*(q-sys)/0.15);return 0;}
+/* ---- Échographie : moteur de rendu ---- */
+const ec=$("echo"),ectx=ec.getContext("2d");let eW=0,eH=0;
+function sizeEcho(){const r=ec.getBoundingClientRect(),dp=devicePixelRatio||1;eW=r.width;eH=r.height;ec.width=Math.max(1,r.width*dp);ec.height=Math.max(1,r.height*dp);ectx.setTransform(dp,0,0,dp,0,0);}
+const roE=new ResizeObserver(sizeEcho);roE.observe(ec);
+const BW=420,BH=320,APX=BW/2,APY=6,RS=BH-10,HA=0.74,PXMM=RS/160;
+const aCan=document.createElement("canvas");aCan.width=BW;aCan.height=BH;
+const actx=aCan.getContext("2d",{willReadFrequently:true});
+const oCan=document.createElement("canvas");oCan.width=BW;oCan.height=BH;
+const octx=oCan.getContext("2d");const oImg=octx.createImageData(BW,BH);
+const mmCan=document.createElement("canvas");mmCan.width=360;mmCan.height=170;const mmctx=mmCan.getContext("2d");
+mmctx.fillStyle="#000";mmctx.fillRect(0,0,360,170);
+const NR=330,NT=220;
+function mkNoise(seed){
+  let sd=seed;const r=()=>(sd=sd*16807%2147483647)/2147483647;
+  const a=new Float32Array(NR*NT),b=new Float32Array(NR*NT);
+  for(let i=0;i<a.length;i++)a[i]=-Math.log(r()+1e-6);
+  for(let i=0;i<NR;i++)for(let j=0;j<NT;j++){let s=0,w=0;for(let k=-3;k<=3;k++){const jj=j+k;if(jj<0||jj>=NT)continue;const ww=4-Math.abs(k);s+=a[i*NT+jj]*ww;w+=ww;}b[i*NT+j]=s/w;}
+  for(let i=0;i<NR;i++)for(let j=0;j<NT;j++){let s=0,w=0;for(let k=-1;k<=1;k++){const ii=i+k;if(ii<0||ii>=NR)continue;const ww=2-Math.abs(k);s+=b[ii*NT+j]*ww;w+=ww;}a[i*NT+j]=s/w;}
+  let m=0;for(let i=0;i<a.length;i++)m+=a[i];m/=a.length;
+  for(let i=0;i<a.length;i++)a[i]=Math.max(0,1+(a[i]/m-1)*2.4);
+  return a;
+}
+const N1=mkNoise(11),N2=mkNoise(97);
+const sIdx=new Int32Array(BW*BH),sR=new Float32Array(BW*BH),sEdge=new Float32Array(BW*BH),cIdx=new Int32Array(BW*BH);
+for(let y=0;y<BH;y++)for(let x=0;x<BW;x++){
+  const i=y*BW+x,dx=x-APX,dy=y-APY,r=Math.hypot(dx,dy),th=Math.atan2(dx,dy);
+  cIdx[i]=Math.min(NR-1,Math.floor(y/BH*NR))*NT+Math.min(NT-1,Math.floor(x/BW*NT));
+  if(dy>0&&r<RS&&Math.abs(th)<HA){
+    sIdx[i]=Math.min(NR-1,Math.floor(r/RS*NR))*NT+Math.min(NT-1,Math.floor((th+HA)/(2*HA)*(NT-1)));
+    sR[i]=r/RS;sEdge[i]=Math.min(1,(HA-Math.abs(th))*r/5)*Math.min(1,(RS-r)/5);
+  }else sIdx[i]=-1;
+}
+const fI=new Float32Array(BW*BH),fT=new Float32Array(BW*BH);
+function blurH(src,dst,rad){for(let y=0;y<BH;y++){let s=0;const o=y*BW;for(let x=-rad;x<=rad;x++)s+=src[o+clamp(x,0,BW-1)];for(let x=0;x<BW;x++){dst[o+x]=s/(2*rad+1);s+=src[o+Math.min(BW-1,x+rad+1)]-src[o+Math.max(0,x-rad)];}}}
+function blurV(src,dst,rad){for(let x=0;x<BW;x++){let s=0;for(let y=-rad;y<=rad;y++)s+=src[clamp(y,0,BH-1)*BW+x];for(let y=0;y<BH;y++){dst[y*BW+x]=s/(2*rad+1);s+=src[Math.min(BH-1,y+rad+1)*BW+x]-src[Math.max(0,y-rad)*BW+x];}}}
+const gr=v=>{const c=Math.round(clamp(v,0,1)*255);return `rgb(${c},${c},${c})`;};
+function poly(p,v){actx.beginPath();p.forEach((q,i)=>i?actx.lineTo(q[0],q[1]):actx.moveTo(q[0],q[1]));actx.closePath();actx.fillStyle=gr(v);actx.fill();}
+function spoly(p,v,lw){actx.beginPath();p.forEach((q,i)=>i?actx.lineTo(q[0],q[1]):actx.moveTo(q[0],q[1]));actx.closePath();actx.strokeStyle=gr(v);actx.lineWidth=lw;actx.lineJoin="round";actx.stroke();}
+function el(x,y,rx,ry,v,rot){actx.beginPath();actx.ellipse(x,y,Math.max(1,rx),Math.max(1,ry),rot||0,0,Math.PI*2);actx.fillStyle=gr(v);actx.fill();}
+function seg(x1,y1,x2,y2,v,lw){actx.beginPath();actx.moveTo(x1,y1);actx.lineTo(x2,y2);actx.strokeStyle=gr(v);actx.lineWidth=lw;actx.lineCap="round";actx.stroke();}
+
+function chamber(B,A,W,thick,dL,dR,c,sL,sR2){
+  const Lx=A[0]-B[0],Ly=A[1]-B[1],L=Math.hypot(Lx,Ly),ux=Lx/L,uy=Ly/L,nx=-uy,ny=ux;
+  const N=28,le=[],re=[],lp=[],rp=[];
+  for(let i=0;i<=N;i++){
+    const t=i/N,w=W*Math.pow(Math.max(0,1-Math.pow(t,2.4)),0.5),px=B[0]+Lx*t,py=B[1]+Ly*t;
+    const wl=w*sL*(1-dL(t)*c),wr=w*sR2*(1-dR(t)*c),th=thick(t);
+    le.push([px-nx*wl,py-ny*wl]);re.push([px+nx*wr,py+ny*wr]);
+    lp.push([px-nx*(w*sL+th),py-ny*(w*sL+th)]);rp.push([px+nx*(w*sR2+th),py+ny*(w*sR2+th)]);
+  }
+  const cap=[A[0]+ux*thick(1),A[1]+uy*thick(1)];
+  return {endo:le.concat(re.slice().reverse()),epi:lp.concat([cap],rp.slice().reverse()),hL:le[0],hR:re[0],u:[ux,uy],n:[nx,ny]};
+}
+function leaflet(h,other,u,len,o,bow){
+  const cx=other[0]-h[0],cy=other[1]-h[1],cl=Math.hypot(cx,cy),dx=cx/cl,dy=cy/cl;
+  const ox=u[0]*0.9+dx*0.25,oy=u[1]*0.9+dy*0.25;
+  const vx=dx*(1-o)+ox*o-u[0]*bow*(1-o),vy=dy*(1-o)+oy*o-u[1]*bow*(1-o);
+  const vl=Math.hypot(vx,vy);return [h[0]+vx/vl*len,h[1]+vy/vl*len];
+}
+let geo={};
+function anat4c(d,c,now){
+  const dil=clamp((S.pre-12)/45+(1-S.contr)*0.25,0,0.5),k=1+dil*0.7,rvd=clamp((1-S.rv)*1.1,0,0.7),kr=1+rvd;
+  const kf=clamp(d.fevg/0.25,0.12,1.7);
+  actx.fillStyle=gr(0.13);actx.fillRect(0,0,BW,BH);
+  actx.fillStyle=gr(0.26);actx.fillRect(0,0,BW,24);seg(0,9,BW,9,0.38,1);seg(0,17,BW,17,0.34,1);
+  el(60,250,90,120,0.05);el(360,250,90,120,0.05);
+  const L=165*k,ang=0.2,apL=[224,40],baseL=[apL[0]+Math.sin(ang)*L,apL[1]+Math.cos(ang)*L];
+  const mapse=clamp(d.fevg/0.55,0.2,1)*15*PXMM*c;
+  const bL=[baseL[0]-Math.sin(ang)*mapse,baseL[1]-Math.cos(ang)*mapse];
+  const LV=chamber(bL,apL,46*k,t=>t>0.62?11:19,t=>t<0.35?0.16*kf:0.02,t=>t<0.7?0.3*kf:0.06,c,1,1);
+  const apR=[198,92],baseR=[172,200];const tap=d.tapse*PXMM*0.9*c;
+  const Lr=Math.hypot(apR[0]-baseR[0],apR[1]-baseR[1]);
+  const bR=[baseR[0]+(apR[0]-baseR[0])/Lr*tap,baseR[1]+(apR[1]-baseR[1])/Lr*tap];
+  const RV=chamber(bR,apR,36*kr,()=>8,()=>0.22*S.rv,()=>0.03,c,1,0.55);
+  const kla=1+(S.pre-12)/70,la=[266,252],ra=[170,248];
+  // péricarde et myocarde
+  spoly(LV.epi,0.95,9);spoly(RV.epi,0.9,8);
+  el(la[0],la[1],(44*kla)+5,40,0.32);el(ra[0],ra[1],38*(1+rvd*0.6)+4,37,0.3);
+  poly(LV.epi,0.5);poly(RV.epi,0.48);
+  el(LV.hL[0]-2,LV.hL[1]+4,7,5,0.8);el(LV.hR[0]+3,LV.hR[1]+3,6,5,0.7);el(RV.hL[0]-3,RV.hL[1]+3,6,5,0.65);
+  // cavités
+  poly(RV.endo,0.015);
+  {const half=LV.endo.length/2|0,sp=LV.endo.slice(0,Math.round(half*0.93));actx.beginPath();sp.forEach((q,i)=>{const x=q[0]-LV.n[0]*11,y=q[1]-LV.n[1]*11;i?actx.lineTo(x,y):actx.moveTo(x,y);});actx.strokeStyle=gr(0.52);actx.lineWidth=21;actx.lineCap="round";actx.stroke();}
+  spoly(LV.endo,0.62,3);
+  poly(LV.endo,0.015);
+  el(la[0],la[1],44*kla,35*(1+0.08*c),0.015);el(ra[0],ra[1],38*(1+rvd*0.6),33*(1+0.06*c),0.015);
+  poly([LV.hL,LV.hR,[la[0]+30*kla,la[1]-20],[la[0]-30*kla,la[1]-20]],0.015);
+  poly([RV.hL,RV.hR,[ra[0]+22,ra[1]-20],[ra[0]-24,ra[1]-20]],0.015);
+  el(219,241,4,24,0.36);
+  // valves
+  const o=1-Math.min(1,c*3);
+  const aml=leaflet(LV.hL,LV.hR,LV.u,30*k,o,0.15),pml=leaflet(LV.hR,LV.hL,LV.u,19*k,o,0.15);
+  seg(LV.hL[0],LV.hL[1],aml[0],aml[1],0.85,3);seg(LV.hR[0],LV.hR[1],pml[0],pml[1],0.8,3);
+  const tv1=leaflet(RV.hL,RV.hR,RV.u,22,o,0.1),tv2=leaflet(RV.hR,RV.hL,RV.u,16,o,0.1);
+  seg(RV.hL[0],RV.hL[1],tv1[0],tv1[1],0.75,2.5);seg(RV.hR[0],RV.hR[1],tv2[0],tv2[1],0.75,2.5);
+  if(d.smoke){let sd=11;const r=()=>(sd=sd*16807%2147483647)/2147483647;actx.fillStyle=gr(0.2);for(let i=0;i<220;i++){const a=r()*6.28+now*0.12*(0.4+r()),q=r();const t=0.15+0.75*r();const px=bL[0]+(apL[0]-bL[0])*t,py=bL[1]+(apL[1]-bL[1])*t;actx.fillRect(px+Math.cos(a)*30*k*q*(1-t*0.6),py+Math.sin(a)*10*q,2,2);}}
+  geo={LV,RV,la,ra,M:[(LV.hL[0]+LV.hR[0])/2,(LV.hL[1]+LV.hR[1])/2],apL,o,k,kla};
+}
+function anatPsga(d,c,now){
+  const dil=clamp((S.pre-12)/45+(1-S.contr)*0.25,0,0.5),k=1+dil*0.7,rvd=clamp((1-S.rv)*1.1,0,0.7);
+  const kf=clamp(d.fevg/0.25,0.12,1.7),kla=1+(S.pre-12)/50;
+  actx.fillStyle=gr(0.11);actx.fillRect(0,0,BW,BH);
+  actx.fillStyle=gr(0.26);actx.fillRect(0,0,BW,26);seg(0,10,BW,10,0.4,1);seg(0,19,BW,18,0.34,1);
+  const Y=(y,x)=>y-0.035*x;
+  const yRV=38,rvw=12,hrv=24*(1+rvd*1.4),yS=yRV+rvw+hrv,sept=20,Dd=50*PXMM*k,post=Dd*0.3*kf*c,xA=200;
+  poly([[0,Y(yRV,0)],[BW,Y(yRV,BW)],[BW,Y(yRV+rvw,BW)],[0,Y(yRV+rvw,0)]],0.55);actx.fillStyle=gr(0.015);actx.beginPath();actx.moveTo(0,Y(yRV+rvw,0));actx.lineTo(BW,Y(yRV+rvw,BW));actx.lineTo(BW,Y(yS,BW));actx.lineTo(0,Y(yS,0));actx.fill();
+  poly([[-5,Y(yS,-5)],[xA,Y(yS,xA)],[BW,Y(yS+2,BW)],[BW,Y(yS+11,BW)],[xA+6,Y(yS+12,xA)],[xA-6,Y(yS+sept,xA)],[-5,Y(yS+sept+4,-5)]],0.52);
+  const top=yS+sept+1.5*c,bot=top+Dd-post,pw=19+post*0.35;
+  poly([[-5,Y(bot,-5)+4],[xA+42,Y(bot,xA+42)-6],[xA+48,Y(bot+pw,xA+42)-6],[-5,Y(bot+pw,-5)+4]],0.5);
+  actx.beginPath();actx.moveTo(-5,Y(bot+pw+3,-5)+4);actx.quadraticCurveTo(120,Y(bot+pw+9,120),xA+90,Y(bot+pw-6,xA+90));actx.strokeStyle=gr(0.95);actx.lineWidth=5;actx.stroke();
+  actx.beginPath();actx.moveTo(-5,Y(top,-5));actx.lineTo(xA-8,Y(top,xA-8));actx.quadraticCurveTo(xA+16,(Y(top,xA)+Y(bot,290))/2,xA+34,Y(bot,xA+34)-6);actx.lineTo(-5,Y(bot,-5)+4);actx.closePath();actx.fillStyle=gr(0.015);actx.fill();
+  const aT=Y(yS+11,xA),AR=31*PXMM;
+  actx.fillStyle=gr(0.62);actx.fillRect(xA+4,aT-4,BW,AR+18);
+  actx.fillStyle=gr(0.015);actx.fillRect(xA+6,aT,BW,AR);el(xA+36,aT+AR/2,26,AR/2+6,0.015);
+  const lr=36*kla,lc=[xA+76,aT+AR+9+lr+4];
+  el(lc[0],lc[1],lr+9,lr*0.92+9,0.4);el(lc[0],lc[1],lr,lr*0.92,0.015);
+  poly([[xA-12,Y(top,xA)+6],[xA+8,aT+AR+8],[lc[0]-lr*0.7,lc[1]-lr*0.4],[xA+34,Y(bot,xA+34)-8]],0.015);
+  const dao=[lc[0]-14,Math.max(lc[1]+lr+22,Y(bot+pw,xA+42)+40)];el(dao[0],dao[1],18,16,0.7);el(dao[0],dao[1],13,11,0.02);
+  const o=1-Math.min(1,c*3),mid=(Y(top,xA)+Y(bot,xA))/2;
+  const ah=[xA+8,aT+AR+8],at=[ (xA-40)*o+(xA-18)*(1-o), (Y(top,xA)+12)*o+(mid+8)*(1-o)];
+  seg(ah[0],ah[1],at[0],at[1],0.85,3);
+  const ph=[xA+34,Y(bot,xA+34)-7],pt=[(xA+6)*o+(xA-14)*(1-o),(Y(bot,xA+6)-4)*o+(mid+14)*(1-o)];
+  seg(ph[0],ph[1],pt[0],pt[1],0.8,3);
+  const op=d.avOpen?Math.min(1,d.svN/40+0.35)*Math.min(1,c*2.5):0,vx=xA+10;
+  seg(vx,aT,vx+6+26*op,aT+(AR/2-2)*(1-op)+3*op,0.92,2.5);seg(vx,aT+AR,vx+6+26*op,aT+AR-(AR/2-2)*(1-op)-3*op,0.92,2.5);
+  if(S.imp>0){actx.beginPath();actx.moveTo(BW,aT+AR*0.55);actx.lineTo(vx-4,aT+AR*0.6);actx.quadraticCurveTo(xA-50,top+30,xA-110,bot-22);actx.strokeStyle=gr(0.98);actx.lineWidth=5;actx.stroke();}
+  if(d.smoke){let sd=19;const r=()=>(sd=sd*16807%2147483647)/2147483647;actx.fillStyle=gr(0.2);for(let i=0;i<200;i++){const x=10+r()*(xA-20);actx.fillRect(x+Math.sin(now*0.3+i)*4,Y(top,x)+4+r()*(bot-top-8),2,2);}}
+  geo={yS:Y(yS,100),top:Y(top,100),bot:Y(bot,100),aT,AR,lc,lr,yRV:Y(yRV,60),hrv};
+}
+function anatVci(d,now){
+  actx.fillStyle=gr(0.05);actx.fillRect(0,0,BW,BH);
+  actx.fillStyle=gr(0.26);actx.fillRect(0,0,BW,20);seg(0,9,BW,9,0.38,1);
+  actx.fillStyle=gr(0.34);actx.fillRect(0,20,BW,BH);
+  let sd=5;const r=()=>(sd=sd*16807%2147483647)/2147483647;
+  for(let i=0;i<18;i++){const x=40+r()*300,y=50+r()*170;el(x,y,2+r()*6,1.5+r()*4,0.06,r()*3);el(x,y-5,3,1,0.55);}
+  actx.beginPath();actx.moveTo(40,272);actx.quadraticCurveTo(230,250,BW,214);actx.lineTo(BW,BH);actx.lineTo(0,BH);actx.closePath();actx.fillStyle=gr(0.07);actx.fill();
+  actx.beginPath();actx.moveTo(40,272);actx.quadraticCurveTo(230,250,BW,214);actx.strokeStyle=gr(0.92);actx.lineWidth=6;actx.stroke();
+  const resp=0.5+0.5*Math.sin(2*Math.PI*now/4),dia=d.ivc*PXMM*(1-d.ivcVar/100*resp);
+  const P0=[80,226],P1=[288,176];
+  seg(178,104,262,170,0.6,16);seg(178,104,262,170,0.015,11);
+  el(320,150,46,40,0.42);
+  seg(P0[0],P0[1],P1[0],P1[1],0.75,dia+7);seg(P1[0],P1[1],312,158,0.75,dia+5);
+  el(320,150,40,34,0.015);
+  seg(P0[0],P0[1],P1[0],P1[1],0.015,dia);seg(P1[0],P1[1],312,158,0.015,dia-2);
+  const yI=P0[1]+(P1[1]-P0[1])*((250-P0[0])/(P1[0]-P0[0]));
+  geo={yI,dia};
+}
+function anatLung(d,now){
+  actx.fillStyle=gr(0.07);actx.fillRect(0,0,BW,BH);
+  actx.fillStyle=gr(0.7);actx.fillRect(0,0,BW,6);
+  actx.fillStyle=gr(0.15);actx.fillRect(0,6,BW,30);
+  actx.fillStyle=gr(0.26);actx.fillRect(0,36,BW,48);
+  for(let y=40;y<84;y+=7)seg(0,y+Math.sin(y)*2,BW,y-1,0.4,1.2);
+  const py=92,slide=Math.sin(now*2.2)*3;
+  if(d.blines<3)for(const [y,v] of[[py*2,0.5],[py*3,0.32]])seg(84,y,336,y,v,4);
+  {let sd=29;const r=()=>(sd=sd*16807%2147483647)/2147483647;for(let i=0;i<d.blines;i++){const x=95+(i+0.15+0.7*r())*(230/Math.max(d.blines,1))+slide,w=4+r()*4,v=0.6+0.3*r();actx.beginPath();actx.moveTo(x-w/2,py);actx.lineTo(x+w/2,py);actx.lineTo(x+w/2+3,BH);actx.lineTo(x-w/2-3,BH);actx.closePath();actx.fillStyle=gr(v);actx.fill();}}
+  for(let x=84;x<336;x+=6){const v=0.75+0.25*Math.sin(x*0.7+now*6);seg(x,py,x+6,py,v,4);}
+  for(const rx of[40,380]){el(rx,py-6,46,9,0.95);actx.fillStyle=gr(0);actx.fillRect(rx-46,py-4,92,BH);}
+}
+function shade(kind){
+  const a=actx.getImageData(0,0,BW,BH).data;
+  for(let i=0,j=0;i<fI.length;i++,j+=4)fI[i]=a[j]/255;
+  blurH(fI,fT,kind==="linear"?2:3);blurV(fT,fI,1);
+  const w=0.5+0.5*Math.sin(performance.now()/1000*0.9),o=oImg.data;
+  for(let i=0;i<fI.length;i++){
+    const k=kind==="sector"?sIdx[i]:cIdx[i],j=i*4;
+    if(k<0){o[j]=o[j+1]=o[j+2]=0;o[j+3]=255;continue;}
+    const rr=kind==="sector"?sR[i]:Math.floor(i/BW)/BH;
+    const sp=N1[k]*(1-w)+N2[k]*w;
+    let g=1.2-0.62*rr;let v=(0.035+fI[i]*0.965)*sp*g*0.88;
+    if(rr<0.035)v+=0.3*sp*(0.035-rr)/0.035;
+    if(kind==="sector")v*=sEdge[i];
+    const c=Math.min(255,Math.pow(Math.min(1.5,v),0.82)*212)|0;
+    o[j]=c;o[j+1]=c;o[j+2]=Math.min(255,c+4);o[j+3]=255;
+  }
+  octx.putImageData(oImg,0,0);
+}
+function cfmOverlay(d,c){
+  const g=geo;if(!g.M)return;
+  const inBox=(x,y)=>{const th=Math.atan2(x-APX,y-APY),r=Math.hypot(x-APX,y-APY);return th>-0.06&&th<0.4&&r>120&&r<300;};
+  let sd=((performance.now()/33)|0)*7+1;const r=()=>(sd=sd*16807%2147483647)/2147483647;
+  const gs=()=>{let s=0;for(let i=0;i<3;i++)s+=r();return (s-1.5)/0.5;};
+  const M=g.M,ap=g.apL,ax=ap[0]-M[0],ay=ap[1]-M[1],al=Math.hypot(ax,ay),ux=ax/al,uy=ay/al;
+  const la=g.la,lx=la[0]-M[0],ly=la[1]-M[1],ll=Math.hypot(lx,ly),vx=lx/ll,vy=ly/ll;
+  if(g.o>0.6){
+    for(let i=0;i<1400;i++){const t=Math.abs(gs())*0.45,s=gs()*9*(1+t*1.5);const x=M[0]+ux*t*al*0.9-uy*s,y=M[1]+uy*t*al*0.9+ux*s;if(!inBox(x,y))continue;const q=Math.exp(-s*s/60)*(1-t);octx.fillStyle=q>0.55?"#ffd23a":q>0.3?"#ff6a1a":q>0.12?"#d01818":"#7a0a0e";octx.fillRect(x,y,2,2);}
+  }
+  if(d.im>=2&&c>0.2){
+    const L=(d.im===3?100:60)*c,W=d.im===3?16:10;
+    for(let i=0;i<500;i++){const a=r()*Math.PI,rr=r()*10;const x=M[0]+Math.cos(a)*rr*1.2,y=M[1]-Math.sin(a)*rr*0.9-2;if(!inBox(x,y))continue;octx.fillStyle=rr>7?"#ffd23a":rr>4?"#d01818":"#1f4dff";octx.fillRect(x,y,2,2);}
+    for(let i=0;i<1800;i++){const t=Math.abs(gs())*0.5,s=gs()*W*(0.25+t*2.2);const x=M[0]+vx*t*L*1.6-vy*s,y=M[1]+vy*t*L*1.6+vx*s;if(!inBox(x,y))continue;const p=r();octx.fillStyle=t<0.08?"#ffffff":p<0.3?"#27e0ff":p<0.5?"#1f4dff":p<0.7?"#fff36b":p<0.85?"#5cff8a":"#ffffff";octx.fillRect(x,y,2,2);}
+  }
+}
+function drawEcgStrip(x0,y0,w,h,now){
+  ectx.strokeStyle="#5fe0a6";ectx.lineWidth=1.5;ectx.beginPath();
+  for(let x=0;x<=w;x+=1.5){const t=now-(w-x)/w*3;const y=y0+h-ecgV(t)*h;x?ectx.lineTo(x0+x,y):ectx.moveTo(x0+x,y);}
+  ectx.stroke();ectx.fillStyle="#5fe0a6";ectx.beginPath();ectx.arc(x0+w,y0+h-ecgV(now)*h,2.5,0,7);ectx.fill();
+}
+function chromeText(lines,x,y,align){ectx.font="12px Barlow,sans-serif";ectx.fillStyle="rgba(233,241,243,.8)";ectx.textAlign=align||"left";lines.forEach((l,i)=>ectx.fillText(l,x,y+i*15));ectx.textAlign="left";}
+function lab(t,bx,by,sc,ox,oy){if(!legend)return;ectx.font="600 13px Barlow,sans-serif";ectx.fillStyle="#ffe066";ectx.fillText(t,ox+bx*sc,oy+by*sc);}
+let lastEcho=0,mmLast=0;
+function drawEcho(now){
+  if(!eW||$("echoOn").hidden)return;
+  if(now-lastEcho<1/30)return;lastEcho=now;
+  const d=hemo(S),c=contraction(now);
+  ectx.fillStyle="#000";ectx.fillRect(0,0,eW,eH);
+  const split=view==="vci";
+  const areaH=(split?eH*0.6:eH)-26;
+  if(view==="itv")return drawPW(d,now);
+  if(view==="dti")return drawDTI(d,now);
+  if(view==="4c"){anat4c(d,c,now);shade("sector");if(cfm)cfmOverlay(d,c);}
+  else if(view==="psga"){anatPsga(d,c,now);shade("sector");}
+  else if(view==="vci"){anatVci(d,now);shade("sector");}
+  else{anatLung(d,now);shade("linear");}
+  const sc=Math.min(eW/BW,areaH/BH),ox=(eW-BW*sc)/2,oy=4;
+  ectx.imageSmoothingEnabled=true;ectx.drawImage(oCan,ox,oy,BW*sc,BH*sc);
+  const lin=view==="poumon",depth=lin?6:16;
+  chromeText([lin?"L12-3 · Poumon":"S5-1 · Cardiaque",{"4c":"Apicale 4 cavités","psga":"Parasternale grand axe","vci":"Sous-costale VCI","poumon":"Intercostal antérieur"}[view]],8,16);
+  chromeText([`${lin?28:52} Hz`,`G ${lin?48:56}`,`${depth} cm`],eW-8,16,"right");
+  ectx.strokeStyle="rgba(233,241,243,.6)";ectx.fillStyle="rgba(233,241,243,.7)";ectx.font="11px Barlow,sans-serif";
+  for(let cm=1;cm<=depth;cm++){const y=oy+(lin?cm/depth*BH:APY+cm*10*PXMM)*sc;if(y>oy+BH*sc)break;const xr=ox+BW*sc-4;ectx.beginPath();ectx.moveTo(xr,y);ectx.lineTo(xr-(cm%5?4:9),y);ectx.stroke();if(cm%5===0)ectx.fillText(cm,xr-22,y+4);}
+  if(!lin){ectx.fillStyle="#4fd8ea";ectx.beginPath();ectx.arc(ox+(APX-30)*sc,oy+(APY+6)*sc,3,0,7);ectx.fill();}
+  if(view==="4c"&&cfm){
+    ectx.strokeStyle="rgba(233,241,243,.7)";ectx.lineWidth=1;ectx.beginPath();
+    ectx.arc(ox+APX*sc,oy+APY*sc,300*sc,Math.PI/2-0.4,Math.PI/2+0.06);ectx.arc(ox+APX*sc,oy+APY*sc,120*sc,Math.PI/2+0.06,Math.PI/2-0.4,true);ectx.closePath();ectx.stroke();
+    const gx=8,gy=60,gh=70,gg=ectx.createLinearGradient(0,gy,0,gy+gh);gg.addColorStop(0,"#ffd23a");gg.addColorStop(0.3,"#c2141a");gg.addColorStop(0.5,"#000");gg.addColorStop(0.7,"#1f4dff");gg.addColorStop(1,"#27e0ff");
+    ectx.fillStyle=gg;ectx.fillRect(gx,gy,8,gh);chromeText(["+64","","","","-64 cm/s"],gx+12,gy+8);
+  }
+  if(view==="4c"&&geo.LV){lab("VG",geo.LV.hR[0]+10,(geo.LV.hR[1]+geo.apL[1])/2+20,sc,ox,oy);lab("VD",geo.RV.hL[0]-30,geo.RV.hL[1]-50,sc,ox,oy);lab("OG",geo.la[0]+30,geo.la[1]+10,sc,ox,oy);lab("OD",geo.ra[0]-50,geo.ra[1]+10,sc,ox,oy);}
+  if(view==="psga"&&geo.yS){lab("VD",205,geo.yRV+12+geo.hrv/2+5,sc,ox,oy);lab("VG",130,(geo.top+geo.bot)/2,sc,ox,oy);lab("Ao",292,geo.aT+geo.AR/2+5,sc,ox,oy);lab("OG",geo.lc[0]-6,geo.lc[1]+5,sc,ox,oy);}
+  if(view==="vci"&&geo.yI){lab("VCI",120,geo.yI+5,sc,ox,oy);lab("OD",350,geo.yI-18,sc,ox,oy);lab("Foie",80,90,sc,ox,oy);
+    const mx=ox+250*sc;ectx.setLineDash([3,4]);ectx.strokeStyle="rgba(255,224,102,.8)";ectx.beginPath();ectx.moveTo(mx,oy+110*sc);ectx.lineTo(mx,oy+280*sc);ectx.stroke();ectx.setLineDash([]);
+    const steps=Math.max(1,Math.round((now-mmLast)*60));mmLast=now;
+    const col=octx.getImageData(250,110,1,170).data;
+    mmctx.drawImage(mmCan,-steps,0);
+    for(let s=0;s<steps;s++){for(let y=0;y<170;y++){const v=Math.min(255,col[y*4]*(0.65+0.7*Math.random()))|0;mmctx.fillStyle=`rgb(${v},${v},${v})`;mmctx.fillRect(359-s,y,1,1);}}
+    const my=eH*0.6,mh=eH*0.4-30;ectx.drawImage(mmCan,0,my,eW,mh);
+    ectx.strokeStyle="rgba(147,168,175,.5)";ectx.beginPath();ectx.moveTo(0,my);ectx.lineTo(eW,my);ectx.stroke();
+    chromeText(["TM",`VCI ${d.ivc} mm, variation ${d.ivcVar<10?"< 10":"≈ "+d.ivcVar} %`],8,my+16);
+  }
+  if(lin){lab("Côte",10,80,sc,ox,oy);lab("Ligne pleurale",150,86,sc,ox,oy);if(d.blines>0)lab("Lignes B",150,230,sc,ox,oy);}
+  drawEcgStrip(8,eH-26,eW-16,20,now);
+}
+function drawDTI(d,now){
+  const o=oImg.data,y0=170,vs=9,win=3.6,xs=((now%win)/win)*BW;
+  const vel=t=>{const b=beatAt(t),u=t-b.t,rr=b.rr;let v=0;
+    v+=d.sprime*G(u,0.26,0.045);
+    v-=(d.sprime*0.95)*G(u,0.5,0.035);
+    if(S.rhythm!=="fa"&&rr>0.45)v-=(d.sprime*1.1)*G(u,rr-0.02,0.035);
+    v+=1.5*G(u,0.17,0.012)-1.2*G(u,0.4,0.015);
+    return v;};
+  let sd=(now*997)|0;const r=()=>(sd=sd*16807%2147483647)/2147483647;
+  for(let x=0;x<BW;x++){
+    const gap=x>=xs&&x<xs+10,t=x<xs?now-(xs-x)/BW*win:now-(xs-x+BW)/BW*win,v=vel(t),yv=y0-v*vs;
+    for(let y=0;y<BH;y++){const j=(y*BW+x)*4;let I=0;
+      if(!gap){const dy=Math.abs(y-yv);I=dy<5?(1-dy/5)*(0.7+0.5*r()):0.03*r();if(Math.abs(v)>0.6&&((v>0&&y<y0&&y>yv)||(v<0&&y>y0&&y<yv)))I=Math.max(I,0.18*r());}
+      const c=Math.min(255,I*235)|0;o[j]=c;o[j+1]=c;o[j+2]=c;o[j+3]=255;}
+  }
+  octx.putImageData(oImg,0,0);
+  const sc=Math.min(eW/BW,(eH-30)/BH),ox=(eW-BW*sc)/2,oy=2;
+  ectx.imageSmoothingEnabled=true;ectx.drawImage(oCan,ox,oy,BW*sc,BH*sc);
+  ectx.strokeStyle="rgba(233,241,243,.6)";ectx.lineWidth=1;ectx.beginPath();ectx.moveTo(ox,oy+y0*sc);ectx.lineTo(ox+BW*sc,oy+y0*sc);ectx.stroke();
+  ectx.fillStyle="rgba(233,241,243,.75)";ectx.font="11px Barlow,sans-serif";ectx.textAlign="right";
+  for(let cm=-15;cm<=15;cm+=5){const y=oy+(y0-cm*vs)*sc;ectx.fillText(cm,ox+BW*sc-4,y+4);}
+  ectx.textAlign="left";
+  chromeText(["S5-1 · DTI pulsé","Anneau tricuspide latéral, apicale 4 cavités centrée VD","cm/s"],ox+8,oy+16);
+  let b=null;for(let i=clock.beats.length-2;i>=0;i--){const bb=clock.beats[i];if(bb.t+0.4<now-0.05&&bb.t>now-win+0.3){b=bb;break;}}
+  if(b){const t=b.t+0.26;let x=xs-(now-t)/win*BW;if(x<0)x+=BW;const px=ox+x*sc,py=oy+(y0-d.sprime*vs)*sc;
+    ectx.strokeStyle="#ffe066";ectx.lineWidth=1.5;ectx.beginPath();ectx.moveTo(px-8,py);ectx.lineTo(px+8,py);ectx.moveTo(px,py-8);ectx.lineTo(px,py+8);ectx.stroke();
+    ectx.font="600 13px Barlow,sans-serif";ectx.fillStyle="#ffe066";ectx.fillText("S′",px+10,py-6);}
+  const msg=`S′ ${n1(d.sprime)} cm/s   TAPSE ${d.tapse} mm`;
+  ectx.font="600 14px Barlow,sans-serif";const tw=ectx.measureText(msg).width;
+  ectx.fillStyle="rgba(0,0,0,.7)";ectx.fillRect(ox+BW*sc-tw-46,oy+BH*sc-34,tw+16,24);ectx.fillStyle=d.sprime<9.5?"#ff8a7a":"#ffe066";ectx.fillText(msg,ox+BW*sc-tw-38,oy+BH*sc-17);
+  if(legend){ectx.font="600 13px Barlow,sans-serif";ectx.fillStyle="#ffe066";}
+  drawEcgStrip(8,eH-26,eW-16,20,now);
+}
+function drawPW(d,now){
+  const o=oImg.data,y0=44,vs=200,win=3.6,xs=((now%win)/win)*BW;
+  const impOn=S.imp>0&&d.impEff>0.5,et=0.27,vmax=d.itv/(et*0.637)/100;
+  const vel=t=>{if(impOn)return 0.32+0.1*Math.sin(t*37)+0.05*Math.sin(t*91);const b=beatAt(t),u=t-b.t-0.17;return u>0&&u<et&&d.avOpen?vmax*Math.pow(Math.sin(Math.PI*u/et),0.9):0;};
+  let sd=(now*1000)|0;const r=()=>(sd=sd*16807%2147483647)/2147483647;
+  for(let x=0;x<BW;x++){
+    const gap=x>=xs&&x<xs+10,t=x<xs?now-(xs-x)/BW*win:now-(xs-x+BW)/BW*win,v=vel(t);
+    for(let y=0;y<BH;y++){
+      const j=(y*BW+x)*4;let I=0;
+      if(!gap){
+        if(y>y0){const u=(y-y0)/vs;if(v>0.02&&u<=v){const dd=(v-u)/v;I=(0.12+0.88*Math.exp(-dd*dd/0.025))*(0.45+0.9*r());}else I=0.035*r();
+          if(y-y0<4&&v>0.02)I=Math.max(I,0.35*r());}
+        else I=0.03*r();
+      }
+      const c=Math.min(255,I*230)|0;o[j]=c;o[j+1]=c;o[j+2]=c;o[j+3]=255;
+    }
+  }
+  octx.putImageData(oImg,0,0);
+  const sc=Math.min(eW/BW,(eH-30)/BH),ox=(eW-BW*sc)/2,oy=2;
+  ectx.imageSmoothingEnabled=true;ectx.drawImage(oCan,ox,oy,BW*sc,BH*sc);
+  ectx.strokeStyle="rgba(233,241,243,.6)";ectx.lineWidth=1;ectx.beginPath();ectx.moveTo(ox,oy+y0*sc);ectx.lineTo(ox+BW*sc,oy+y0*sc);ectx.stroke();
+  ectx.fillStyle="rgba(233,241,243,.75)";ectx.font="11px Barlow,sans-serif";ectx.textAlign="right";
+  for(let cm=-100;cm<=20;cm+=20){const y=oy+(y0-cm/100*vs)*sc;if(y>oy+BH*sc-4)continue;ectx.fillText(cm,ox+BW*sc-4,y+4);}
+  ectx.textAlign="left";
+  chromeText(["S5-1 · PW","Chambre de chasse du VG, apicale 5 cavités","Volume d'échantillon 4 mm, angle 0°"],ox+8,oy+16);
+  if(!impOn&&d.avOpen){
+    let b=null;for(let i=clock.beats.length-2;i>=0;i--){const bb=clock.beats[i];if(bb.t+0.17+et<now-0.05&&bb.t>now-win+0.3){b=bb;break;}}
+    if(b){ectx.setLineDash([2,3]);ectx.strokeStyle="#ffe066";ectx.lineWidth=1.5;ectx.beginPath();
+      for(let k=0;k<=30;k++){const t=b.t+0.17+et*k/30,v=vel(t);let x=xs-(now-t)/win*BW;if(x<0)x+=BW;const px=ox+x*sc,py=oy+(y0+v*vs)*sc;k?ectx.lineTo(px,py):ectx.moveTo(px,py);}
+      ectx.stroke();ectx.setLineDash([]);}
+  }
+  const msg=impOn?"Flux continu de l'Impella : ITV non interprétable":!d.avOpen?"Pas d'éjection : valve aortique fermée":`ITV ${n1(d.itv)} cm   Vmax ${Math.round(vmax*100)} cm/s   FC ${d.hr}`;
+  ectx.font="600 14px Barlow,sans-serif";const tw=ectx.measureText(msg).width;
+  ectx.fillStyle="rgba(0,0,0,.7)";ectx.fillRect(ox+BW*sc-tw-46,oy+BH*sc-34,tw+16,24);ectx.fillStyle="#ffe066";ectx.fillText(msg,ox+BW*sc-tw-38,oy+BH*sc-17);
+  drawEcgStrip(8,eH-26,eW-16,20,now);
+}
+
+/* ---- Débriefing ---- */
+function finish(){
+  $("main").hidden=true;$("debrief").hidden=false;
+  renderVitals();
+  const o=outcome(S);
+  $("outT").textContent=o.title;$("outT").dataset.c=o.cls;$("outX").textContent=o.text;
+  const cnt={optimal:0,acceptable:0,discutable:0,deletere:0};decisions.forEach(x=>cnt[x.grade]++);
+  $("tally").innerHTML=Object.keys(cnt).map(k=>`<div class="${GRADES[k][1]}"><b>${cnt[k]}</b><span>${GRADES[k][0]}</span></div>`).join("");
+  $("decs").innerHTML=decisions.map(x=>`<li><div class="dh"><time>${x.h}</time><span>${esc(x.step)}</span><em class="grade ${GRADES[x.grade][1]}">${GRADES[x.grade][0]}</em></div><p class="dl">${esc(x.label)}</p><p class="mut">${esc(x.why)}</p></li>`).join("");
+  drawCharts();
+  window.scrollTo({top:0,behavior:reduce?"auto":"smooth"});
+}
+function drawCharts(){
+  const H=S.hist,tmax=Math.max(24,Math.ceil(S.t));
+  const defs=[["chMap","PAM (mmHg)","map",[30,110],[65],"#ff5a4e"],["chIc","IC total (L/min/m²)","ic",[0,4.5],[2.1],"#4fd8ea"],["chLac","Lactate (mmol/L)","lac",[0,14],[2,4],"#ffc53d"]];
+  for(const [id,title,k,rg,refs,col] of defs){
+    const svg=$(id),W=svg.clientWidth||600,Hh=svg.clientHeight||150,ml=40,mr=12,mt=10,mb=24;
+    const X=t=>ml+(W-ml-mr)*t/tmax,Y=v=>mt+(Hh-mt-mb)*(1-(clamp(v,rg[0],rg[1])-rg[0])/(rg[1]-rg[0]));
+    let s="";
+    for(let h=0;h<=tmax;h+=W<520?6:3){s+=`<line x1="${X(h)}" x2="${X(h)}" y1="${mt}" y2="${Hh-mb}" class="gl"/><text x="${X(h)}" y="${Hh-6}" text-anchor="middle" class="ax">H${h}</text>`;}
+    for(const r of refs)s+=`<line x1="${ml}" x2="${W-mr}" y1="${Y(r)}" y2="${Y(r)}" class="ref"/><text x="${ml-6}" y="${Y(r)+4}" text-anchor="end" class="ax">${String(r).replace(".",",")}</text>`;
+    for(const m of S.marks)s+=`<line x1="${X(m.t)}" x2="${X(m.t)}" y1="${mt}" y2="${Hh-mb}" class="mk"/>`;
+    s+=`<path d="${H.map((p,i)=>`${i?"L":"M"}${X(p.t).toFixed(1)},${Y(p[k]).toFixed(1)}`).join("")}" fill="none" stroke="${col}" stroke-width="2.5"/>`;
+    const lp=H[H.length-1];s+=`<circle cx="${X(lp.t)}" cy="${Y(lp[k])}" r="4" fill="${col}"/>`;
+    svg.innerHTML=s;
+  }
+  $("mkLegend").innerHTML=S.marks.map(m=>`<span><time>${fmtT(m.t)}</time> ${esc(m.label)}</span>`).join("");
+}
+const roC=new ResizeObserver(()=>{if(!$("debrief").hidden)drawCharts();});roC.observe($("debrief"));
+
+/* ---- Événements ---- */
+document.addEventListener("click",e=>{
+  const x=e.target.closest(".exam");if(x)return askExam(x.dataset.x);
+  if(e.target.closest("#cfYes")&&pendingExam)return doExam(pendingExam);
+  if(e.target.closest("#cfNo")){$("confirm").hidden=true;pendingExam=null;return;}
+  const lg=e.target.closest("#lgBtn");if(lg){legend=!legend;lg.setAttribute("aria-pressed",legend);return;}
+  const cf=e.target.closest("#cfmBtn");if(cf){cfm=!cfm;cf.setAttribute("aria-pressed",cfm);return;}
+  const c=e.target.closest(".choice");if(c&&phase==="decide")return choose(c.dataset.c);
+  if(e.target.closest("#next"))return next();
+  const v=e.target.closest(".vtab");if(v){view=v.dataset.v;renderEchoPanel();return;}
+  if(e.target.closest("#restart")||e.target.closest("#again")){clock.beats=[];return start();}
+  const m=e.target.closest(".mode");if(m){mode=m.dataset.m;try{localStorage.setItem("choc-mode",mode)}catch(x){}document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode?"true":"false"));}
+});
+document.querySelectorAll(".mode").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode?"true":"false"));
+
+function loop(ms){const now=ms/1000;tickBeats(now);drawMon(now);drawEcho(now);requestAnimationFrame(loop);}
+start();
+if(reduce){const now=performance.now()/1000;for(let i=0;i<20;i++)tickBeats(now+i*0.6);}
+requestAnimationFrame(loop);
+
+}
+</script>
+</body>
+</html>
