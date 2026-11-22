@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chambre à erreurs</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinique, attentif, un peu ludique : la ronde de sécurité
+   IDEA une chambre de réanimation où l'on entre et où l'on regarde tout
+   PICTURE la chambre dessinée, puis chaque équipement en gros plan avec les points à inspecter
+   COLOUR fond bleu nuit comme les autres simulateurs ; ambre pour l'attention, vert corrigé, rouge fausse alerte
+   TYPE Barlow Condensed pour titres et chiffres, Barlow pour le texte
+   LAYOUT la chambre (ou le gros plan) à gauche, le dossier et les décisions à droite ; empilé sous 900px */
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--red:#ff5a4e;--ok:#5fe0a6}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1360px;margin:0 auto;padding:clamp(14px,2.4vw,30px) max(2.4vw,16px)}
+h1{font:600 clamp(30px,3.6vw,44px)/1.05 "Barlow Condensed",Barlow,sans-serif;margin:0;text-wrap:balance}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 10px}
+h3{font:600 18px/1.25 Barlow,sans-serif;margin:0 0 6px}
+p{margin:0 0 10px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.top{margin-bottom:14px}.top p{color:var(--mut);margin:4px 0 0}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.mut{color:var(--mut)}.big{font:600 22px/1.3 "Barlow Condensed",sans-serif}
+#view{background:#04090b;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+#view svg{display:block;width:100%;height:auto}
+.intro{padding:40px 28px;min-height:300px}
+.hint{color:var(--mut);font-size:14px;margin:0;padding:8px 14px;border-top:1px solid var(--line)}
+.crumb{display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.btn{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.btn:hover{border-color:#3b5862}
+.btn.ok{border-color:#2f6b52}.btn.ko{border-color:#7a5d14;color:#ffe08a}
+.go{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;border:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.list{display:grid;gap:8px}
+.pre{text-align:left;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);min-height:56px}
+.pre:hover{border-color:#3b5862}.pre b{display:block}.pre span{font-size:14px;color:var(--mut)}
+/* zones de la chambre */
+.rz rect:first-child{fill:transparent;stroke:transparent;stroke-width:3}
+.rz{cursor:pointer}
+.rz:hover rect:first-child,.rz:focus rect:first-child{stroke:#ffe066;fill:rgba(255,224,102,.08)}
+.rz .tag rect{fill:rgba(4,9,11,.82);stroke:#ffe066;stroke-width:1}
+.rz .tag text{fill:#ffe066;font:600 14px Barlow,sans-serif}
+.rz .tag{opacity:.0;transition:opacity .15s}
+.rz:hover .tag,.rz:focus .tag{opacity:1}
+@media(hover:none){.rz .tag{opacity:.9}}
+/* points à inspecter */
+.hs{cursor:pointer}
+.hs rect{fill:rgba(255,224,102,.04);stroke:#ffe066;stroke-width:2;stroke-dasharray:6 5}
+.hs circle{fill:#ffe066}.hs text{fill:#0b1215}
+.hs:hover rect,.hs:focus rect,.hs.sel rect{fill:rgba(255,224,102,.12);stroke-dasharray:none;stroke-width:3}
+.hs.conf rect{stroke:#93a8af}.hs.conf circle{fill:#93a8af}
+.hs.done rect{stroke:var(--ok)}.hs.done circle{fill:var(--ok)}
+.hs.flag rect{stroke:var(--amb)}.hs.flag circle{fill:var(--amb)}
+.hs.fp rect{stroke:var(--red)}.hs.fp circle{fill:var(--red)}
+/* panneau */
+.pt p{color:#c9d6da}
+.kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.kpi div{background:var(--panel2);border-radius:10px;padding:6px 8px}
+.kpi b{display:block;font:600 24px/1.1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.kpi small{color:var(--mut);font-size:12px;line-height:1.2;display:block}
+.card2{background:#0d171b;border:1px solid #2c4650;border-radius:12px;padding:12px 14px;margin-top:12px}
+.eyebrow{font:600 12px Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--amb);margin:0 0 4px}
+.fb{border-radius:10px;padding:10px 12px;font-size:15px}
+.fb.good{background:#123a2b}.fb.bad{background:#3a1714}.fb.mid{background:#3a2c08}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;min-height:46px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.opt:hover{border-color:var(--ink)}
+.zl{display:grid;gap:6px}
+.zb{display:flex;justify-content:space-between;gap:10px;text-align:left;min-height:42px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.zb.on{border-color:var(--ink)}.zb i{font-style:normal;color:var(--mut);font-variant-numeric:tabular-nums}
+.grade{display:inline-block;font:600 13px Barlow,sans-serif;padding:2px 9px;border-radius:6px;margin-right:8px}
+.g-ok{color:#06251a;background:var(--ok)}.g-mid{color:#2a1d00;background:var(--amb)}.g-bad{color:#fff;background:#c9362c}
+.deb{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.deb p{margin:0 0 6px}
+footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.kpi{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.rz .tag{transition:none}}
+</style>
+</head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div class="wrap">
+  <header class="top">
+    <h1>Chambre à erreurs</h1>
+    <p>Entrez dans la chambre, inspectez chaque équipement, signalez les erreurs et corrigez-les. Pour interne de DES de médecine intensive-réanimation.</p>
+  </header>
+  <div class="grid">
+    <div id="view"></div>
+    <aside class="card" id="panel"></aside>
+  </div>
+  <footer><strong>Outil pédagogique.</strong> Situations fictives. Les valeurs cibles citées (volume courant, pression du ballonnet, tête de lit, aspiration) sont des repères usuels ; les procédures de chaque service priment.</footer>
+</div>
+<script>
+{
+/* ===== Catalogue des points à inspecter ===== */
+/* e:true = peut être une erreur selon le scénario ; sinon point conforme (leurre) */
+const ZONES=[
+ {k:"mur",n:"Prises murales, BAVU, aspiration"},
+ {k:"resp",n:"Respirateur"},
+ {k:"scope",n:"Scope"},
+ {k:"pse",n:"Pousse-seringues"},
+ {k:"tete",n:"Patient : tête et intubation"},
+ {k:"vvc",n:"Voie veineuse centrale"},
+ {k:"lit",n:"Lit"},
+ {k:"urine",n:"Sonde urinaire"},
+ {k:"drain",n:"Drain thoracique"},
+ {k:"porte",n:"Entrée de la chambre"}
+];
+const PTS=[
+ // --- mur
+ {id:"bavu_o2",z:"mur",e:true,n:"Débitmètre O₂ du BAVU",
+  ok:"Débitmètre ouvert à 15 L/min, ballon réserve gonflé, BAVU prêt.",
+  err:"Débitmètre O₂ fermé (0 L/min) : le BAVU est branché mais l'oxygène n'arrive pas, le ballon réserve est plat.",
+  why:"En cas d'extubation accidentelle, de panne du respirateur ou de débranchement, la ventilation au BAVU se ferait à l'air ambiant : désaturation rapide chez un patient sous FiO₂ élevée.",
+  fix:["Ouvrir le débitmètre à 15 L/min et vérifier que le ballon réserve se remplit","Ouvrir à 2 L/min pour éviter de gaspiller l'oxygène","Le laisser fermé et l'ouvrir au moment où l'on en aura besoin"]},
+ {id:"asp",z:"mur",e:true,n:"Aspiration murale",
+  ok:"Vide ouvert (dépression d'environ −150 à −200 mmHg), bocal branché, tuyau et sonde d'aspiration prêts.",
+  err:"Régulateur de vide fermé, tuyau débranché du bocal.",
+  why:"Chez un patient intubé, une aspiration immédiatement disponible est indispensable : encombrement, vomissement, extubation accidentelle, réintubation.",
+  fix:["Rebrancher le tuyau, ouvrir le vide (environ −150 à −200 mmHg) et tester","Laisser fermé pour limiter le bruit, on l'ouvrira au besoin","Régler la dépression au maximum en permanence"]},
+ {id:"masque",z:"mur",n:"Masque facial",ok:"Masque de taille adulte adaptée, monté sur le BAVU, avec un filtre."},
+ // --- respirateur
+ {id:"vt",z:"resp",e:true,n:"Volume courant",
+  ok:c=>`VAC, Vt ${Math.round(c.pbw*6/10)*10} mL, soit ${(Math.round(c.pbw*6/10)*10/c.pbw).toFixed(1).replace(".",",")} mL/kg de poids prédit (${Math.round(c.pbw)} kg).`,
+  err:c=>`VAC, Vt 640 mL, soit ${(640/c.pbw).toFixed(1).replace(".",",")} mL/kg de poids prédit (${Math.round(c.pbw)} kg). Le Vt a été réglé sur le poids réel (${c.kg} kg).`,
+  why:"Au-delà de 8 mL/kg de poids prédit, le risque de lésions pulmonaires induites par la ventilation augmente. Le poids prédit dépend de la taille et du sexe, pas du poids réel. Cible : 6 mL/kg dans le SDRA (ARDSNet), 6 à 8 mL/kg chez les autres patients.",
+  fix:["Ramener le Vt à 6 mL/kg de poids prédit et compenser par la fréquence","Garder ce Vt : il correspond à 7 mL/kg du poids réel","Baisser la fréquence respiratoire pour limiter le volume minute"]},
+ {id:"clos",z:"resp",e:true,n:"Aspiration trachéale",
+  ok:"Système d'aspiration clos monté entre la pièce en Y et la sonde d'intubation.",
+  err:c=>`Pas de système d'aspiration clos : on aspire en débranchant le circuit, alors que la PEP est à ${c.pep} cmH₂O.`,
+  why:"Chaque débranchement fait perdre la PEP : dérecrutement alvéolaire et désaturation, parfois longue à corriger. Le système clos maintient la pression pendant l'aspiration.",
+  fix:["Mettre en place un système d'aspiration clos","Débrancher le plus vite possible lors des aspirations","Monter la FiO₂ à 100 % en permanence pour compenser"]},
+ {id:"humid",z:"resp",e:true,n:"Humidification",
+  ok:"Filtre échangeur de chaleur et d'humidité seul, daté du jour.",
+  err:"Filtre échangeur de chaleur et d'humidité monté en plus d'un humidificateur chauffant.",
+  why:"Le filtre se gorge d'eau : sa résistance augmente brutalement, avec un risque d'obstruction du circuit. On utilise l'un ou l'autre, jamais les deux.",
+  fix:["Garder une seule méthode : retirer le filtre ou arrêter l'humidificateur chauffant","Garder les deux pour mieux humidifier les sécrétions","Changer le filtre toutes les heures"]},
+ {id:"alarm",z:"resp",e:true,n:"Alarmes du respirateur",
+  ok:"Alarmes actives. Pression haute à 40 cmH₂O, volume minute bas et haut réglés.",
+  err:"Alarmes en pause, limite de pression haute à 80 cmH₂O.",
+  why:"Une alarme inopérante ou une limite trop haute ne prévient ni d'une obstruction, ni d'un débranchement, ni d'un barotraumatisme.",
+  fix:["Réactiver les alarmes et régler la pression haute à environ 10 cmH₂O au-dessus de la pression de crête","Les laisser en pause tant que le patient est sédaté","Monter toutes les limites au maximum pour éviter les alarmes intempestives"]},
+ {id:"fio2",z:"resp",n:"FiO₂ et PEP",ok:c=>`FiO₂ ${c.fio2} %, PEP ${c.pep} cmH₂O, SpO₂ ${c.spo2} % : réglages cohérents avec la prescription.`},
+ // --- scope
+ {id:"scope_al",z:"scope",e:true,n:"Alarmes du scope",
+  ok:"Alarmes actives, limites adaptées : SpO₂ basse 90 %, FC 50 à 130, PAM basse 65 mmHg.",
+  err:"Alarmes suspendues, et limite basse de SpO₂ réglée à 75 %.",
+  why:"Une désaturation ou une hypotension passerait inaperçue, notamment quand l'infirmière est dans une autre chambre.",
+  fix:["Réactiver les alarmes et adapter les limites au patient","Les laisser suspendues : la centrale de surveillance suffit","Baisser le volume des alarmes au minimum"]},
+ {id:"pa",z:"scope",n:"Pression artérielle invasive",ok:"Tête de pression au niveau de l'oreillette droite, zéro fait ce matin, courbe de bonne qualité."},
+ {id:"spo2",z:"scope",n:"SpO₂",ok:"Capteur bien placé, courbe de pléthysmographie de bonne qualité."},
+ // --- pousse-seringues
+ {id:"label",z:"pse",e:true,n:"Étiquetage des seringues",
+  ok:"Toutes les seringues sont étiquetées : molécule, concentration, date et heure.",
+  err:"Une seringue sans étiquette tourne à 3 mL/h.",
+  why:"Produit inconnu : erreur médicamenteuse possible, impossible de savoir ce qui est administré ni de faire le relais.",
+  fix:["Arrêter la seringue ; faute de certitude sur son contenu, la jeter et en reconstituer une étiquetée","Deviner le contenu d'après le débit et la position dans la rampe","Écrire l'étiquette de mémoire"]},
+ {id:"relais",z:"pse",e:true,n:"Noradrénaline",
+  ok:"Noradrénaline à 6 mL/h, 22 mL restants ; seringue de relais préparée et étiquetée.",
+  err:"Noradrénaline à 6 mL/h : plus que 1,5 mL (fin dans 15 minutes) et aucune seringue de relais préparée.",
+  why:"Une interruption de quelques minutes de noradrénaline peut provoquer un collapsus brutal. Le relais se prépare à l'avance, selon la procédure du service.",
+  fix:["Préparer tout de suite la seringue de relais et faire le relais selon la procédure du service","Augmenter le débit pour finir la seringue plus vite","Attendre l'alarme de fin de seringue pour la préparer"]},
+ {id:"sedation",z:"pse",n:"Sédation",ok:"Sufentanil et propofol étiquetés, débits conformes à la prescription."},
+ {id:"insuline",z:"pse",n:"Insuline",ok:"Insuline à 2 UI/h, glycémie capillaire à 1,6 g/L il y a une heure."},
+ // --- tête
+ {id:"hob",z:"tete",e:true,n:"Tête de lit",
+  ok:"Tête du lit relevée à 30°.",
+  err:"Patient à plat : tête du lit à 0°.",
+  why:"Le décubitus strict favorise les inhalations et les pneumopathies acquises sous ventilation. Tête à 30–45° sauf contre-indication.",
+  fix:["Relever la tête du lit à 30–45°","Mettre le patient en léger Trendelenburg","Laisser à plat : le patient est sédaté"]},
+ {id:"cuff",z:"tete",e:true,n:"Pression du ballonnet",
+  ok:"Manomètre : 26 cmH₂O.",
+  err:"Manomètre : 45 cmH₂O.",
+  why:"Au-delà de 30 cmH₂O, la muqueuse trachéale devient ischémique (sténose, fistule). En dessous de 20, les micro-inhalations augmentent. Cible : 20 à 30 cmH₂O.",
+  fix:["Ajuster la pression à environ 25 cmH₂O avec le manomètre","Dégonfler complètement le ballonnet pour protéger la trachée","Laisser ainsi : plus le ballonnet est gonflé, mieux il protège"]},
+ {id:"bracelet",z:"tete",e:true,n:"Bracelet d'identification",
+  ok:"Bracelet au poignet, identité vérifiée.",
+  err:"Pas de bracelet d'identification.",
+  why:"Sans identification fiable, risque d'erreur de patient (transfusion, examens, médicaments), d'autant que le patient ne peut pas décliner son identité.",
+  fix:["Poser un bracelet après vérification de l'identité","Écrire le nom sur le drap","Se fier au numéro de la chambre"]},
+ {id:"sonde",z:"tete",n:"Sonde d'intubation",ok:"Sonde 7,5 fixée, repère à 22 cm aux arcades dentaires, conforme à la radiographie du matin."},
+ // --- VVC
+ {id:"cap",z:"vvc",e:true,n:"Lumières du cathéter",
+  ok:"Les trois lumières sont reliées à une ligne ou fermées par une valve.",
+  err:"Une lumière est ouverte, sans bouchon ni valve.",
+  why:"Risque d'embolie gazeuse (surtout patient assis ou en inspiration) et porte d'entrée infectieuse.",
+  fix:["Clamper la lumière et poser un bouchon stérile ou une valve après désinfection","La couvrir avec une compresse","La laisser ouverte pour pouvoir prélever rapidement"]},
+ {id:"nad_ligne",z:"vvc",e:true,n:"Ligne de noradrénaline",
+  ok:"Noradrénaline seule sur sa lumière dédiée.",
+  err:"Un antibiotique est branché en Y sur la ligne de noradrénaline, en amont du cathéter.",
+  why:"Le passage de l'antibiotique pousse un bolus de noradrénaline contenu dans la ligne (pic hypertensif), puis rend le débit irrégulier.",
+  fix:["Dédier une lumière à la noradrénaline et passer l'antibiotique sur une autre voie","Passer l'antibiotique plus lentement sur la même ligne","Arrêter la noradrénaline le temps de l'antibiotique"]},
+ {id:"pansement",z:"vvc",e:true,n:"Pansement",
+  ok:"Pansement transparent occlusif, propre, daté de J3.",
+  err:"Pansement décollé sur un bord, souillé, daté de J9.",
+  why:"Un pansement non occlusif ou souillé augmente le risque d'infection liée au cathéter. Il se refait dès qu'il est décollé ou souillé.",
+  fix:["Refaire le pansement de façon stérile et le dater","Renforcer le bord décollé avec du sparadrap","Attendre la date de réfection prévue"]},
+ // --- lit
+ {id:"barriere",z:"lit",e:true,n:"Barrières",
+  ok:"Barrières relevées des deux côtés.",
+  err:"Barrière abaissée côté couloir, personne au lit du patient.",
+  why:"Risque de chute, notamment au réveil, lors d'une agitation ou d'une fenêtre de sédation.",
+  fix:["Remonter la barrière","Attacher le patient","Laisser abaissée mais monter le lit au maximum"]},
+ {id:"freins",z:"lit",e:true,n:"Freins",
+  ok:"Freins serrés.",
+  err:"Freins non serrés : le lit roule.",
+  why:"Le lit peut bouger lors d'un soin ou d'une mobilisation : chute, arrachement de la sonde d'intubation ou des cathéters.",
+  fix:["Serrer les freins","Caler les roues avec une alèse","Pousser le lit contre le mur"]},
+ {id:"matelas",z:"lit",n:"Matelas",ok:"Matelas à air en fonctionnement, sans alarme."},
+ // --- urines
+ {id:"poche",z:"urine",e:true,n:"Poche à urines",
+  ok:"Poche suspendue au cadre du lit, sous le niveau de la vessie, sans contact avec le sol.",
+  err:"Poche posée au sol.",
+  why:"Le contact avec le sol contamine le robinet de vidange. Placée au-dessus de la vessie, elle favoriserait le reflux. Risque d'infection urinaire sur sonde.",
+  fix:["Suspendre la poche au cadre du lit, sous le niveau de la vessie, sans contact avec le sol","Poser la poche sur le lit pour mieux surveiller la diurèse","Clamper la sonde le temps de trouver un support"]},
+ {id:"diurese",z:"urine",n:"Diurèse",ok:"Urines claires, diurèse horaire notée sur la feuille de surveillance."},
+ // --- drain
+ {id:"drain",z:"drain",e:true,n:"Drain thoracique",
+  ok:"Drain non clampé, aspiration à −20 cmH₂O, bocal sous le niveau du thorax, le niveau d'eau oscille avec la respiration.",
+  err:"Drain clampé, alors que les transmissions signalent un bullage ce matin.",
+  why:"Clamper un drain qui bulle (fuite d'air persistante) expose au pneumothorax compressif, d'autant plus sous ventilation en pression positive.",
+  fix:["Déclamper le drain, puis vérifier le bullage et l'oscillation","Le laisser clampé jusqu'à la prochaine radiographie","Traire énergiquement le drain pour le désobstruer"]},
+ {id:"bocal",z:"drain",n:"Position du bocal",ok:"Bocal posé au sol, sous le niveau du thorax, tuyau sans boucle."},
+ // --- porte
+ {id:"iso",z:"porte",e:true,n:"Précautions complémentaires",
+  ok:c=>c.bmr?"Affiche « précautions contact » sur la porte, tabliers et gants à disposition.":"Pas de précautions complémentaires prescrites pour ce patient.",
+  err:"Patient porteur d'une bactérie multirésistante, mais aucune affiche ni matériel de précautions contact à l'entrée.",
+  why:"Sans signalement, les intervenants n'appliquent pas les précautions contact : transmission croisée de la bactérie multirésistante aux autres patients.",
+  fix:["Afficher les précautions contact et mettre tabliers et gants à disposition","Le noter seulement dans le dossier","Isoler le patient en chambre à pression négative"]},
+ {id:"sha",z:"porte",e:true,n:"Solution hydroalcoolique",
+  ok:"Distributeur plein à l'entrée de la chambre.",
+  err:"Flacon de solution hydroalcoolique vide.",
+  why:"L'hygiène des mains est la première mesure contre la transmission croisée ; un distributeur vide la rend impossible au point de soin.",
+  fix:["Remplacer le flacon","Se laver les mains seulement en sortant du service","Utiliser des gants à la place"]},
+ {id:"collecteur",z:"porte",e:true,n:"Collecteur à aiguilles",
+  ok:"Collecteur sous le trait de remplissage, fermeture provisoire en place.",
+  err:"Collecteur rempli au-dessus du trait, des aiguilles dépassent.",
+  why:"Risque d'accident d'exposition au sang pour les soignants.",
+  fix:["Fermer définitivement le collecteur et le remplacer","Tasser le contenu pour gagner de la place","Ajouter les aiguilles par-dessus avec précaution"]},
+ {id:"tablier",z:"porte",n:"Équipements de protection",ok:"Gants, tabliers et masques disponibles sur le chariot."}
+];
+const P=Object.fromEntries(PTS.map(p=>[p.id,p]));
+const pbwOf=(sex,h)=>(sex==="H"?50:45.5)+0.91*(h-152.4);
+
+const SCEN=[
+ {k:"sdra",t:"SDRA sévère",sub:"Lit 12 · pneumopathie, curarisé",
+  ctx:{sex:"H",age:58,h:175,kg:95,pep:14,fio2:60,spo2:93,bmr:false,drain:false},
+  txt:"Homme de 58 ans, 175 cm, 95 kg. SDRA sur pneumopathie à pneumocoque, intubé depuis 24 heures, curarisé. Noradrénaline à faible dose.",
+  err:["vt","clos","bavu_o2","hob","cuff","cap","scope_al"]},
+ {k:"choc",t:"Choc septique",sub:"Lit 7 · péritonite opérée",
+  ctx:{sex:"F",age:67,h:162,kg:70,pep:6,fio2:40,spo2:96,bmr:false,drain:false},
+  txt:"Femme de 67 ans, 162 cm, 70 kg. Péritonite opérée cette nuit, choc septique sous noradrénaline, ventilée, sédatée. L'infirmière vient de partir en pause.",
+  err:["relais","nad_ligne","label","poche","pansement","barriere","freins"]},
+ {k:"bmr",t:"BMR et pneumothorax",sub:"Lit 3 · patient drainé",
+  ctx:{sex:"H",age:72,h:170,kg:68,pep:8,fio2:45,spo2:95,bmr:true,drain:true},
+  txt:"Homme de 72 ans, 170 cm, 68 kg. Pneumopathie à entérobactérie productrice de BLSE, pneumothorax droit drainé hier, ventilé. Admis cette nuit d'un autre hôpital.",
+  err:["iso","sha","collecteur","drain","humid","bracelet","asp","alarm"]},
+ {k:"rand",t:"Ronde aléatoire",sub:"Six erreurs tirées au hasard",ctx:null,txt:"",err:null}
+];
+
+/* ===== Dessins : chambre et gros plans ===== */
+const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" fill="${o.c||"#e9f1f3"}" font-size="${o.s||16}" font-weight="${o.w||500}" text-anchor="${o.a||"start"}" font-family="${o.f||"Barlow,sans-serif"}">${s}</text>`;
+const R=(x,y,w,h,f,o={})=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.r??6}" fill="${f}"${o.st?` stroke="${o.st}" stroke-width="${o.sw||2}"`:""}${o.op?` opacity="${o.op}"`:""}/>`;
+const SKIN="#d9a98c",SHEET="#9fb6c4",METAL="#8a9aa3",DARK="#0d171b";
+
+/* ---------- la chambre ---------- */
+function drawRoom(){
+  const c=G.ctx;let s=`<svg viewBox="0 0 1200 680" role="img" aria-label="Chambre de réanimation">`;
+  s+=R(0,0,1200,520,"#26343d",{r:0})+R(0,520,1200,160,"#1b252b",{r:0})+R(0,512,1200,10,"#33454f",{r:0});
+  // fenêtre
+  s+=R(470,50,300,170,"#3d5a6b",{r:4,st:"#506a78",sw:6})+`<line x1="620" y1="50" x2="620" y2="220" stroke="#506a78" stroke-width="5"/>`+R(480,60,130,150,"#6f93a6",{r:2,op:.35})+R(630,60,130,150,"#6f93a6",{r:2,op:.35});
+  // rail mural et prises
+  s+=R(30,170,200,150,"#3a4b55",{st:"#4d6370"});
+  s+=`<circle cx="70" cy="205" r="12" fill="#f4f7f8"/><circle cx="110" cy="205" r="12" fill="#222"/><circle cx="150" cy="205" r="12" fill="#ffd23f"/>`;
+  s+=T(60,240,"O₂",{s:13,c:"#cfd8dc"})+T(98,240,"Air",{s:13,c:"#cfd8dc"})+T(140,240,"Vide",{s:13,c:"#cfd8dc"});
+  // BAVU
+  const bavuOn=!E("bavu_o2");
+  s+=`<path d="M70 217 Q60 260 80 285" fill="none" stroke="#9fd3ff" stroke-width="3"/>`;
+  s+=`<ellipse cx="85" cy="300" rx="16" ry="${bavuOn?16:6}" fill="#56a36c" opacity=".9"/><ellipse cx="115" cy="300" rx="22" ry="12" fill="#e7b04a"/>`;
+  // aspiration
+  s+=R(150,250,40,60,"#cfe8f2",{op:.7,st:"#9fb6c4"})+`<path d="M170 250 L${E("asp")?"185 228":"150 217"}" stroke="#cfd8dc" stroke-width="3"/>`;
+  // scope
+  s+=`<line x1="315" y1="0" x2="315" y2="60" stroke="${METAL}" stroke-width="6"/>`+R(235,55,180,115,DARK,{st:"#4d6370",sw:4});
+  s+=`<path d="M245 85 l20 0 l5 -14 l6 26 l5 -12 l40 0 l5 -14 l6 26 l5 -12 l40 0" fill="none" stroke="#5fe0a6" stroke-width="2"/>`;
+  s+=`<path d="M245 120 q15 -18 30 0 q15 -18 30 0 q15 -18 30 0 q15 -18 30 0" fill="none" stroke="#ff5a4e" stroke-width="2"/>`;
+  s+=T(400,152,E("scope_al")?"⨯":"",{s:20,c:"#ffc53d",a:"end",w:700});
+  // respirateur
+  s+=R(40,340,165,250,"#c9d3d8",{r:10})+R(55,355,135,90,DARK,{st:"#556"})+`<path d="M62 410 l15 -30 l20 0 l12 30 l20 0" fill="none" stroke="#ffc53d" stroke-width="2"/>`;
+  s+=R(60,460,125,110,"#b5c0c6",{r:6})+`<circle cx="70" cy="600" r="12" fill="#333"/><circle cx="175" cy="600" r="12" fill="#333"/>`;
+  s+=`<path d="M190 380 Q250 360 300 ${E("hob")?405:372}" fill="none" stroke="#cfe3ec" stroke-width="7" stroke-linecap="round"/>`;
+  if(E("humid"))s+=R(190,470,40,50,"#cfe8f2",{op:.8,st:"#9fb6c4"});
+  // lit
+  const flat=E("hob");
+  s+=R(270,470,620,22,METAL,{r:4})+`<line x1="300" y1="492" x2="300" y2="600" stroke="${METAL}" stroke-width="8"/><line x1="860" y1="492" x2="860" y2="600" stroke="${METAL}" stroke-width="8"/>`;
+  s+=`<circle cx="300" cy="612" r="14" fill="#333"/><circle cx="860" cy="612" r="14" fill="#333"/>`;
+  if(!E("freins"))s+=R(288,620,24,8,"#5fe0a6",{r:2})+R(848,620,24,8,"#5fe0a6",{r:2});
+  // matelas (partie tête inclinée)
+  const ang=flat?0:-30;
+  s+=`<g transform="rotate(${ang} 440 450)">${R(270,430,170,40,"#e9eef0",{r:10})}<ellipse cx="315" cy="412" rx="34" ry="28" fill="${SKIN}"/>${R(300,438,140,20,SHEET,{r:6})}</g>`;
+  s+=R(440,430,450,40,"#e9eef0",{r:10})+R(430,418,440,36,SHEET,{r:14});
+  // sonde d'intubation
+  s+=`<g transform="rotate(${ang} 440 450)"><path d="M300 412 L270 400" stroke="#f4f7f8" stroke-width="4"/></g>`;
+  // barrière
+  s+=E("barriere")?R(470,500,300,14,"#c9d3d8",{r:4,st:"#8a9aa3"}):R(470,395,300,16,"#c9d3d8",{r:4,st:"#8a9aa3"})+`<line x1="500" y1="411" x2="500" y2="470" stroke="${METAL}" stroke-width="5"/><line x1="740" y1="411" x2="740" y2="470" stroke="${METAL}" stroke-width="5"/>`;
+  // pied à perfusion et seringues
+  s+=`<line x1="935" y1="70" x2="935" y2="610" stroke="${METAL}" stroke-width="6"/><line x1="900" y1="610" x2="970" y2="610" stroke="${METAL}" stroke-width="6"/>`;
+  s+=R(905,90,26,50,"#e8f4fa",{op:.85})+R(940,95,24,44,"#e8f4fa",{op:.85});
+  for(let i=0;i<4;i++)s+=R(885,190+i*42,100,36,"#d5dde1",{r:5})+R(893,198+i*42,52,20,DARK,{r:2})+`<rect x="950" y="${199+i*42}" width="28" height="18" rx="3" fill="${i===0&&E("relais")?"#ff5a4e":"#ffffff"}" opacity=".85"/>`;
+  s+=`<path d="M885 220 Q700 300 360 ${flat?405:378}" fill="none" stroke="#cfe3ec" stroke-width="2" opacity=".7"/>`;
+  // poche à urines
+  s+=E("poche")?R(700,600,60,50,"#e8d98a",{r:10,op:.85})+`<path d="M730 600 Q720 520 660 470" fill="none" stroke="#e8d98a" stroke-width="3"/>`
+    :R(700,480,55,45,"#e8d98a",{r:10,op:.85})+`<path d="M727 480 Q720 470 660 460" fill="none" stroke="#e8d98a" stroke-width="3"/>`;
+  // drain
+  if(c.drain)s+=R(560,560,80,80,"#cfe8f2",{op:.8,st:"#9fb6c4"})+`<path d="M600 560 Q600 490 560 445" fill="none" stroke="#cfe3ec" stroke-width="3"/>`+(E("drain")?`<rect x="585" y="520" width="30" height="10" fill="#4a90e2"/>`:"");
+  // porte, SHA, collecteur
+  s+=R(1060,110,125,410,"#5a4636",{r:4,st:"#3d2f24"})+`<circle cx="1080" cy="320" r="6" fill="#d9c08a"/>`;
+  if(c.bmr&&!E("iso"))s+=R(1085,150,80,90,"#ffd23f",{r:4})+T(1125,185,"PRÉCAUTIONS",{s:11,c:"#3a2c08",a:"middle",w:700})+T(1125,205,"CONTACT",{s:13,c:"#3a2c08",a:"middle",w:700});
+  s+=R(1015,250,32,60,"#e8f4fa",{r:4,st:"#9fb6c4"})+R(1019,270,24,36,E("sha")?"#26343d":"#9fd3ff",{r:3,op:.7});
+  s+=R(985,430,70,90,"#7c8b93",{r:4})+R(995,400,50,32,"#ffd23f",{r:3})+(E("collecteur")?`<path d="M1005 400 l-6 -16 M1018 400 l3 -18 M1032 400 l8 -14" stroke="#cfd8dc" stroke-width="2"/>`:"");
+  s+=`</svg>`;
+  return s;
+}
+/* zones cliquables de la chambre : x,y,w,h */
+const ROOMZ={mur:[25,165,215,165],resp:[35,335,175,275],scope:[230,50,190,125],pse:[875,80,120,330],tete:[255,360,200,110],vvc:[330,410,110,45],lit:[455,385,420,250],urine:[690,470,90,190],drain:[550,550,100,100],porte:[980,100,215,430]};
+
+/* ---------- gros plans ---------- */
+function closeup(z){
+  const c=G.ctx;let s=`<svg viewBox="0 0 900 560" role="img" aria-label="${ZONES.find(x=>x.k===z).n}"><rect width="900" height="560" fill="#1d2930"/>`;
+  const H={};
+  if(z==="mur"){
+    s+=R(60,40,780,140,"#3a4b55",{st:"#4d6370"});
+    [["O₂","#f4f7f8",160],["Air","#222",320],["Vide","#ffd23f",620]].forEach(([n,cl,x])=>{s+=`<circle cx="${x}" cy="100" r="26" fill="${cl}" stroke="#111" stroke-width="2"/>`+T(x,160,n,{a:"middle",c:"#cfd8dc"});});
+    // débitmètre
+    const on=!E("bavu_o2");
+    s+=R(140,140,40,130,"#e8f4fa",{op:.9,st:"#9fb6c4"});for(let i=0;i<=15;i+=5)s+=`<line x1="142" y1="${262-i*7.5}" x2="152" y2="${262-i*7.5}" stroke="#334"/>`+T(185,266-i*7.5,i,{s:12,c:"#9fb6c4"});
+    s+=`<circle cx="160" cy="${262-(on?15:0)*7.5}" r="8" fill="#e74c3c"/>`;
+    s+=`<path d="M160 270 Q150 330 210 350" fill="none" stroke="#9fd3ff" stroke-width="5"/>`;
+    s+=`<ellipse cx="250" cy="380" rx="${on?50:46}" ry="${on?50:14}" fill="#56a36c" opacity=".9"/><ellipse cx="350" cy="380" rx="70" ry="38" fill="#e7b04a"/><path d="M420 370 L470 370" stroke="#cfd8dc" stroke-width="10"/>`;
+    s+=`<path d="M470 350 Q520 330 540 370 Q520 420 470 400 Z" fill="#cfe8f2" opacity=".8"/>`;
+    H.bavu_o2=[120,130,200,310];H.masque=[460,320,100,110];
+    // aspiration
+    s+=R(600,190,60,60,"#e8f4fa",{op:.9,st:"#9fb6c4"})+`<circle cx="630" cy="220" r="20" fill="#fff" stroke="#334"/><line x1="630" y1="220" x2="${E("asp")?630:616}" y2="${E("asp")?202:208}" stroke="#e74c3c" stroke-width="3"/>`;
+    s+=R(600,280,80,140,"#cfe8f2",{op:.6,st:"#9fb6c4"});
+    s+=E("asp")?`<path d="M640 280 Q700 260 740 300" fill="none" stroke="#cfd8dc" stroke-width="6"/>`+T(740,330,"débranché",{s:13,c:"#93a8af"}):`<path d="M640 280 Q640 250 630 250" fill="none" stroke="#cfd8dc" stroke-width="6"/><path d="M680 300 Q760 300 780 420" fill="none" stroke="#cfd8dc" stroke-width="6"/>`;
+    H.asp=[580,180,240,260];
+  }
+  if(z==="resp"){
+    s+=R(40,30,520,330,"#c9d3d8",{r:14})+R(60,50,480,290,DARK,{r:6});
+    const vt=E("vt")?640:Math.round(c.pbw*6/10)*10;
+    s+=T(80,85,"VAC",{s:26,w:700,c:"#ffc53d",f:"Barlow Condensed,sans-serif"})+T(170,85,`${c.sex==="H"?"Homme":"Femme"} · ${c.h} cm · poids prédit ${Math.round(c.pbw)} kg`,{s:16,c:"#93a8af"});
+    [["Vt",vt,"mL"],["FR",E("vt")?16:22,"/min"],["PEP",c.pep,"cmH₂O"],["FiO₂",c.fio2,"%"]].forEach((v,i)=>{s+=R(80+i*112,110,100,90,"#16242a",{r:8})+T(90+i*112,135,v[0],{s:15,c:"#93a8af"})+T(90+i*112,180,v[1],{s:34,w:600,f:"Barlow Condensed,sans-serif"})+T(90+i*112,196,v[2],{s:12,c:"#93a8af"});});
+    H.vt=[75,105,110,100];H.fio2=[300,105,215,100];
+    const al=E("alarm");
+    s+=R(80,220,440,100,"#16242a",{r:8})+T(95,248,al?"🔕 Alarmes en pause":"Alarmes actives",{s:17,c:al?"#ffc53d":"#5fe0a6",w:600});
+    s+=T(95,280,`P haute ${al?80:40} cmH₂O · VM bas 4 L/min · VM haut 14 L/min`,{s:15,c:"#c9d6da"})+T(95,305,"Ppic 29 · Pplat 24 cmH₂O",{s:15,c:"#93a8af"});
+    H.alarm=[75,215,450,110];
+    // circuit
+    s+=`<path d="M560 160 Q650 160 690 250" fill="none" stroke="#cfe3ec" stroke-width="16"/><path d="M560 260 Q630 270 690 280" fill="none" stroke="#cfe3ec" stroke-width="16"/>`;
+    s+=R(670,240,60,60,"#f4f7f8",{r:8,st:"#9fb6c4"})+T(700,276,"Y",{s:18,a:"middle",c:"#334",w:700});
+    s+=R(740,250,70,34,"#e8f4fa",{r:14,st:"#4fd8ea"})+T(775,272,"ECH",{s:13,a:"middle",c:"#225",w:700});
+    if(!E("clos"))s+=`<path d="M810 267 L860 267" stroke="#f4f7f8" stroke-width="10"/>`+R(820,290,40,180,"#e8f4fa",{r:8,op:.6,st:"#9fb6c4"})+T(840,490,"clos",{s:13,a:"middle",c:"#93a8af"});
+    else s+=`<path d="M810 267 L870 267" stroke="#f4f7f8" stroke-width="10"/>`;
+    H.clos=[800,240,90,270];
+    if(E("humid"))s+=R(580,380,110,120,"#cfe8f2",{r:10,op:.75,st:"#9fb6c4"})+R(590,440,90,50,"#4fd8ea",{r:6,op:.5})+T(635,525,"humidificateur",{s:13,a:"middle",c:"#93a8af"})+`<path d="M635 380 Q640 330 650 300" fill="none" stroke="#cfe3ec" stroke-width="10"/>`;
+    H.humid=[570,300,220,235];
+  }
+  if(z==="scope"){
+    s+=R(40,30,820,420,DARK,{r:12,st:"#4d6370",sw:6});
+    s+=`<path d="M60 110 ${Array.from({length:12},(_,i)=>`l25 0 l6 -40 l8 70 l6 -30 l15 0`).join(" ")}" fill="none" stroke="#5fe0a6" stroke-width="2.5"/>`+T(840,95,"FC 104",{s:30,a:"end",c:"#5fe0a6",w:600,f:"Barlow Condensed,sans-serif"});
+    s+=`<path d="M60 230 ${Array.from({length:12},()=>`q20 -50 40 -10 q10 10 20 10`).join(" ")}" fill="none" stroke="#ff5a4e" stroke-width="2.5"/>`+T(840,215,"PA 112/58 (76)",{s:28,a:"end",c:"#ff5a4e",w:600,f:"Barlow Condensed,sans-serif"});
+    s+=`<path d="M60 330 ${Array.from({length:12},()=>`q18 -40 36 -6 q12 6 24 6`).join(" ")}" fill="none" stroke="#4fd8ea" stroke-width="2.5"/>`+T(840,320,`SpO₂ ${c.spo2}`,{s:30,a:"end",c:"#4fd8ea",w:600,f:"Barlow Condensed,sans-serif"});
+    H.pa=[50,160,800,90];H.spo2=[50,265,800,90];
+    const al=E("scope_al");
+    s+=R(60,380,780,55,"#16242a",{r:8})+T(80,415,al?"🔕 Alarmes suspendues · SpO₂ basse 75 %":"Alarmes actives · SpO₂ basse 90 % · FC 50–130 · PAM basse 65",{s:18,c:al?"#ffc53d":"#5fe0a6",w:600});
+    H.scope_al=[55,370,790,75];
+  }
+  if(z==="pse"){
+    const L=[["Noradrénaline","6 mL/h",E("relais")?"1,5 mL":"22 mL","#4fd8ea"],["Sufentanil","2 mL/h","31 mL","#b4a0ff"],["Propofol 2 %","9 mL/h","18 mL","#f4f7f8"],[E("label")?"":"Insuline","3 mL/h","40 mL","#ffc53d"]];
+    L.forEach((p,i)=>{const y=40+i*115;s+=R(60,y,560,95,"#d5dde1",{r:10})+R(80,y+18,170,58,DARK,{r:4})+T(95,y+55,p[1],{s:26,c:"#5fe0a6",w:600,f:"Barlow Condensed,sans-serif"});
+      s+=R(280,y+25,300,44,"#f4f7f8",{r:6,op:.9})+R(280,y+25,p[2]==="1,5 mL"?18:p[2]==="18 mL"?120:200,44,p[3],{r:6,op:.35});
+      s+=p[0]?R(350,y+30,160,34,"#fff",{r:4,st:"#888",sw:1})+T(430,y+53,p[0],{s:15,a:"middle",c:"#223",w:600}):T(430,y+53,"(aucune étiquette)",{s:13,a:"middle",c:"#8a5a00"});
+      s+=T(600,y+90,`reste ${p[2]}`,{s:13,a:"end",c:"#45555c"});});
+    if(!E("relais"))s+=R(660,40,200,95,"#e8f4fa",{r:10,op:.9,st:"#4fd8ea"})+T(760,80,"Relais",{s:15,a:"middle",c:"#223",w:600})+T(760,105,"noradrénaline prêt",{s:14,a:"middle",c:"#223"});
+    H.relais=[55,35,810,105];H.sedation=[55,150,570,220];H.label=[55,380,570,105];H.insuline=[640,380,230,105];
+    if(!E("label"))H.label=[55,380,570,105];
+    s+=R(650,400,210,70,"#16242a",{r:8})+T(665,430,"Glycémie 1,6 g/L",{s:15,c:"#c9d6da"})+T(665,455,"il y a 1 h",{s:13,c:"#93a8af"});
+  }
+  if(z==="tete"){
+    const flat=E("hob");
+    s+=`<g transform="rotate(${flat?0:-25} 600 380)">${R(120,330,700,60,"#e9eef0",{r:16})}<ellipse cx="260" cy="290" rx="95" ry="80" fill="${SKIN}"/>${R(330,300,450,60,SHEET,{r:20})}</g>`;
+    s+=`<path d="M450 470 A110 110 0 0 1 ${flat?560:546} ${flat?470:420}" fill="none" stroke="#ffc53d" stroke-width="3"/>`+T(470,520,`tête de lit ${flat?0:30}°`,{s:18,c:"#ffc53d",w:600});
+    H.hob=[400,430,260,110];
+    s+=`<g transform="rotate(${flat?0:-25} 600 380)"><path d="M180 290 L60 260" stroke="#f4f7f8" stroke-width="12"/><path d="M180 300 Q140 330 120 340" stroke="#4fd8ea" stroke-width="3" fill="none"/>${R(170,282,24,18,"#ffffff",{r:2})}</g>`;
+    // manomètre
+    const cp=E("cuff")?45:26;
+    s+=`<circle cx="110" cy="120" r="70" fill="#f4f7f8" stroke="#45555c" stroke-width="4"/>`;
+    for(let v=0;v<=60;v+=10){const a=(-210+v*4)*Math.PI/180;s+=`<line x1="${110+55*Math.cos(a)}" y1="${120+55*Math.sin(a)}" x2="${110+65*Math.cos(a)}" y2="${120+65*Math.sin(a)}" stroke="#334" stroke-width="2"/>`+T(110+43*Math.cos(a),125+43*Math.sin(a),v,{s:11,a:"middle",c:"#334"});}
+    const a2=(-210+cp*4)*Math.PI/180;s+=`<line x1="110" y1="120" x2="${110+50*Math.cos(a2)}" y2="${120+50*Math.sin(a2)}" stroke="#e74c3c" stroke-width="4"/>`+T(110,215,"cmH₂O",{s:13,a:"middle",c:"#93a8af"});
+    s+=`<path d="M110 190 Q120 260 120 330" stroke="#4fd8ea" stroke-width="3" fill="none"/>`;
+    H.cuff=[30,40,170,190];H.sonde=[40,230,180,120];
+    // poignet
+    s+=R(640,90,200,70,SKIN,{r:30});if(!E("bracelet"))s+=R(700,85,40,80,"#f4f7f8",{r:6,st:"#9fb6c4"});
+    s+=T(740,200,"poignet",{s:14,a:"middle",c:"#93a8af"});H.bracelet=[620,70,240,150];
+  }
+  if(z==="vvc"){
+    s+=`<path d="M0 560 Q200 300 450 260 Q700 230 900 260 L900 560 Z" fill="${SKIN}"/>`;
+    const pd=E("pansement");
+    s+=`<path d="M300 300 L520 280 L540 380 L310 400 Z" fill="#e8f4fa" opacity="${pd?.55:.7}" stroke="#cfd8dc"/>`+(pd?`<path d="M300 300 L330 260 L360 290" fill="#e8f4fa" opacity=".6"/><circle cx="420" cy="340" r="18" fill="#a0522d" opacity=".4"/>`:"");
+    s+=T(320,425,pd?"J9":"J3",{s:18,c:"#45555c",w:700});
+    H.pansement=[290,250,270,190];
+    s+=`<path d="M420 330 L560 250" stroke="#f4f7f8" stroke-width="14"/>`;
+    const lum=[["#4fd8ea","noradrénaline",160],["#b4a0ff","sédation",220],["#e9eef0","",280]];
+    lum.forEach((l,i)=>{s+=`<path d="M560 250 L700 ${l[2]}" stroke="${l[0]}" stroke-width="7"/>`;});
+    s+=R(700,150,40,22,"#4fd8ea",{r:4})+`<path d="M740 161 L880 120" stroke="#cfe3ec" stroke-width="4"/>`+T(760,110,"noradrénaline",{s:14,c:"#93a8af"});
+    if(E("nad_ligne"))s+=`<path d="M800 140 L840 210" stroke="#ffc53d" stroke-width="4"/>`+R(830,205,50,30,"#ffc53d",{r:6,op:.8})+T(855,255,"antibiotique",{s:13,a:"middle",c:"#ffc53d"});
+    s+=R(700,210,40,22,"#b4a0ff",{r:4})+`<path d="M740 221 L880 230" stroke="#cfe3ec" stroke-width="4"/>`;
+    s+=E("cap")?R(700,272,22,16,"#e9eef0",{r:3})+`<circle cx="728" cy="280" r="5" fill="#1d2930"/>`:R(700,268,40,24,"#f4f7f8",{r:6,st:"#9fb6c4"});
+    H.nad_ligne=[690,90,200,175];H.cap=[680,262,110,50];
+  }
+  if(z==="lit"){
+    s+=R(80,240,740,60,"#e9eef0",{r:16})+R(80,300,740,30,METAL,{r:4})+R(120,330,14,150,METAL,{r:2})+R(770,330,14,150,METAL,{r:2});
+    s+=E("barriere")?R(220,350,420,22,"#c9d3d8",{r:6,st:"#8a9aa3"})+T(430,400,"barrière abaissée",{s:15,a:"middle",c:"#93a8af"}):R(220,180,420,26,"#c9d3d8",{r:6,st:"#8a9aa3"})+`<line x1="260" y1="206" x2="260" y2="250" stroke="${METAL}" stroke-width="8"/><line x1="600" y1="206" x2="600" y2="250" stroke="${METAL}" stroke-width="8"/>`;
+    H.barriere=[200,170,460,240];
+    const fr=!E("freins");
+    [127,777].forEach(x=>{s+=`<circle cx="${x}" cy="495" r="26" fill="#333"/>`+R(x-22,450,44,18,fr?"#5fe0a6":"#8a9aa3",{r:4})+T(x,445,fr?"frein serré":"frein libre",{s:13,a:"middle",c:fr?"#5fe0a6":"#c9d6da"});});
+    H.freins=[60,420,820,110];
+    s+=R(700,60,150,80,"#16242a",{r:8})+T(715,95,"Matelas à air",{s:15,c:"#c9d6da"})+T(715,122,"en fonction",{s:14,c:"#5fe0a6"});H.matelas=[690,50,170,100];
+  }
+  if(z==="urine"){
+    s+=R(60,80,780,40,METAL,{r:4})+T(70,70,"cadre du lit",{s:14,c:"#93a8af"});
+    const fl=E("poche");
+    s+=R(0,470,900,90,"#151d22",{r:0});
+    const by=fl?360:150;
+    s+=R(360,by,170,200-(fl?40:0),"#e8d98a",{r:18,op:.85})+`<path d="M445 ${by} Q440 60 200 40" fill="none" stroke="#e8d98a" stroke-width="6"/>`;
+    if(!fl)s+=`<path d="M400 120 L400 ${by}" stroke="#cfd8dc" stroke-width="4"/><path d="M490 120 L490 ${by}" stroke="#cfd8dc" stroke-width="4"/>`;
+    s+=T(445,by+100,"200 mL",{s:16,a:"middle",c:"#5a4a10",w:600});
+    H.poche=[340,by-10,210,220];
+    s+=R(640,180,200,90,"#16242a",{r:8})+T(655,215,"Diurèse 60 mL/h",{s:16,c:"#c9d6da"})+T(655,245,"urines claires",{s:14,c:"#93a8af"});H.diurese=[630,170,220,110];
+  }
+  if(z==="drain"){
+    s+=R(0,470,900,90,"#151d22",{r:0});
+    s+=R(300,230,260,240,"#e8f4fa",{r:14,op:.85,st:"#9fb6c4"});
+    [0,1,2].forEach(i=>s+=R(320+i*80,260,60,190,"#cfe8f2",{r:6,st:"#9fb6c4"}));
+    s+=R(324,380,52,66,"#4fd8ea",{r:4,op:.5})+R(404,400,52,46,"#4fd8ea",{r:4,op:.5})+R(484,420,52,26,"#e74c3c",{r:4,op:.4});
+    s+=`<path d="M350 230 Q350 120 150 60" fill="none" stroke="#cfe3ec" stroke-width="8"/>`+T(150,45,"vers le thorax",{s:14,c:"#93a8af"});
+    if(E("drain"))s+=R(255,130,60,20,"#4a90e2",{r:4})+T(320,124,"clamp fermé",{s:14,c:"#4a90e2",w:600});
+    H.drain=[140,40,330,220];H.bocal=[290,220,280,260];
+    s+=T(580,300,"aspiration −20 cmH₂O",{s:15,c:"#93a8af"});
+  }
+  if(z==="porte"){
+    s+=R(420,20,300,520,"#5a4636",{r:6,st:"#3d2f24"})+`<circle cx="450" cy="300" r="10" fill="#d9c08a"/>`;
+    if(c.bmr&&!E("iso"))s+=R(470,70,200,150,"#ffd23f",{r:6})+T(570,125,"PRÉCAUTIONS",{s:20,c:"#3a2c08",a:"middle",w:700})+T(570,160,"CONTACT",{s:24,c:"#3a2c08",a:"middle",w:700})+T(570,195,"tablier · gants",{s:15,c:"#3a2c08",a:"middle"});
+    H.iso=[440,50,260,200];
+    const sv=E("sha");s+=R(310,120,70,140,"#e8f4fa",{r:8,st:"#9fb6c4"})+R(320,160,50,92,sv?"#1d2930":"#9fd3ff",{r:4,op:.7})+T(345,285,sv?"vide":"",{s:14,a:"middle",c:"#ffc53d"});H.sha=[295,110,100,190];
+    s+=R(90,330,190,200,"#7c8b93",{r:6})+R(120,230,130,100,"#ffd23f",{r:6})+`<line x1="120" y1="255" x2="250" y2="255" stroke="#c0392b" stroke-width="3" stroke-dasharray="6 4"/>`;
+    if(E("collecteur"))s+=`<path d="M150 230 l-12 -40 M180 230 l6 -46 M215 230 l18 -36 M235 230 l2 -30" stroke="#cfd8dc" stroke-width="3"/>`;
+    H.collecteur=[100,170,170,170];
+    s+=R(740,330,140,200,"#7c8b93",{r:6})+R(755,350,110,40,"#4fd8ea",{r:4,op:.7})+R(755,400,110,40,"#5fe0a6",{r:4,op:.7})+R(755,450,110,40,"#f4f7f8",{r:4,op:.7});H.tablier=[730,320,160,220];
+  }
+  // zones à inspecter
+  for(const [id,r] of Object.entries(H)){const p=P[id];if(!p)continue;if(p.z!==z)continue;
+    const st=G.marks[id];const cls=st?(st.res==="ok"||st.res==="fixed"?"hs done":st.res==="fp"?"hs fp":st.res==="conf"?"hs conf":"hs flag"):"hs";
+    s+=`<g class="${cls}${G.sel===id?" sel":""}" data-pt="${id}" tabindex="0" role="button" aria-label="Inspecter : ${p.n}"><rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" rx="12"/><circle cx="${r[0]+r[2]-14}" cy="${r[1]+14}" r="12"/><text x="${r[0]+r[2]-14}" y="${r[1]+19}" text-anchor="middle" font-size="14" font-weight="700" font-family="Barlow,sans-serif">${st?(st.res==="fp"||st.res==="conf"?"✓":"!"):"?"}</text></g>`;}
+  return s+`</svg>`;
+}
+
+/* ===== Déroulé d'une ronde ===== */
+const $=id=>document.getElementById(id);
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const txtOf=(v,c)=>typeof v==="function"?v(c):v;
+let G={scen:null,ctx:null,errs:new Set(),marks:{},zone:null,sel:null,t0:0,ended:false,perm:{}};
+const E=id=>G.errs.has(id)&&!(G.marks[id]&&G.marks[id].res==="fixed");
+const zonesOn=()=>ZONES.filter(z=>z.k!=="drain"||G.ctx.drain);
+const ptsOf=z=>PTS.filter(p=>p.z===z);
+
+function start(k){
+  const sc=SCEN.find(s=>s.k===k);
+  let ctx,errs;
+  if(k==="rand"){
+    const base=shuffle(SCEN.filter(s=>s.ctx))[0];
+    ctx={...base.ctx,pep:12,drain:Math.random()<0.5,bmr:Math.random()<0.5};
+    const pool=PTS.filter(p=>p.e&&(p.z!=="drain"||ctx.drain)&&(p.id!=="iso"||ctx.bmr));
+    errs=shuffle(pool).slice(0,6).map(p=>p.id);
+    G.txt=base.txt;
+  }else{ctx={...sc.ctx};errs=sc.err;G.txt=sc.txt;}
+  ctx.pbw=pbwOf(ctx.sex,ctx.h);
+  G={...G,scen:sc,ctx,errs:new Set(errs),marks:{},zone:null,sel:null,t0:performance.now(),ended:false,perm:{}};
+  if(k==="rand")G.txt=`${ctx.sex==="H"?"Homme":"Femme"} de ${ctx.age} ans, ${ctx.h} cm, ${ctx.kg} kg, ventilé, sous noradrénaline${ctx.drain?", pneumothorax drainé":""}${ctx.bmr?", porteur d'une bactérie multirésistante":""}.`;
+  render();
+}
+function stats(){
+  const N=G.errs.size;let found=0,fixed=0,fp=0;
+  for(const [id,m] of Object.entries(G.marks)){if(m.res==="fixed"){found++;fixed++;}if(m.res==="badfix"||m.res==="flag")found++;if(m.res==="fp")fp++;}
+  return {N,found,fixed,fp};
+}
+function view(){
+  if(!G.scen){$("view").innerHTML=`<div class="intro"><h2>Entrez dans la chambre</h2><p>Une chambre de réanimation, un patient, et plusieurs erreurs cachées dans l'environnement : réglages, matériel, sécurité, hygiène. Inspectez chaque équipement, signalez les erreurs et corrigez-les.</p><p class="mut">Choisissez un scénario à droite.</p></div>`;return;}
+  if(!G.zone){
+    let s=drawRoom();
+    const zs=zonesOn().map(z=>{const r=ROOMZ[z.k];const pts=ptsOf(z.k),seen=pts.filter(p=>G.marks[p.id]).length;
+      return `<g class="rz" data-z="${z.k}" tabindex="0" role="button" aria-label="Inspecter : ${z.n}"><rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" rx="14"/><g class="tag"><rect x="${r[0]+6}" y="${r[1]+6}" width="${Math.max(120,z.n.length*7.2)}" height="26" rx="8"/><text x="${r[0]+16}" y="${r[1]+24}">${z.n.split(",")[0]}${seen?` · ${seen}/${pts.length}`:""}</text></g></g>`;}).join("");
+    $("view").innerHTML=s.replace("</svg>",zs+"</svg>")+`<p class="hint">Cliquez sur un équipement pour vous en approcher.</p>`;
+  }else{
+    const z=ZONES.find(x=>x.k===G.zone);
+    $("view").innerHTML=`<div class="crumb"><button class="btn" type="button" id="back">← La chambre</button><b>${z.n}</b></div>`+closeup(G.zone)+`<p class="hint">Cliquez sur un élément marqué « ? » pour l'examiner.</p>`;
+  }
+}
+function panel(){
+  const P_=$("panel");
+  if(!G.scen){P_.innerHTML=`<h2>Scénarios</h2><div class="list">${SCEN.map(s=>`<button class="pre" type="button" data-s="${s.k}"><b>${s.t}</b><span>${s.sub}</span></button>`).join("")}</div>`;return;}
+  const st=stats(),c=G.ctx;
+  if(G.ended){
+    const rows=[...G.errs].map(id=>{const p=P[id],m=G.marks[id],r=m&&m.res;
+      const tag=r==="fixed"?["g-ok","Trouvée et corrigée"]:r==="badfix"||r==="flag"?["g-mid","Trouvée, mal corrigée"]:["g-bad","Manquée"];
+      return `<div class="deb"><p><span class="grade ${tag[0]}">${tag[1]}</span><b>${p.n}</b></p><p>${txtOf(p.err,c)}</p><p class="mut">${p.why}</p><p class="mut"><b>Correction :</b> ${p.fix[0]}.</p></div>`;}).join("");
+    const fps=Object.entries(G.marks).filter(([,m])=>m.res==="fp").map(([id])=>P[id].n);
+    P_.innerHTML=`<h2>Débriefing</h2><p class="big">${st.found} erreur${st.found>1?"s":""} trouvée${st.found>1?"s":""} sur ${st.N}, ${st.fixed} corrigée${st.fixed>1?"s":""}.</p>
+      <p class="mut">Fausses alertes : ${st.fp}${fps.length?` (${fps.join(", ")})`:""}. Durée : ${Math.round(G.time/60)} min ${String(Math.round(G.time%60)).padStart(2,"0")} s.</p>${rows}
+      <p class="row"><button class="go" type="button" data-s="${G.scen.k}">Rejouer ce scénario</button><button class="btn" type="button" id="menu">Autre scénario</button></p>`;
+    return;
+  }
+  let h=`<div class="pt"><h2>${G.scen.t}</h2><p>${G.txt}</p><div class="kpi"><div><b>${st.found}/${st.N}</b><small>erreurs trouvées</small></div><div><b>${st.fixed}</b><small>corrigées</small></div><div><b>${st.fp}</b><small>fausses alertes</small></div><div><b id="clock">0:00</b><small>temps</small></div></div></div>`;
+  if(G.sel){const p=P[G.sel],m=G.marks[G.sel],isE=E(G.sel)||(m&&m.res==="fixed");
+    const obs=m&&m.res==="fixed"?txtOf(p.ok,c):G.errs.has(G.sel)&&!(m&&m.res==="fixed")?txtOf(p.err,c):txtOf(p.ok,c);
+    h+=`<div class="card2"><p class="eyebrow">${ZONES.find(z=>z.k===p.z).n}</p><h3>${p.n}</h3><p>${obs}</p>`;
+    if(!m||m.res==="conf"){h+=`<p class="row"><button class="btn ok" type="button" data-a="conf">${m?"✓ Jugé conforme":"Conforme"}</button><button class="btn ko" type="button" data-a="err">Signaler une erreur</button></p>`;}
+    else if(m.res==="fp")h+=`<p class="fb bad"><b>Fausse alerte.</b> Ce point est conforme.</p>`;
+    else if(m.res==="flag"){const perm=G.perm[G.sel]||(G.perm[G.sel]=shuffle([0,1,2]));
+      h+=`<p class="fb good"><b>Oui, c'est une erreur.</b> ${p.why}</p><p><b>Que faites-vous ?</b></p><div class="opts">${perm.map(i=>`<button class="opt" type="button" data-f="${i}">${p.fix[i]}</button>`).join("")}</div>`;}
+    else if(m.res==="fixed")h+=`<p class="fb good"><b>Erreur corrigée.</b> ${p.why}</p>`;
+    else if(m.res==="badfix")h+=`<p class="fb mid"><b>Ce n'est pas la bonne correction.</b> Il fallait : ${p.fix[0].toLowerCase()}. ${p.why}</p>`;
+    h+=`</div>`;}
+  h+=`<h3 style="margin-top:14px">Équipements</h3><div class="zl">${zonesOn().map(z=>{const pts=ptsOf(z.k),seen=pts.filter(p=>G.marks[p.id]).length;return `<button type="button" class="zb${G.zone===z.k?" on":""}" data-z="${z.k}"><span>${z.n}</span><i>${seen}/${pts.length}</i></button>`;}).join("")}</div>
+   <p class="row" style="margin-top:12px"><button class="go" type="button" id="end">Terminer la ronde</button><button class="btn" type="button" id="menu">Changer de scénario</button></p>`;
+  P_.innerHTML=h;
+}
+function render(){view();panel();}
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-s]");if(s){start(s.dataset.s);scrollTo({top:0,behavior:"smooth"});return;}
+  if(e.target.closest("#menu")){G.scen=null;G.zone=null;render();return;}
+  const z=e.target.closest("[data-z]");if(z&&G.scen&&!G.ended){G.zone=z.dataset.z;G.sel=null;render();$("view").scrollIntoView({block:"nearest"});return;}
+  if(e.target.closest("#back")){G.zone=null;G.sel=null;render();return;}
+  const pt=e.target.closest("[data-pt]");if(pt&&!G.ended){G.sel=pt.dataset.pt;render();if(innerWidth<900)$("panel").scrollIntoView({behavior:"smooth",block:"start"});return;}
+  const a=e.target.closest("[data-a]");if(a&&G.sel){const id=G.sel;
+    if(a.dataset.a==="conf")G.marks[id]={res:"conf"};
+    else G.marks[id]={res:G.errs.has(id)?"flag":"fp"};
+    render();return;}
+  const f=e.target.closest("[data-f]");if(f&&G.sel){G.marks[G.sel]={res:+f.dataset.f===0?"fixed":"badfix"};render();return;}
+  if(e.target.closest("#end")){G.time=(performance.now()-G.t0)/1000;G.ended=true;G.zone=null;G.sel=null;render();return;}
+});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-z],[data-pt]")){e.preventDefault();e.target.dispatchEvent(new MouseEvent("click",{bubbles:true}));}});
+setInterval(()=>{const el=$("clock");if(el&&G.scen&&!G.ended){const t=(performance.now()-G.t0)/1000;el.textContent=`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,"0")}`;}},1000);
+render();
+
+}
+</script>
+</body>
+</html>

@@ -12,6 +12,7 @@ Site statique : chaque page est un fichier HTML autonome, sans serveur ni base d
 | /choc-cardiogenique/ | `choc-cardiogenique/index.html` |
 | /epuration-extrarenale/ | `epuration-extrarenale/index.html` |
 | /ecmo/ | `ecmo/index.html` |
+| /erreurs/ | `erreurs/index.html` (chambre à erreurs) |
 | /mentions-legales/ | `mentions-legales/index.html` (à compléter) |
 
 Plus `manifest.webmanifest` et `icon.svg`, qui permettent d'ajouter le site à l'écran d'accueil d'un téléphone comme une application.

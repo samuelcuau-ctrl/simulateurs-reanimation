@@ -1,6 +1,6 @@
 # Simulateurs de réanimation
 
-Site statique (HTML autonomes, sans build). Une page par simulateur, dans son dossier : `ventilation/`, `fibroscopie/`, `choc-cardiogenique/`, `epuration-extrarenale/`, `ecmo/`. Page d'accueil : `index.html` (tableau `BEDS` : un lit par simulateur, lien relatif vers son dossier).
+Site statique (HTML autonomes, sans build). Une page par simulateur, dans son dossier : `ventilation/`, `fibroscopie/`, `choc-cardiogenique/`, `epuration-extrarenale/`, `ecmo/`, `erreurs/` (chambre à erreurs). Page d'accueil : `index.html` (tableau `BEDS` : un lit par simulateur, lien relatif vers son dossier).
 
 Règles :
 - Quand un simulateur est modifié, remplacer son `index.html` et vérifier dans la même modification que la fiche correspondante de `index.html` (accueil) est à jour (lien, description, étiquettes).

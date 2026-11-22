@@ -121,7 +121,7 @@ footer strong{color:var(--ink);font-weight:600}
 
 <script>
 {
-const THEMES=[["all","Tous"],["resp","Ventilation et voies aériennes"],["hemo","Hémodynamique et circulation"],["rein","Rein et métabolisme"],["infect","Infectiologie"]];
+const THEMES=[["all","Tous"],["resp","Ventilation et voies aériennes"],["hemo","Hémodynamique et circulation"],["rein","Rein et métabolisme"],["infect","Infectiologie"],["secu","Sécurité des soins"]];
 const BEDS=[
  {id:"vent",bed:1,st:"on",th:"resp",name:"Ventilation mécanique",col:"#ffc53d",lab:"Paw",wave:"paw",url:"ventilation/",
   desc:"Réglez le ventilateur face à des patients qui réagissent : SDRA, obstruction bronchique, auto-PEP. Courbes pression, débit et volume en direct, gaz du sang et boucles. Quiz d'asynchronies avec de nouveaux patients à chaque partie.",
@@ -135,6 +135,9 @@ const BEDS=[
  {id:"choc",bed:3,st:"on",th:"hemo",name:"Choc cardiogénique",col:"#ff5a4e",lab:"PA",wave:"art",url:"choc-cardiogenique/",
   desc:"Un patient en bas débit qui s'aggrave de H0 à H24 : amines, coronarographie, assistance circulatoire. Patient modélisé, échographie simulée avec ITV et index cardiaque.",
   vals:[["PAM","63"],["IC","1,8"],["Lactate","4,7"]],tags:["DES MIR","Scénario adaptatif","Échographie"]},
+ {id:"erreurs",bed:11,st:"on",th:"secu",name:"Chambre à erreurs",col:"#ffe066",lab:"SpO₂",wave:"pleth",url:"erreurs/",
+  desc:"Entrez dans une chambre de réanimation et inspectez chaque équipement : respirateur, BAVU, pousse-seringues, voie centrale, lit, drain. Trouvez les erreurs cachées, corrigez-les, puis lisez le débriefing.",
+  vals:[],tags:["Interne et IDE","4 scénarios","Sécurité des soins"]},
  {id:"ab",bed:5,st:"plan",th:"rein",name:"Acide-base et gaz du sang",col:"#b4a0ff",lab:"EtCO₂",wave:"capno",desc:"Analyse guidée : trou anionique, delta/delta et compensations attendues."},
  {id:"ecmo",bed:6,st:"on",th:"hemo",name:"ECMO VA et VV",col:"#ff9a6b",lab:"Débit",wave:"ecmo",url:"ecmo/",
   desc:"Le patient entier sous ECMO, canules en place : réglez le débit d'ECMO, le débit cardiaque et les poumons, et voyez où va le sang oxygéné. Zone de mélange, syndrome d'Arlequin, configuration VAV, recirculation en VV.",
