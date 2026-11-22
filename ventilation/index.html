@@ -235,53 +235,128 @@ const PS=[['C','Compliance',10,100,1,'mL/cmH₂O','Compliance du système respir
  ['h','Taille',140,200,1,'cm','Sert au calcul du poids prédit (formule ARDSNet).']];
 
 
+/* ---------- banque de questions du quiz ----------
+   Chaque scénario génère à chaque tirage un patient, des réglages et un énoncé différents.
+   ok : formulations de la bonne réponse ; ko : distracteurs (3 tirés au sort), de longueur comparable. */
 const TYPES=[['ineff','Efforts inefficaces'],['dbl','Double déclenchement'],['auto','Auto-déclenchement'],['starv','Soif de débit (flow starvation)'],['late','Cyclage retardé'],['prem','Cyclage prématuré'],['none','Aucune asynchronie']];
 const QB={C:50,R:10,rexp:1,pu:45,eff:0,frp:16,shunt:8,rec:30,vdA:10,hco3:24,vco2:210,h:175,sex:'H',osc:0,nodrive:1};
-const QUIZ=[
- {k:'starv',ctx:'Homme de 62 ans en VAC, sédation allégée ce matin. Il semble inconfortable et tire sur la machine.',
-  p:{C:45,R:12,eff:10,frp:22},v:{mode:'VAC',vt:450,fr:12,ti:1.3,pause:0,trig:2,peep:5,fio2:40},
+const QN=7;
+const rnd=(a,b,s=1)=>+(a+Math.floor(Math.random()*(Math.round((b-a)/s)+1))*s).toFixed(2);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const n1=x=>String(x).replace('.',',');
+function who(a0,a1){const H=Math.random()<0.6;return{sex:H?'H':'F',h:H?rnd(165,188):rnd(152,174),T:`${H?'Homme':'Femme'} de ${rnd(a0,a1)} ans`,il:H?'il':'elle',Il:H?'Il':'Elle',e:H?'':'e'}}
+const POOL=[
+ {k:'starv',gen(){const w=who(40,75),vt=rnd(400,480,10),ti=rnd(1.2,1.4,0.05);return{
+  ctx:pick([`${w.T} en VAC, sédation allégée ce matin. ${w.Il} semble inconfortable et tire sur la machine.`,
+   `${w.T}, J3 d’une pneumopathie, en VAC à débit carré. La sédation vient d’être arrêtée ; ${w.il} grimace à chaque insufflation.`]),
+  p:{sex:w.sex,h:w.h,C:rnd(40,55),R:rnd(10,14),eff:rnd(9,12,0.5),frp:rnd(20,25)},
+  v:{mode:'VAC',vt,fr:rnd(10,14),ti,pause:0,trig:2,peep:rnd(5,8),fio2:rnd(35,50,5)},
   how:'Pendant l’insufflation, la courbe de pression se creuse (concavité vers le haut) au lieu de monter régulièrement : le patient aspire plus que le débit fixe que délivre la machine. Avec l’effort affiché, on voit que le creux coïncide avec le pic de Pmus.',
-  fixes:[['Diminuer le débit pour une insufflation plus douce',0],['Passer en mode à débit libre (VPC ou AI) ; à défaut, augmenter le débit inspiratoire',1],['Rendre le trigger plus sensible',0],['Augmenter la PEEP',0]],
-  fixExp:'En VAC le débit est imposé : si la demande du patient le dépasse, il « tire » sur un débit insuffisant, ce qui augmente son travail respiratoire. Un mode en pression laisse le débit s’adapter à la demande. Dans ce simulateur, passez en VPC (ou en AI) avec une pression qui donne un Vt raisonnable.',
-  task:'Passez en VPC ou en AI avec un Vt raisonnable.'},
- {k:'ineff',ctx:'Homme de 70 ans, BPCO sévère, en VAC. La FR que vous comptez au lit est supérieure à celle affichée par le ventilateur.',
-  p:{C:55,R:20,rexp:1.7,eff:5,frp:16,h:170,hco3:30},v:{mode:'VAC',vt:600,fr:14,ti:1.3,pause:0.2,trig:2,peep:5,fio2:35},
+  ok:['Passer en VPC ou en AI pour libérer le débit, ou à défaut l’augmenter','Passer en mode à débit libre (VPC ou AI), ou à défaut augmenter nettement le débit insufflé'],
+  ko:['Augmenter la FiO₂ et approfondir la sédation','Passer en débit décélérant en gardant le même Vt et allonger nettement le Ti inspiratoire','Ralentir le débit insufflé pour rendre l’insufflation plus douce et plus confortable','Rendre le trigger plus sensible pour faciliter le déclenchement de chacun des cycles','Augmenter la PEEP pour réduire le travail inspiratoire imposé au patient','Allonger la pause télé-inspiratoire pour mieux répartir le volume insufflé'],
+  fixExp:'En VAC le débit est imposé : si la demande du patient le dépasse, il « tire » sur un débit insuffisant, ce qui augmente son travail respiratoire. Un mode en pression laisse le débit s’adapter à la demande. Ralentir le débit aggrave la soif ; le trigger et la PEEP ne changent rien au débit délivré.',
+  task:'Passez en VPC ou en AI avec un Vt raisonnable.'}}},
+ {k:'ineff',gen(){const w=who(60,80),vt=rnd(590,650,10),fr=rnd(14,16);return{
+  ctx:pick([`${w.T}, BPCO sévère, en VAC. La FR que vous comptez au lit est supérieure à celle affichée par le ventilateur.`,
+   `${w.T}, BPCO, intubé${w.e} pour exacerbation, en VAC à ${fr}/min. On voit le thorax se creuser entre certains cycles.`]),
+  p:{sex:w.sex,h:w.h,C:rnd(50,60),R:rnd(19,21),rexp:rnd(1.6,1.7,0.1),eff:rnd(4.5,5.5,0.5),frp:rnd(15,19),hco3:rnd(28,33)},
+  v:{mode:'VAC',vt,fr,ti:rnd(1.2,1.4,0.05),pause:0.2,trig:2,peep:5,fio2:rnd(30,40,5)},
   how:'Pendant l’expiration, le débit expiratoire est brièvement freiné vers la ligne de base (et la Paw s’infléchit) sans qu’un cycle parte. Le débit n’est jamais revenu à zéro en fin d’expiration : l’effort du patient doit d’abord vaincre l’auto-PEEP.',
-  fixes:[['Rendre le trigger plus dur',0],['Augmenter le Vt pour mieux soulager le patient',0],['Réduire l’hyperinflation dynamique : baisser le Vt, raccourcir le Ti, réduire la FR',1],['Augmenter la fréquence machine',0]],
+  ok:['Réduire l’hyperinflation : baisser le Vt, raccourcir le Ti, baisser la FR','Réduire l’hyperinflation dynamique : Vt plus bas, Ti plus court, FR réglée plus basse'],
+  ko:['Augmenter la PEEP externe au-delà de l’auto-PEEP','Augmenter la fréquence et le Vt pour mettre au repos les muscles et supprimer tout effort','Rendre le trigger plus dur pour éviter des déclenchements parasites par le circuit','Augmenter le Vt pour mieux soulager les muscles respiratoires du patient','Augmenter la FR réglée pour que la machine prenne en charge chacun des efforts','Allonger le Ti pour améliorer la vidange alvéolaire et la ventilation minute'],
   fixExp:'L’auto-PEEP agit comme un seuil de déclenchement caché. En diminuant le volume piégé (Vt plus bas, Ti plus court, FR réglée plus basse pour allonger le Te), l’effort redevient efficace. En pratique, chez le patient en limitation de débit, une PEEP externe à environ 70–80 % de l’auto-PEEP peut aussi aider (non modélisé ici).',
-  task:'Réduisez le volume piégé jusqu’à ce que chaque effort déclenche un cycle.'},
- {k:'auto',ctx:'Femme de 55 ans, curarisée pour un SDRA. Le ventilateur affiche une FR de 21/min pour 12 réglée.',
-  p:{osc:2.5,eff:0,h:165,sex:'F'},v:{mode:'VAC',vt:400,fr:12,trig:0.5,peep:8,fio2:50},
-  how:'Des cycles partent alors que le patient ne fait aucun effort (Pmus nulle). Le débit expiratoire présente des oscillations régulières, rythmées par le cœur, qui franchissent un trigger réglé trop sensible.',
-  fixes:[['Approfondir la sédation',0],['Diminuer la FR réglée',0],['Augmenter la PEEP',0],['Rendre le trigger moins sensible (au-dessus de l’amplitude des oscillations) et rechercher une fuite',1]],
-  fixExp:'L’auto-déclenchement vient de la machine, pas du patient : oscillations cardiogéniques, fuite du circuit ou eau dans les tuyaux. On durcit le trigger et on traque la fuite. Augmenter la sédation est inutile et délétère.',
-  task:'Ajustez le trigger pour que la FR mesurée revienne à la FR réglée.'},
- {k:'dbl',ctx:'Homme de 48 ans en VPC, SDRA modéré, sédation légère. La courbe de volume monte par paliers.',
-  p:{C:40,R:10,pu:32,eff:12,frp:16},v:{mode:'VPC',pinsp:8,fr:12,ti:0.5,trig:2,peep:8,fio2:50},
-  how:'Deux insufflations s’enchaînent sans expiration complète entre elles : le Ti machine (0,5 s) est bien plus court que l’effort du patient, qui inspire encore quand la machine s’arrête et redéclenche aussitôt. Le volume s’empile (breath stacking) et le VTe mesuré s’effondre.',
-  fixes:[['Allonger le Ti machine pour l’adapter au temps inspiratoire du patient',1],['Rendre le trigger plus sensible',0],['Diminuer la pression inspiratoire',0],['Augmenter la FR réglée',0]],
-  fixExp:'Le temps inspiratoire neural dépasse le Ti machine. Allonger le Ti (ou passer en AI où le patient cycle lui-même) supprime le second déclenchement. Dans le SDRA, l’empilement double le volume réel : si la commande reste très forte malgré l’ajustement, une sédation plus profonde se discute.',
-  task:'Allongez le Ti jusqu’à ce que les cycles ne s’empilent plus.'},
- {k:'prem',ctx:'Femme de 66 ans en aide inspiratoire, J4 d’une pneumopathie. Elle paraît en « soif d’air ».',
-  p:{C:50,R:12,eff:8,frp:18,h:162,sex:'F'},v:{mode:'AI',ai:10,cyc:70,trig:2,rise:0.2,peep:5,fio2:35},
-  how:'Le Ti machine est très court : le débit chute brutalement et l’insufflation s’arrête alors que l’effort du patient est encore à son maximum. Le seuil de cyclage à 70 % du débit de pointe est atteint trop tôt.',
-  fixes:[['Augmenter le seuil de cyclage',0],['Abaisser le seuil de cyclage (≈ 15–25 %) et accélérer la pente',1],['Diminuer l’aide inspiratoire',0],['Rendre le trigger plus dur',0]],
-  fixExp:'En AI, l’insufflation s’arrête quand le débit descend sous un pourcentage du débit de pointe. Un seuil élevé coupe tôt : bon pour le BPCO, mauvais pour un patient à commande forte et constante de temps courte. Abaisser le seuil prolonge l’insufflation jusqu’à la fin de l’effort.',
-  task:'Réglez le cyclage (et la pente) pour que l’insufflation couvre l’effort.'},
- {k:'late',ctx:'Homme de 72 ans, BPCO, en aide inspiratoire depuis hier. Il contracte ses abdominaux en fin d’insufflation.',
-  p:{C:60,R:20,rexp:1.7,eff:5,frp:20,h:172,hco3:30},v:{mode:'AI',ai:14,cyc:10,trig:2,rise:0.1,peep:5,fio2:35},
-  how:'L’insufflation se prolonge longtemps après la fin de l’effort : le débit inspiratoire décroît lentement (constante de temps longue du BPCO) avant d’atteindre le seuil de cyclage bas. Le Te est raccourci, l’auto-PEEP monte et des efforts deviennent inefficaces.',
-  fixes:[['Augmenter le seuil de cyclage (40–50 %) et éviter une AI excessive',1],['Abaisser le seuil de cyclage',0],['Allonger la pente',0],['Augmenter l’aide inspiratoire',0]],
-  fixExp:'Chez le patient obstructif, le débit décroît lentement : avec un cyclage à 10 %, la machine insuffle bien après la fin de l’effort. Un cyclage à 40–50 % arrête l’insufflation au bon moment, rend du temps expiratoire et diminue l’auto-PEEP.',
-  task:'Relevez le seuil de cyclage pour que l’insufflation s’arrête avec l’effort.'},
- {k:'ineff',ctx:'Homme de 50 ans, poumons sains, en VAC après une neurochirurgie. Il se réveille, on voit son thorax bouger entre les cycles.',
-  p:{eff:3,frp:18},v:{mode:'VAC',vt:450,fr:10,trig:10,peep:5,fio2:35},
-  how:'Des efforts visibles (petits creux de pression et inflexions du débit entre les cycles) sans déclenchement. Cette fois, le débit expiratoire revient bien à zéro : pas d’auto-PEEP. C’est le trigger, réglé à 10 L/min, qui est beaucoup trop dur pour ce patient.',
-  fixes:[['Réduire le Vt',0],['Augmenter la PEEP',0],['Augmenter la FR réglée',0],['Rendre le trigger plus sensible (1–3 L/min)',1]],
+  task:'Réduisez le volume piégé jusqu’à ce que chaque effort déclenche un cycle.'}}},
+ {k:'ineff',gen(){const w=who(35,70),trig=rnd(9,10,0.5);return{
+  ctx:pick([`${w.T}, poumons sains, en VAC après une neurochirurgie. ${w.Il} se réveille, on voit son thorax bouger entre les cycles.`,
+   `${w.T}, en VAC après un polytraumatisme sans atteinte thoracique. La sédation a été arrêtée il y a deux heures ; la FR affichée reste égale à la FR réglée.`]),
+  p:{sex:w.sex,h:w.h,eff:2.5,frp:rnd(16,20)},
+  v:{mode:'VAC',vt:rnd(420,480,10),fr:rnd(8,12),trig,peep:5,fio2:rnd(30,40,5)},
+  how:`Des efforts visibles (petits creux de pression et inflexions du débit entre les cycles) sans déclenchement. Cette fois, le débit expiratoire revient bien à zéro : pas d’auto-PEEP. C’est le trigger, réglé à ${n1(trig)} L/min, qui est beaucoup trop dur pour ce patient.`,
+  ok:['Rendre le trigger plus sensible, autour de 1 à 3 L/min','Rendre le trigger plus sensible (1 à 3 L/min) pour que chaque effort soit détecté'],
+  ko:['Passer en AI en gardant le même trigger','Augmenter la PEEP de quelques cmH₂O pour compenser une auto-PEEP probablement méconnue','Réduire le Vt pour limiter une éventuelle hyperinflation dynamique','Augmenter la PEEP pour contrebalancer une auto-PEEP présumée','Augmenter la FR réglée pour que la machine couvre chaque effort','Raccourcir le Ti pour allonger le temps expiratoire disponible'],
   fixExp:'Même asynchronie que chez le BPCO, autre cause : il faut toujours chercher pourquoi l’effort échoue. Débit expiratoire non nul en fin d’expiration → auto-PEEP ; débit revenu à zéro → trigger trop dur ou patient trop faible.',
-  task:'Réglez le trigger pour que chaque effort soit détecté.'}
+  task:'Réglez le trigger pour que chaque effort soit détecté.'}}},
+ {k:'auto',gen(){const w=who(30,75),m=pick(['VAC','VPC']),fr=rnd(10,14);return{
+  ctx:pick([`${w.T}, curarisé${w.e} pour un SDRA, en ${m}. Le ventilateur affiche une FR nettement supérieure à la FR réglée (${fr}/min).`,
+   `${w.T}, post-arrêt cardiaque, sédaté${w.e} et curarisé${w.e}, en ${m}. L’alarme de FR haute sonne régulièrement alors que la FR réglée est de ${fr}/min.`]),
+  p:{sex:w.sex,h:w.h,osc:rnd(2,3,0.25),eff:0,C:rnd(30,50)},
+  v:{mode:m,vt:rnd(380,450,10),pinsp:rnd(12,16),fr,trig:pick([0.5,1]),peep:rnd(8,12),fio2:rnd(40,60,5)},
+  how:'Des cycles partent alors que le patient ne fait aucun effort (Pmus nulle). Le débit expiratoire présente des oscillations régulières, rythmées par le cœur, qui franchissent un trigger réglé trop sensible.',
+  ok:['Durcir le trigger et rechercher une fuite ou de l’eau dans le circuit','Rendre le trigger moins sensible, au-dessus des oscillations, et rechercher une fuite'],
+  ko:['Diminuer la PEEP de quelques cmH₂O','Augmenter la sédation et le curare pour supprimer les efforts résiduels du diaphragme','Approfondir la sédation pour supprimer les efforts résiduels du patient','Diminuer la FR réglée pour limiter la ventilation minute délivrée','Augmenter la PEEP pour stabiliser le volume pulmonaire télé-expiratoire','Rendre le trigger plus sensible pour mieux synchroniser la machine au patient'],
+  fixExp:'L’auto-déclenchement vient de la machine, pas du patient : oscillations cardiogéniques, fuite du circuit ou eau dans les tuyaux. On durcit le trigger (au-dessus de l’amplitude des oscillations) et on traque la fuite. Augmenter la sédation est inutile et délétère : le patient est déjà curarisé.',
+  task:'Ajustez le trigger pour que la FR mesurée revienne à la FR réglée.'}}},
+ {k:'dbl',gen(){const w=who(35,70),ti=pick([0.4,0.45]);return{
+  ctx:pick([`${w.T} en VPC, SDRA modéré, sédation légère. La courbe de volume monte par paliers.`,
+   `${w.T} en VPC pour une pneumopathie, sédation en cours de diminution. Le VTe affiché varie beaucoup d’un cycle à l’autre.`]),
+  p:{sex:w.sex,h:w.h,C:rnd(36,44),R:10,pu:32,eff:rnd(11,13,0.5),frp:rnd(14,17)},
+  v:{mode:'VPC',pinsp:rnd(7,9),fr:12,ti,trig:2,peep:8,fio2:rnd(40,60,5)},
+  how:`Deux insufflations s’enchaînent sans expiration complète entre elles : le Ti machine (${n1(ti)} s) est bien plus court que l’effort du patient, qui inspire encore quand la machine s’arrête et redéclenche aussitôt. Le volume s’empile (breath stacking) et le VTe mesuré s’effondre.`,
+  ok:['Allonger le Ti machine pour couvrir le temps inspiratoire du patient','Allonger le Ti machine (ou passer en AI) pour couvrir tout le temps inspiratoire du patient'],
+  ko:['Diminuer la PEEP pour faciliter le déclenchement','Diminuer la pression inspiratoire et rendre le trigger plus sensible pour suivre le patient','Rendre le trigger plus sensible pour mieux suivre la demande du patient','Diminuer la pression inspiratoire pour réduire le volume empilé','Augmenter la FR réglée pour couvrir chacun des efforts du patient','Raccourcir encore le Ti pour allonger le temps expiratoire disponible'],
+  fixExp:'Le temps inspiratoire neural dépasse le Ti machine. Allonger le Ti (ou passer en AI où le patient cycle lui-même) supprime le second déclenchement. Dans le SDRA, l’empilement double le volume réel : si la commande reste très forte malgré l’ajustement, une sédation plus profonde se discute.',
+  task:'Allongez le Ti jusqu’à ce que les cycles ne s’empilent plus.'}}},
+ {k:'prem',gen(){const w=who(45,80),cyc=rnd(60,70,5);return{
+  ctx:pick([`${w.T} en aide inspiratoire, J4 d’une pneumopathie. ${w.Il} paraît en « soif d’air ».`,
+   `${w.T}, en aide inspiratoire depuis ce matin après un choc septique. ${w.Il} tire sur ses sterno-cléido-mastoïdiens en fin d’insufflation.`]),
+  p:{sex:w.sex,h:w.h,C:rnd(45,55),R:rnd(10,13),eff:rnd(7,9,0.5),frp:rnd(16,20)},
+  v:{mode:'AI',ai:rnd(8,11),cyc,trig:2,rise:rnd(0.2,0.3,0.05),peep:5,fio2:rnd(30,40,5)},
+  how:`Le Ti machine est très court : le débit chute brutalement et l’insufflation s’arrête alors que l’effort du patient est encore à son maximum. Le seuil de cyclage à ${cyc} % du débit de pointe est atteint trop tôt.`,
+  ok:['Abaisser le seuil de cyclage (15 à 25 %) et accélérer la pente','Abaisser le seuil de cyclage (environ 15 à 25 %) et accélérer la pente pour couvrir l’effort'],
+  ko:['Diminuer la PEEP pour soulager le patient','Diminuer l’aide inspiratoire et rendre le trigger plus dur pour limiter les cycles déclenchés','Relever le seuil de cyclage pour mieux respecter la fin de l’effort','Diminuer l’aide inspiratoire pour limiter le volume insufflé à chaque cycle','Rendre le trigger plus dur pour espacer les déclenchements','Allonger le temps de montée pour adoucir le début de l’insufflation'],
+  fixExp:'En AI, l’insufflation s’arrête quand le débit descend sous un pourcentage du débit de pointe. Un seuil élevé coupe tôt : bon pour le BPCO, mauvais pour un patient à commande forte et constante de temps courte. Abaisser le seuil prolonge l’insufflation jusqu’à la fin de l’effort.',
+  task:'Réglez le cyclage (et la pente) pour que l’insufflation couvre l’effort.'}}},
+ {k:'late',gen(){const w=who(60,82),cyc=pick([5,10]);return{
+  ctx:pick([`${w.T}, BPCO, en aide inspiratoire depuis hier. ${w.Il} contracte ses abdominaux en fin d’insufflation.`,
+   `${w.T}, emphysème connu, en aide inspiratoire. ${w.Il} semble expirer activement « contre la machine » à chaque cycle.`]),
+  p:{sex:w.sex,h:w.h,C:rnd(55,65),R:rnd(19,22),rexp:rnd(1.5,1.8,0.1),eff:rnd(4.5,5,0.5),frp:rnd(18,22),hco3:30},
+  v:{mode:'AI',ai:rnd(13,16),cyc,trig:2,rise:0.1,peep:5,fio2:rnd(30,40,5)},
+  how:`L’insufflation se prolonge longtemps après la fin de l’effort : le débit inspiratoire décroît lentement (constante de temps longue du BPCO) avant d’atteindre le seuil de cyclage bas (${cyc} %). Le Te est raccourci, l’auto-PEEP monte et des efforts deviennent inefficaces.`,
+  ok:['Relever le seuil de cyclage (40 à 50 %) sans aide excessive','Relever le seuil de cyclage (40 à 50 %) et éviter une aide inspiratoire excessive'],
+  ko:['Abaisser la PEEP pour faciliter l’expiration','Abaisser le seuil de cyclage et augmenter l’aide pour que l’insufflation couvre tout l’effort','Abaisser le seuil de cyclage pour mieux accompagner la fin de l’effort','Allonger le temps de montée pour adoucir le début de chaque cycle','Augmenter l’aide inspiratoire pour mieux couvrir l’effort du patient','Rendre le trigger plus sensible pour mieux suivre le patient'],
+  fixExp:`Chez le patient obstructif, le débit décroît lentement : avec un cyclage à ${cyc} %, la machine insuffle bien après la fin de l’effort. Un cyclage à 40–50 % arrête l’insufflation au bon moment, rend du temps expiratoire et diminue l’auto-PEEP.`,
+  task:'Relevez le seuil de cyclage pour que l’insufflation s’arrête avec l’effort.'}}},
+ {k:'none',gen(){const w=who(40,75);return{
+  ctx:pick([`${w.T}, J5 d’une pneumopathie, en aide inspiratoire. Avant l’épreuve de sevrage, on vous demande si les réglages sont adaptés.`,
+   `${w.T}, en aide inspiratoire après une chirurgie digestive. L’externe trouve que les courbes « ne sont pas comme d’habitude ».`]),
+  p:{sex:w.sex,h:w.h,C:rnd(60,66),R:rnd(12,13),eff:rnd(5,7,0.5),frp:rnd(15,20)},
+  v:{mode:'AI',ai:rnd(8,12),cyc:15,trig:rnd(1.5,2.5,0.5),rise:0.1,peep:5,fio2:rnd(30,40,5)},
+  how:'Chaque effort déclenche un cycle, l’insufflation s’arrête avec la fin de l’effort et le débit expiratoire revient à zéro avant l’effort suivant. La FR mesurée égale la fréquence des efforts : pas d’asynchronie.',
+  ok:['Ne rien modifier : les réglages sont adaptés, surveiller','Ne rien modifier : la synchronisation est bonne, poursuivre la surveillance clinique'],
+  ko:['Passer en VAC pour sécuriser la ventilation','Augmenter l’aide inspiratoire et abaisser le cyclage pour préparer au mieux l’épreuve de sevrage','Rendre le trigger plus sensible pour détecter plus tôt chaque effort','Abaisser le seuil de cyclage pour prolonger un peu chaque insufflation','Augmenter l’aide inspiratoire pour diminuer le travail respiratoire','Allonger la pente pour adoucir le début de chaque insufflation'],
+  fixExp:'Savoir reconnaître une interaction patient–ventilateur normale fait partie du diagnostic : modifier des réglages adaptés expose à créer une asynchronie (sur-assistance, cyclage retardé, auto-déclenchement).',
+  task:'Aucune correction n’est nécessaire : vérifiez simplement que rien n’apparaît.'}}},
+ {k:'none',gen(){const w=who(30,75);return{
+  ctx:`${w.T}, curarisé${w.e} pour un SDRA, en VAC. L’interne s’inquiète des petites ondulations visibles sur la courbe de débit expiratoire.`,
+  p:{sex:w.sex,h:w.h,osc:rnd(0.75,1.25,0.25),eff:0,C:rnd(30,45)},
+  v:{mode:'VAC',vt:rnd(380,440,10),fr:rnd(16,22),trig:rnd(2,3,0.5),peep:rnd(8,12),fio2:rnd(40,60,5)},
+  how:'Le patient est curarisé : aucun effort. Les petites oscillations cardiogéniques du débit expiratoire restent sous le seuil du trigger : aucun cycle n’est auto-déclenché et la FR mesurée égale la FR réglée.',
+  ok:['Ne rien modifier : les réglages sont adaptés, surveiller','Ne rien modifier : la synchronisation est bonne, poursuivre la surveillance clinique'],
+  ko:['Passer en VPC pour lisser la courbe de débit','Rendre le trigger moins sensible et rechercher une fuite, car les oscillations sont visibles','Rendre le trigger moins sensible pour prévenir des auto-déclenchements','Approfondir la sédation pour éviter toute reprise d’effort inspiratoire','Augmenter la PEEP pour atténuer les oscillations de la courbe de débit','Rendre le trigger plus sensible pour mieux détecter le patient'],
+  fixExp:'Des oscillations cardiogéniques sont fréquentes et sans conséquence tant qu’elles ne franchissent pas le trigger. Le diagnostic d’auto-déclenchement repose sur des cycles sans effort et une FR mesurée supérieure à la FR réglée, pas sur l’aspect de la courbe.',
+  task:'Aucune correction n’est nécessaire : vérifiez simplement que rien n’apparaît.'}}}
 ];
-const Z={i:0,step:1,score:0,fixed:0,start:0};
+function probe(k,g){
+  // vérifie en simulation accélérée (40 s) que le tirage montre bien l'asynchronie attendue
+  P={...QB,...g.p};V={...DEFV,...g.v};mode=g.v.mode;reset();for(const x in EV)EV[x]=[];
+  for(let n=0;n<40/DT;n++)stepSim();
+  const c=Object.fromEntries(Object.entries(EV).map(([x,a])=>[x,a.length]));
+  return k==='none'?Object.values(c).every(x=>x===0):c[k]>=3;
+}
+function drawQuiz(){
+  // QN questions, au plus 2 du même type (1 seule « aucune asynchronie »), jamais deux fois le même type d'affilée
+  for(let tries=0;tries<50;tries++){
+    const L=[],cnt={};
+    for(const s of shuffle([...POOL,...POOL])){
+      const lim=s.k==='none'?1:2;if(L.length>=QN||(cnt[s.k]||0)>=lim||(L.length&&L[L.length-1].k===s.k))continue;
+      cnt[s.k]=(cnt[s.k]||0)+1;let g=s.gen();for(let n=0;n<6&&!probe(s.k,g);n++)g=s.gen();
+      L.push({k:s.k,...g,opts:shuffle([[pick(g.ok),1],...shuffle(g.ko).slice(0,3).map(x=>[x,0])])});
+    }
+    if(L.length===QN)return L;
+  }
+}
+const Z={i:0,step:1,score:0,fixed:0,start:0,list:[]};
 let P,V,mode,cs='sain',running=true,speed=1;
 let t,Vel,ph,phStart,bStart,bMode,Pi,backup,holdI,holdE,pauseDur,cur,prevLoop,bt,M,G,GT,alarmT,lastI,curs,pphase,effTrig,EV,lastQ,lastPaw,lastPm=0,showM=false;
 const bufM=new Float32Array(N),bufP=new Float32Array(N),bufQ=new Float32Array(N),bufV=new Float32Array(N);
@@ -322,7 +397,7 @@ function begin(trig){
   ph='insp';phStart=t;bStart=t;cur=newCur();
 }
 function endInsp(){cur.pplatT=palv(Vel);
-  if(bMode==='AI'&&P.eff>0){if(cur.post>0.5)EV.late.push(t);if(pphase<0.3&&pmus()>0.4*P.eff*drive())EV.prem.push(t)}
+  if(bMode==='AI'&&P.eff>0){if(cur.post>0.5)EV.late.push(t);if(effTrig&&pphase<0.3&&pmus()>0.4*P.eff*drive())EV.prem.push(t)}
   if((bMode==='VAC'&&V.pause>0)||holdI){pauseDur=holdI?2:V.pause;holdI=false;ph='pause';phStart=t}else toExp()}
 function toExp(){if(ph==='pause')cur.pplat=lastPaw;ph='exp';phStart=t;cur.tiEnd=t}
 
@@ -403,8 +478,8 @@ const toast=m=>{const el=$('#toast');el.textContent=m;el.classList.add('show');c
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.c)d.c==='quiz'?startQuiz():loadCase(d.c);
-  if(d.t&&Z.step===1){Z.a1=d.t;Z.step=2;if(d.t===QUIZ[Z.i].k)Z.score++;renderQuiz()}
-  if(d.x&&Z.step===2){Z.a2=+d.x;Z.step=3;Z.start=t;if(QUIZ[Z.i].fixes[Z.a2][1])Z.score++;renderQuiz()}
+  if(d.t&&Z.step===1){Z.a1=d.t;Z.step=2;if(d.t===Z.list[Z.i].k)Z.score++;renderQuiz()}
+  if(d.x&&Z.step===2){Z.a2=+d.x;Z.step=3;Z.start=t;if(Z.list[Z.i].opts[Z.a2][1])Z.score++;renderQuiz()}
   if(d.q==='next')loadQuiz(Z.i+1);if(d.q==='restart')startQuiz();
   if(d.m){mode=d.m;if(mode!=='AI')backup=false;syncUI();toast('Mode '+mode+' : appliqué au prochain cycle')}
   if(d.f){V.flow=d.f;syncUI()}
@@ -428,36 +503,38 @@ $('#hE').onclick=()=>{holdE=true;toast('Pause télé-expiratoire avant le procha
 /* ---------- quiz ---------- */
 const typeName=k=>TYPES.find(x=>x[0]===k)[1];
 function loadQuiz(i){
-  Z.i=i;Z.step=1;const q=QUIZ[i];cs='quiz';if(!q){renderQuiz();return}
+  Z.i=i;Z.step=1;const q=Z.list[i];cs='quiz';if(!q){renderQuiz();return}
   P={...QB,...q.p};V={...DEFV,...q.v};mode=q.v.mode;reset();
   $('#caseView').hidden=true;$('#quizView').hidden=false;$('#gTitle').textContent='Correction en direct';
   renderQuiz();syncUI();
 }
-function startQuiz(){Z.score=0;Z.fixed=0;loadQuiz(0);toast('Quiz : observez les courbes, puis répondez')}
+function startQuiz(){Z.score=0;Z.fixed=0;Z.list=drawQuiz();loadQuiz(0);toast('Nouveau tirage : observez les courbes, puis répondez')}
 function renderQuiz(){
-  const q=QUIZ[Z.i],v=$('#quizView');
-  if(Z.i>=QUIZ.length){v.innerHTML=`<h2>Quiz terminé</h2><p>Identifications et corrections : <b>${Z.score} / ${QUIZ.length*2}</b>. Asynchronies corrigées sur le ventilateur : <b>${Z.fixed} / ${QUIZ.length}</b>.</p><button class="btn on" data-q="restart">Recommencer</button>`;return}
-  let h=`<div class="qmeta"><span>Question ${Z.i+1} / ${QUIZ.length}</span><span>Score ${Z.score} · corrigées ${Z.fixed}</span></div><h2>Quelle asynchronie ?</h2><p>${q.ctx}</p>`;
+  const q=Z.list[Z.i],v=$('#quizView'),nq=Z.list.length;
+  if(Z.i>=nq){v.innerHTML=`<h2>Quiz terminé</h2><p>Identifications et conduites : <b>${Z.score} / ${nq*2}</b>. Situations validées sur le ventilateur : <b>${Z.fixed} / ${nq}</b>.</p><p class="help">Chaque partie tire de nouveaux patients, de nouveaux réglages et un nouvel ordre de réponses.</p><button class="btn on" data-q="restart">Nouveau quiz</button>`;return}
+  let h=`<div class="qmeta"><span>Question ${Z.i+1} / ${nq}</span><span>Score ${Z.score} · validées ${Z.fixed}</span></div><h2>Quelle asynchronie ?</h2><p>${q.ctx}</p>`;
   h+=`<div class="opts">${TYPES.map(([k,n])=>`<button class="opt ${Z.step>1?(k===q.k?'good':(k===Z.a1?'bad':'')):''}" data-t="${k}" ${Z.step>1?'disabled':''}>${n}</button>`).join('')}</div>`;
   if(Z.step===1)h+=`<p class="help">Astuce : le bouton « Effort patient » superpose l’effort musculaire (−Pmus, en pointillés) sur la courbe de pression.</p>`;
   if(Z.step>1){
-    h+=`<div class="fb ${Z.a1===q.k?'ok':'ko'}"><b>${Z.a1===q.k?'Exact':'Non : il s’agit de « '+typeName(q.k)+' »'}</b>${q.how}</div><h3>Quelle action la corrige ?</h3>`;
-    h+=`<div class="opts">${q.fixes.map((f,j)=>`<button class="opt ${Z.step>2?(f[1]?'good':(j===Z.a2?'bad':'')):''}" data-x="${j}" ${Z.step>2?'disabled':''}>${f[0]}</button>`).join('')}</div>`;
+    h+=`<div class="fb ${Z.a1===q.k?'ok':'ko'}"><b>${Z.a1===q.k?'Exact':'Non : la bonne réponse est « '+typeName(q.k)+' »'}</b>${q.how}</div><h3>Quelle conduite adopter ?</h3>`;
+    h+=`<div class="opts">${q.opts.map((f,j)=>`<button class="opt ${Z.step>2?(f[1]?'good':(j===Z.a2?'bad':'')):''}" data-x="${j}" ${Z.step>2?'disabled':''}>${f[0]}</button>`).join('')}</div>`;
   }
   if(Z.step>2){
-    const ok=q.fixes[Z.a2][1];
-    h+=`<div class="fb ${ok?'ok':'ko'}"><b>${ok?'Bonne correction':'Pas la meilleure option'}</b>${q.fixExp}</div><h3>À vous : corrigez sur le ventilateur</h3><p>${q.task} L’asynchronie doit disparaître pendant 20 secondes.</p>`;
+    const ok=q.opts[Z.a2][1];
+    h+=`<div class="fb ${ok?'ok':'ko'}"><b>${ok?'Bonne conduite':'Pas la meilleure option'}</b>${q.fixExp}</div><h3>À vous sur le ventilateur</h3><p>${q.task} ${q.k==='none'?'Aucune asynchronie ne doit apparaître':'L’asynchronie doit disparaître'} pendant 20 secondes.</p>`;
     h+=`<div class="row"><button class="btn on" data-q="next" id="qNext">${Z.step===4?'Question suivante':'Passer à la suivante'}</button><button class="btn sm" data-e="reset">Recharger la situation</button></div>`;
   }
   v.innerHTML=h;
 }
 function quizGoals(){
-  const q=QUIZ[Z.i];if(!q)return{html:'<li class="ok"><b>✓</b><span>Quiz terminé</span></li>',ok:true};
-  const n=EV[q.k].filter(x=>t-x<20).length,el=Math.max(0,t-Z.start);
+  const q=Z.list[Z.i];if(!q)return{html:'<li class="ok"><b>✓</b><span>Quiz terminé</span></li>',ok:true};
+  const ks=q.k==='none'?Object.keys(EV):[q.k];
+  const n=ks.reduce((s,k)=>s+EV[k].filter(x=>t-x<20).length,0),el=Math.max(0,t-Z.start);
   const g3=Z.step>=3&&el>=20&&n===0;
-  if(g3&&Z.step===3){Z.step=4;Z.fixed++;renderQuiz();toast('Asynchronie corrigée')}
+  if(g3&&Z.step===3){Z.step=4;Z.fixed++;renderQuiz();toast(q.k==='none'?'Synchronisation maintenue':'Asynchronie corrigée')}
   const li=(ok,txt,em)=>`<li class="${ok?'ok':''}"><b>${ok?'✓':''}</b><span>${txt}</span><em>${em||''}</em></li>`;
-  return{html:li(Z.step>1,'Identifier l’asynchronie')+li(Z.step>2,'Choisir la correction')+li(Z.step===4,Z.step>=3?typeName(q.k)+' absent(e) depuis 20 s':'Corriger sur le ventilateur',Z.step>=3?n+' sur 20 s':''),ok:Z.step===4};
+  const lab=Z.step>=3?(q.k==='none'?'Aucune asynchronie depuis 20 s':typeName(q.k)+' absent(e) depuis 20 s'):'Valider sur le ventilateur';
+  return{html:li(Z.step>1,'Identifier l’asynchronie')+li(Z.step>2,'Choisir la conduite')+li(Z.step===4,lab,Z.step>=3?n+' sur 20 s':''),ok:Z.step===4};
 }
 /* ---------- dessin ---------- */
 function fit(cv){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1,w=Math.round(r.width*d),h=Math.round(r.height*d);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);return[c,r.width,r.height]}
