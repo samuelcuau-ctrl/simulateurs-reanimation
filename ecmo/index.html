@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ECMO : flux et syndrome d'Arlequin</title>
-<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* VOICE clinique, calme, précis : on regarde le sang circuler
@@ -72,6 +72,41 @@ label.chk input{width:20px;height:20px;accent-color:var(--cy)}
 .cn b.k{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-size:13px}
 .note{font-size:15px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
 .note b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.tab[aria-selected=true]{background:var(--ink);color:#0b1215;border-color:var(--ink)}
+.tab small{display:block;font-weight:500;font-size:13px;opacity:.75}
+.gas{stroke-width:6;stroke-dasharray:6 8;animation:flow linear infinite}
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+table.t th,table.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+td.badv{color:var(--red)}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.pan{background:var(--panel2);border-radius:12px;padding:10px 12px}
+.pan h3{font-size:15px;color:var(--mut);margin:0 0 6px;font-weight:600}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;font-size:15px}
+.kv span:nth-child(even){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.kv .a{color:var(--red)}.kv .w{color:var(--amb)}
+.caselist{display:grid;gap:8px}
+.casebtn{text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);min-height:56px}
+.casebtn[aria-pressed=true]{border-color:var(--ink);background:#1d2f36}
+.casebtn b{display:block}.casebtn span{font-size:14px;color:var(--mut)}
+.badge{display:inline-block;font:700 12px Barlow,sans-serif;padding:1px 6px;border-radius:5px;background:#2c4650;color:#e9f1f3;margin-right:4px}
+.casebtn span.badge{color:#e9f1f3;font-size:12px}
+.day{font:600 20px "Barlow Condensed",sans-serif;color:var(--amb);margin-right:8px}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;min-height:50px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.choice:hover:not(:disabled){border-color:var(--ink)}
+.choice b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-weight:700}
+.choice.right{border-color:var(--ok)}.choice.wrong{border-color:var(--red)}.choice:disabled{cursor:default}
+.fb{background:var(--panel2);border-radius:12px;padding:12px 14px;margin-top:10px}.fb p{margin:0 0 6px}
+.grade{display:inline-block;font:600 14px Barlow,sans-serif;padding:2px 10px;border-radius:6px}
+.g-ok{color:#06251a;background:var(--ok)}.g-mid{color:#2a1d00;background:var(--amb)}.g-bad{color:#fff;background:#c9362c}
+.score{font:600 18px "Barlow Condensed",sans-serif;color:var(--amb)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.go{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;border:0}
+.go::after{content:"→"}
+@media(max-width:600px){.panels{grid-template-columns:minmax(0,1fr)}.tab small{display:none}}
 footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
 .refs{padding-left:18px;margin:6px 0 0}
 .vopts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
@@ -94,7 +129,7 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
  .left{position:sticky;top:0;z-index:2;background:var(--bg);padding:4px 0 6px}.left .orient{display:none}.fig svg{height:42vh;width:auto;margin:0 auto}.vopts{gap:6px;margin-bottom:6px}.vopts .seg button,.tg{min-height:36px;padding:2px 10px;font-size:14px}.leg{font-size:13px;margin-top:4px}}
 @media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
 </style>
-</head>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"></head>
 <body>
 <nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
 <div class="wrap">
@@ -102,6 +137,12 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
     <h1>ECMO : où va le sang ?</h1>
     <p>ECMO veino-artérielle et veino-veineuse, canulation périphérique. Réglez le débit d'ECMO, le débit cardiaque et les poumons : le sang prend la couleur de sa saturation, et la zone de mélange se déplace.</p>
   </header>
+  <nav class="tabs" role="tablist" aria-label="Parties du module">
+    <button class="tab" role="tab" id="t-flux" data-t="flux">Flux<small>VA, VAV, VV, Arlequin</small></button>
+    <button class="tab" role="tab" id="t-membrane" data-t="membrane">Membrane<small>gaz, ΔP, valeurs usuelles</small></button>
+    <button class="tab" role="tab" id="t-cas" data-t="cas">Cas cliniques<small>débits, balayage, gaz</small></button>
+  </nav>
+  <section id="p-flux" role="tabpanel">
   <div class="grid">
     <div class="left">
       <div class="vopts" id="vopts"></div>
@@ -122,12 +163,74 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
     <div class="card"><h2>Les canules</h2><ul class="cn" id="cann"></ul><p class="note" id="explain"></p></div>
     <div class="card" id="teach"></div>
   </div>
+  </section>
+
+  <section id="p-membrane" role="tabpanel" hidden>
+    <div class="grid">
+      <div>
+        <div class="fig" id="mSvg"></div>
+        <ul class="flags" id="mAlerts"></ul>
+      </div>
+      <div class="card">
+        <h2>Réglages</h2>
+        <div id="mIn"></div>
+        <h3 style="margin-top:14px">Gaz de part et d'autre de la membrane</h3>
+        <div id="mGas"></div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card"><h2>Valeurs usuelles</h2>
+        <table class="t">
+          <tr><th>Paramètre</th><th>Repère</th><th>À quoi penser si anormal</th></tr>
+          <tr><td>PO₂ post-membrane</td><td>&gt; 300 mmHg sous FdO₂ 100 % (souvent 400 à 550)</td><td>&lt; 200 mmHg : dysfonction de l'oxygénateur</td></tr>
+          <tr><td>PCO₂ post-membrane</td><td>Selon le balayage (souvent 25 à 40 mmHg)</td><td>Qui monte à balayage constant : condensation ou dysfonction</td></tr>
+          <tr><td>Gaz pré-membrane</td><td>Sang veineux drainé : SatO₂ 60 à 75 %</td><td>Élevée en VV : recirculation</td></tr>
+          <tr><td>ΔP membrane (pré − post)</td><td>10 à 40 mmHg selon le débit et le modèle</td><td>Hausse progressive : thrombose de la membrane</td></tr>
+          <tr><td>Pression d'aspiration</td><td>Négative, souvent −30 à −100 mmHg</td><td>Très négative, lignes qui tremblent : hypovolémie, canule mal placée</td></tr>
+          <tr><td>Débit sang</td><td>VV : 60 à 80 mL/kg/min ; VA : selon la défaillance cardiaque</td><td>SaO₂ basse en VV : débit ECMO insuffisant face au débit cardiaque</td></tr>
+          <tr><td>Balayage</td><td>Départ fréquent : rapport 1 pour 1 avec le débit sang</td><td>Ajuster sur la PaCO₂, baisse progressive à l'initiation</td></tr>
+          <tr><td>Hémoglobine libre plasmatique</td><td>&lt; 0,1 g/L</td><td>&gt; 0,5 g/L : hémolyse significative (pompe, aspiration)</td></tr>
+          <tr><td>Plaquettes, fibrinogène, D-dimères</td><td>Stables</td><td>Baisse et hausse des D-dimères : consommation dans le circuit</td></tr>
+        </table>
+        <p class="note">Repères usuels : ils varient selon le modèle d'oxygénateur, le débit et les protocoles du service.</p>
+      </div>
+      <div class="card"><h2>Comment fonctionne la membrane</h2>
+        <p>Le sang circule autour de fibres creuses ; le gaz de balayage circule à l'intérieur. Les échanges se font par diffusion, comme dans une alvéole.</p>
+        <p><b>Oxygène.</b> L'oxygénation dépend surtout du débit sang et de la FdO₂ : le sang sort quasiment saturé, et la quantité d'O₂ apportée au patient augmente avec le débit.</p>
+        <p><b>CO₂.</b> L'épuration dépend surtout du balayage : plus le débit de gaz est élevé, plus le CO₂ est emporté. Le balayage est le principal réglage de la PaCO₂.</p>
+        <p><b>Surveillance.</b> Gaz post-membrane réguliers, tendance du ΔP, aspect de la membrane (dépôts sombres), bilan d'hémolyse et de coagulation.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="p-cas" role="tabpanel" hidden>
+    <div class="grid">
+      <div class="card">
+        <div id="kHead"></div>
+        <div class="panels" id="kPanels"></div>
+        <div id="kBody" style="margin-top:12px"></div>
+      </div>
+      <div>
+        <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Les cas</h2><span class="score" id="kScore"></span></div><div class="caselist" id="kList" style="margin-top:10px"></div></div>
+        <div class="card" style="margin-top:14px"><h2>Repères</h2>
+          <ul class="small mut" style="padding-left:18px;margin:0">
+            <li>VV : la SaO₂ dépend du rapport débit ECMO / débit cardiaque, et de la recirculation.</li>
+            <li>Balayage → CO₂ ; débit sang et FdO₂ → O₂.</li>
+            <li>VA fémorale : surveiller la radiale droite (Arlequin) et la décharge du VG (pression pulsée, ouverture aortique).</li>
+            <li>Membrane : PO₂ post-membrane, ΔP, consommation des plaquettes et du fibrinogène, hémolyse.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
   <footer>
     <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Modèle simplifié : consommation d'O₂ 250 mL/min, hémoglobine 10 g/dL, répartition fixe du débit entre les territoires, saturation de sortie de membrane fonction de la FdO₂.</p>
     <ol class="refs">
       <li>Extracorporeal Life Support Organization (ELSO). Guidelines for adult cardiac failure (VA ECMO) and adult respiratory failure (VV ECMO), 2021.</li>
       <li>Rao P et al. Venoarterial extracorporeal membrane oxygenation for cardiogenic shock and cardiac arrest. Circ Heart Fail 2018.</li>
       <li>Combes A et al. EOLIA : ECMO for severe ARDS. N Engl J Med 2018.</li>
+      <li>Aissaoui N et al. Predictors of successful extracorporeal membrane oxygenation (ECMO) weaning after assistance for refractory cardiogenic shock. Intensive Care Med 2011.</li>
+      <li>ELSO. Guideline on anticoagulation and on circuit monitoring (oxygenator failure, hemolysis), 2021–2022.</li>
     </ol>
   </footer>
 </div>
@@ -551,6 +654,246 @@ function vopts(){
 }
 vopts();
 full();
+
+/* ===== Onglet Membrane ===== */
+const MSTATE={
+ normal:{n:"Membrane normale",o2:1,co2:1,dp:1},
+ thromb:{n:"Thrombose débutante",o2:0.72,co2:0.85,dp:1.8},
+ failure:{n:"Dysfonction avancée",o2:0.3,co2:0.55,dp:3},
+ water:{n:"Condensation (eau dans la membrane)",o2:0.95,co2:0.38,dp:1}
+};
+let MB={qb:4,sweep:4,fdo2:1,state:"normal",svo2:0.70,pco2:50,hb:10};
+function memCompute(m){
+  const st=MSTATE[m.state],r={};
+  r.po2pre=pO2(m.svo2);r.spre=m.svo2;r.pco2pre=m.pco2;
+  const on=m.sweep>=0.2&&m.qb>0.1;
+  const capF=Math.min(1,1.15-0.03*m.qb);
+  r.po2post=on?r.po2pre+Math.max(0,m.fdo2*713*0.75-r.po2pre)*st.o2*capF:r.po2pre;
+  r.spost=sevSat(r.po2post);
+  r.pco2post=on?m.pco2/(1+0.7*st.co2*m.sweep/Math.max(m.qb,0.3)):m.pco2;
+  r.vo2=m.qb*(1.34*m.hb*10*(r.spost-r.spre)+0.03*(r.po2post-r.po2pre));
+  r.vco2=m.qb*2.5*(m.pco2-r.pco2post);
+  r.dpExp=4*m.qb+4;r.dp=r.dpExp*st.dp;
+  r.ppre=Math.round(60+38*m.qb+r.dp);r.ppost=r.ppre-Math.round(r.dp);
+  r.ratio=m.sweep/Math.max(m.qb,0.1);
+  return r;
+}
+function memSvg(m,r){
+  const cin=col(r.spre),cout=col(r.spost);
+  const n=(x,y,t,c="#e9f1f3",a="middle",s=16,w=600)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${s}" font-weight="${w}" text-anchor="${a}" font-family="Barlow Condensed,sans-serif" style="paint-order:stroke;stroke:#04090b;stroke-width:4px">${t}</text>`;
+  let s=`<svg viewBox="0 0 700 460" role="img" aria-label="Oxygénateur"><rect width="700" height="460" fill="#04090b"/>`;
+  // mélangeur et gaz
+  s+=`<rect x="250" y="16" width="200" height="54" rx="10" fill="#16242a" stroke="#4d6370"/>`+n(350,40,`Balayage ${String(m.sweep).replace(".",",")} L/min`,"#9fd3ff")+n(350,62,`FdO₂ ${Math.round(m.fdo2*100)} %`,"#9fd3ff",undefined,15,500);
+  s+=`<path class="fl gas" d="M350 70 L350 120" stroke="#9fd3ff" style="animation-duration:${m.sweep>0.1?clamp(4/m.sweep,0.3,6).toFixed(2):0}s"/>`;
+  // boîtier
+  s+=`<rect x="200" y="120" width="300" height="230" rx="26" fill="#0d171b" stroke="#cfd8dc" stroke-width="4"/>`;
+  for(let i=0;i<14;i++)s+=`<line x1="${215+i*20}" y1="135" x2="${215+i*20}" y2="335" stroke="${m.state==="water"?"#4fd8ea":"#2c4650"}" stroke-width="${m.state==="water"?2:1.5}" opacity=".8"/>`;
+  // gradient de sang dans le boîtier
+  s+=`<defs><linearGradient id="bg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="${cin}"/><stop offset="1" stop-color="${cout}"/></linearGradient></defs>`;
+  s+=`<rect x="210" y="130" width="280" height="210" rx="20" fill="url(#bg)" opacity=".55"/>`;
+  if(m.state==="thromb"||m.state==="failure"){const PTS_=[[232,318],[262,300],[248,268],[296,322],[286,284],[230,236],[330,310],[268,214],[312,256],[364,320],[240,180],[300,190],[350,282],[392,300]];const k=m.state==="failure"?14:6;for(let i=0;i<k;i++){const [x,y]=PTS_[i];s+=`<circle cx="${x}" cy="${y}" r="${m.state==="failure"?9:6}" fill="#3a0f14" opacity=".85"/>`;}}
+  s+=n(350,240,"Oxygénateur","#e9f1f3","middle",22);
+  // sang entrée / sortie
+  const dur=m.qb>0.1?clamp(3/m.qb,0.3,6).toFixed(2):0;
+  s+=`<path class="fl" d="M20 330 L200 330" stroke="#0a1016" stroke-width="22"/><path class="fl" d="M20 330 L200 330" stroke="${cin}" stroke-width="16"/><path class="fl dots" d="M20 330 L200 330" style="animation-duration:${dur}s"/>`;
+  s+=`<path class="fl" d="M500 140 L680 140" stroke="#0a1016" stroke-width="22"/><path class="fl" d="M500 140 L680 140" stroke="${cout}" stroke-width="16"/><path class="fl dots" d="M500 140 L680 140" style="animation-duration:${dur}s"/>`;
+  s+=n(110,312,"Sang veineux (de la pompe)","#c9d6da","middle",15,500)+n(590,122,"Sang oxygéné (vers le patient)","#c9d6da","middle",15,500);
+  // pressions
+  s+=`<circle cx="160" cy="390" r="26" fill="#16242a" stroke="#ffc53d" stroke-width="2"/>`+n(160,396,r.ppre,"#ffc53d")+n(160,436,"P pré-membrane","#93a8af","middle",13,500)+`<line x1="160" y1="364" x2="160" y2="340" stroke="#ffc53d" stroke-width="2"/>`;
+  s+=`<circle cx="560" cy="200" r="26" fill="#16242a" stroke="#ffc53d" stroke-width="2"/>`+n(560,206,r.ppost,"#ffc53d")+n(560,246,"P post-membrane","#93a8af","middle",13,500)+`<line x1="560" y1="174" x2="560" y2="150" stroke="#ffc53d" stroke-width="2"/>`;
+  const dpBad=r.dp>r.dpExp*1.5;
+  s+=`<rect x="290" y="372" width="120" height="52" rx="10" fill="#16242a" stroke="${dpBad?"#ff5a4e":"#4d6370"}"/>`+n(350,398,`ΔP ${Math.round(r.dp)}`,dpBad?"#ff8a7a":"#e9f1f3","middle",20)+n(350,417,"mmHg","#93a8af","middle",12,500);
+  // sortie des gaz
+  s+=`<path d="M440 350 L440 400 L520 400" fill="none" stroke="#9fd3ff" stroke-width="5" stroke-dasharray="6 6"/>`+n(560,404,"sortie des gaz","#93a8af","middle",13,500);
+  if(m.state==="water")for(let i=0;i<4;i++)s+=`<path d="M${505+i*10} 412 q4 8 0 12 q-4 -4 0 -12" fill="#4fd8ea"/>`;
+  return s+`</svg>`;
+}
+function memRender(){
+  const m=MB,r=memCompute(m);
+  $("mSvg").innerHTML=memSvg(m,r);
+  const f=(x,d=0)=>Number(x).toFixed(d).replace(".",",");
+  $("mGas").innerHTML=`<table class="t"><tr><th></th><th>Pré-membrane</th><th>Post-membrane</th></tr>
+   <tr><td>PO₂</td><td class="n">${f(r.po2pre)} mmHg</td><td class="n ${r.po2post<200&&m.fdo2>=0.9&&m.sweep>=0.2?"badv":""}">${r.po2post>600?"> 600":f(r.po2post)} mmHg</td></tr>
+   <tr><td>SatO₂</td><td class="n">${f(r.spre*100)} %</td><td class="n">${f(Math.min(r.spost,0.999)*100)} %</td></tr>
+   <tr><td>PCO₂</td><td class="n">${f(r.pco2pre)} mmHg</td><td class="n">${f(r.pco2post)} mmHg</td></tr></table>
+   <div class="mon" style="margin-top:10px"><div class="m"><small>O₂ transféré</small><b>${f(Math.max(0,r.vo2))}</b><i>mL/min</i></div><div class="m"><small>CO₂ épuré (approx.)</small><b>${f(Math.max(0,r.vco2))}</b><i>mL/min</i></div><div class="m"><small>Balayage / débit sang</small><b>${f(r.ratio,1)}</b><i></i></div><div class="m ${r.dp>r.dpExp*1.5?"lo":""}"><small>ΔP membrane (attendu ≈ ${f(r.dpExp)})</small><b>${f(r.dp)}</b><i>mmHg</i></div></div>`;
+  const A=[];
+  if(m.sweep<0.2)A.push(["bad","Balayage arrêté : plus aucun échange gazeux. Le sang sort de la membrane comme il est entré. Une erreur de branchement ou une bouteille vide se manifeste ainsi."]);
+  else{
+    if(r.po2post<200&&m.fdo2>=0.9)A.push(["bad",`PO₂ post-membrane ${f(r.po2post)} mmHg sous FdO₂ ${Math.round(m.fdo2*100)} % : dysfonction de l'oxygénateur (repère usuel : alerte sous 200 mmHg, une membrane normale donne habituellement plus de 300 mmHg).`]);
+    if(r.dp>r.dpExp*1.5)A.push(["bad",`ΔP ${f(r.dp)} mmHg pour ${f(m.qb,1)} L/min : nettement au-dessus de l'attendu. Une hausse progressive traduit des dépôts de fibrine et des caillots dans la membrane ; à rapprocher des D-dimères, du fibrinogène, des plaquettes et de l'hémolyse.`]);
+    if(m.state==="water")A.push(["warn","Le CO₂ s'épure mal alors que l'oxygénation reste bonne et que le ΔP est stable : eau condensée dans les fibres (gouttes à la sortie des gaz). Selon les procédures, un balayage bref à fort débit chasse la condensation."]);
+    if(m.fdo2<0.5)A.push(["warn",`FdO₂ ${Math.round(m.fdo2*100)} % : la PO₂ post-membrane baisse. En VA, on réduit parfois la FdO₂ pour éviter une hyperoxie ; en VV, une FdO₂ basse limite l'oxygénation du patient.`]);
+    if(r.ratio>2)A.push(["warn",`Balayage élevé (rapport ${f(r.ratio,1)}) : épuration du CO₂ importante. À l'initiation, la PaCO₂ doit baisser progressivement : une chute brutale expose à des complications neurologiques.`]);
+    if(r.ratio<0.5)A.push(["warn","Balayage faible par rapport au débit sang : le CO₂ s'épure peu, la PaCO₂ du patient monte."]);
+  }
+  if(m.qb>6)A.push(["warn","Débit sang élevé : vérifier la pression d'aspiration et l'absence de recirculation (VV)."]);
+  if(!A.length)A.push(["ok","Fonctionnement normal : PO₂ post-membrane élevée, CO₂ épuré selon le balayage, ΔP dans l'attendu."]);
+  $("mAlerts").innerHTML=A.map(a=>`<li class="${a[0]}">${a[1]}</li>`).join("");
+}
+function memInputs(){
+  const F=[["qb","Débit sang",0.5,7,0.1,v=>nf(v)+" L/min"],["sweep","Balayage (sweep)",0,10,0.5,v=>nf(v)+" L/min"],["fdo2","FdO₂",0.21,1,0.01,v=>Math.round(v*100)+" %"],["svo2","Saturation du sang drainé (pré-membrane)",0.45,0.9,0.01,v=>Math.round(v*100)+" %"],["pco2","PCO₂ du sang drainé",30,90,1,v=>v+" mmHg"]];
+  $("mIn").innerHTML=`<label class="f" style="grid-template-columns:1fr"><span>État de la membrane</span><select id="mState">${Object.entries(MSTATE).map(([k,s])=>`<option value="${k}"${k===MB.state?" selected":""}>${s.n}</option>`).join("")}</select></label>`+
+   F.map(x=>`<label class="f"><span>${x[1]}</span><output id="mo-${x[0]}">${x[5](MB[x[0]])}</output><input type="range" data-mk="${x[0]}" min="${x[2]}" max="${x[3]}" step="${x[4]}" value="${MB[x[0]]}"></label>`).join("");
+  memInputs.F=F;
+}
+$("mIn").addEventListener("input",e=>{const k=e.target.dataset.mk;if(k){MB[k]=+e.target.value;$("mo-"+k).textContent=memInputs.F.find(x=>x[0]===k)[5](MB[k]);memRender();}});
+$("mIn").addEventListener("change",e=>{if(e.target.id==="mState"){MB.state=e.target.value;memRender();}});
+memInputs();
+
+/* ===== Onglet Cas cliniques ===== */
+const KC=[
+ {id:"vv1",mode:"VV",title:"SDRA sévère sous ECMO VV",sub:"Homme 45 ans, 178 cm, 80 kg",steps:[
+  {day:"H1",text:"Pneumopathie grippale, SDRA sévère. ECMO VV fémoro-jugulaire posée il y a une heure. Le respirateur n'a pas été modifié depuis la canulation.",
+   p:{pat:[["pH","7,24","w"],["PaO₂","58 mmHg"],["SaO₂","88 %","w"],["PaCO₂","62 mmHg","w"]],
+      mem:[["Pré : SatO₂ / PCO₂","70 % / 64 mmHg"],["Post : PO₂ / PCO₂","495 / 34 mmHg"],["ΔP membrane","18 mmHg"]],
+      ecmo:[["Débit sang","4,8 L/min"],["Balayage / FdO₂","4 L/min / 100 %"],["P aspiration","−45 mmHg"]],
+      vent:[["Mode","VAC"],["Vt / FR","420 mL / 32"],["PEP / FiO₂","16 / 100 %"],["Pplat","33 cmH₂O","a"]]},
+   q:"Que modifiez-vous sur le respirateur ?",
+   c:[["Ventilation ultraprotectrice : Pplat ≤ 24, FR basse, PEP ≥ 10, FiO₂ baissée","g-ok","Maintenant que l'ECMO assure une grande part des échanges, l'objectif devient le repos pulmonaire : Pplat ≤ 24 cmH₂O, FR 10 à 30, PEP ≥ 10, FiO₂ 30 à 50 % (stratégie de l'essai EOLIA). Les réglages actuels restent agressifs (Pplat 33, FiO₂ 100 %)."],
+      ["Garder ces réglages tant que la PaCO₂ et le pH ne sont pas normalisés","g-bad","Le CO₂ se règle désormais par le balayage de la membrane, pas par le respirateur. Garder une Pplat à 33 cmH₂O entretient les lésions induites par la ventilation."],
+      ["Baisser seulement la FiO₂ à 40 % en gardant le volume courant et la PEP","g-mid","Baisser la FiO₂ est utile, mais la Pplat à 33 cmH₂O et la FR à 32 restent délétères. Il faut réduire aussi les pressions et la fréquence."],
+      ["Augmenter la PEP à 20 pour recruter avant de réduire le volume courant","g-bad","Augmenter la PEP alors que la Pplat dépasse déjà 30 cmH₂O majore la distension et le retentissement sur le VD, sans bénéfice sous ECMO."]]},
+  {day:"H6",text:"Ventilation ultraprotectrice en place : Vt 250 mL, FR 12, PEP 12, Pplat 24, FiO₂ 40 %. Balayage inchangé.",
+   p:{pat:[["pH","7,18","a"],["PaO₂","70 mmHg"],["SaO₂","91 %"],["PaCO₂","78 mmHg","a"]],
+      mem:[["Pré : SatO₂ / PCO₂","71 % / 80 mmHg"],["Post : PO₂ / PCO₂","490 / 44 mmHg"],["ΔP membrane","18 mmHg"]],
+      ecmo:[["Débit sang","4,8 L/min"],["Balayage / FdO₂","4 L/min / 100 %"],["P aspiration","−45 mmHg"]],
+      vent:[["Vt / FR","250 mL / 12"],["PEP / FiO₂","12 / 40 %"],["Pplat","24 cmH₂O"]]},
+   q:"La PaCO₂ est à 78 mmHg. Que faites-vous ?",
+   c:[["Augmenter le balayage par paliers, avec des gaz du sang rapprochés","g-ok","Le balayage règle l'épuration du CO₂. À l'initiation, la PaCO₂ doit baisser progressivement : une correction trop rapide de l'hypercapnie est associée à des complications neurologiques (vasoconstriction cérébrale, hémorragies)."],
+      ["Monter le balayage à 10 L/min pour normaliser la PaCO₂ dans l'heure qui suit","g-bad","Le bon levier, mais beaucoup trop vite : une chute brutale de la PaCO₂ expose à une alcalose et à des complications neurologiques."],
+      ["Augmenter la FdO₂ : l'oxygène apporté par la membrane fera baisser la PaCO₂","g-bad","La FdO₂ agit sur l'oxygénation, pas sur le CO₂. Elle est d'ailleurs déjà à 100 %."],
+      ["Remonter la fréquence du respirateur à 28 pour mieux épurer le CO₂","g-mid","Efficace mais contraire au repos pulmonaire recherché : sous ECMO VV, le CO₂ se gère d'abord par le balayage."]]},
+  {day:"J2",text:"Pour améliorer la SaO₂, l'équipe a augmenté le débit à 6 L/min. La SaO₂ a baissé.",
+   p:{pat:[["pH","7,36"],["PaO₂","48 mmHg","a"],["SaO₂","82 %","a"],["PaCO₂","46 mmHg"]],
+      mem:[["Pré : SatO₂ / PCO₂","86 % / 44 mmHg","w"],["Post : PO₂ / PCO₂","490 / 30 mmHg"],["ΔP membrane","24 mmHg"]],
+      ecmo:[["Débit sang","6,0 L/min"],["Balayage / FdO₂","6 L/min / 100 %"],["Échographie","pointes des canules à 4 cm","w"]],
+      vent:[["Vt / FR","250 mL / 12"],["PEP / FiO₂","12 / 40 %"]]},
+   q:"Comment interprétez-vous la situation ?",
+   c:[["Recirculation : contrôler les canules à l'échographie, les éloigner","g-ok","Saturation pré-membrane élevée (86 %), PO₂ post-membrane normale, SaO₂ qui baisse quand le débit monte, pointes des canules proches : l'ECMO réaspire son propre sang oxygéné. On repositionne, et on évite d'augmenter encore le débit."],
+      ["Défaillance de la membrane : préparer un changement de membrane rapidement","g-bad","La PO₂ post-membrane est à 490 mmHg et le ΔP est normal : la membrane oxygène parfaitement. Le problème est en amont, dans ce que la canule draine."],
+      ["Augmenter encore le débit à 7 L/min pour compenser la baisse de SaO₂","g-bad","Plus de débit, plus de recirculation : la SaO₂ ne s'améliorera pas et l'hémolyse augmentera."],
+      ["Remonter la FiO₂ du respirateur à 100 % et attendre l'évolution","g-mid","Palliatif : le gain est faible et la cause (canules trop proches) n'est pas traitée."]]},
+  {day:"J7",text:"Depuis 48 heures, le ΔP de la membrane monte. Les D-dimères s'envolent.",
+   p:{pat:[["SaO₂","84 %","w"],["PaCO₂","52 mmHg"],["Plaquettes","60 G/L","w"],["Fibrinogène","1,2 g/L","w"]],
+      mem:[["Post : PO₂ (FdO₂ 100 %)","165 mmHg","a"],["Post : PCO₂","41 mmHg"],["ΔP membrane","52 mmHg (18 à J1)","a"]],
+      ecmo:[["Débit sang","4,8 L/min"],["Balayage / FdO₂","6 L/min / 100 %"],["Anticoagulation","dans la cible"]],
+      vent:[["Vt / FR","260 mL / 12"],["PEP / FiO₂","12 / 50 %"]]},
+   q:"Quelle est votre conduite ?",
+   c:[["Dysfonction de la membrane par thrombose : programmer le changement de membrane","g-ok","PO₂ post-membrane sous 200 mmHg malgré une FdO₂ à 100 %, ΔP presque triplé, consommation des plaquettes et du fibrinogène avec D-dimères élevés : la membrane se thrombose. Son changement se prépare (de façon programmée si possible)."],
+      ["Augmenter le balayage pour améliorer l'oxygénation assurée par la membrane","g-bad","Le balayage agit surtout sur le CO₂. Il ne compense pas une surface d'échange réduite par des caillots."],
+      ["Doubler l'anticoagulation pour dissoudre les caillots déjà formés dans la membrane","g-bad","L'héparine ne dissout pas un caillot constitué, et la consommation des facteurs expose déjà au saignement."],
+      ["Surveiller : une PO₂ post-membrane de 165 mmHg reste encore suffisante","g-mid","Sous FdO₂ 100 %, une membrane normale dépasse habituellement 300 mmHg. Associée à la hausse du ΔP et à la consommation, cette valeur signe une dysfonction évolutive."]]}
+ ]},
+ {id:"vv2",mode:"VV",title:"Hypoxémie sous ECMO VV",sub:"Femme 38 ans, 165 cm, 65 kg",steps:[
+  {day:"J3",text:"SDRA grippal sous ECMO VV. Fièvre à 39,8 °C, tachycardie à 135/min, sédation allégée ce matin. Débit cardiaque mesuré à 9 L/min. Canules distantes de 15 cm.",
+   p:{pat:[["SaO₂","79 %","a"],["PaO₂","45 mmHg","a"],["PaCO₂","44 mmHg"],["Hémoglobine","7,2 g/dL","w"]],
+      mem:[["Pré : SatO₂ / PCO₂","66 % / 46 mmHg"],["Post : PO₂ / PCO₂","470 / 30 mmHg"],["ΔP membrane","20 mmHg"]],
+      ecmo:[["Débit sang","4,5 L/min"],["Balayage / FdO₂","5 L/min / 100 %"],["P aspiration","−60 mmHg"]],
+      vent:[["Vt / FR","240 mL / 14"],["PEP / FiO₂","12 / 50 %"],["Débit cardiaque","9 L/min","w"]]},
+   q:"Pourquoi la SaO₂ est-elle basse, et que faites-vous ?",
+   c:[["Débit cardiaque trop haut pour l'ECMO : traiter la fièvre, corriger l'anémie","g-ok","En VV, la SaO₂ dépend du rapport entre débit ECMO et débit cardiaque : ici 4,5 sur 9 L/min, la moitié du retour veineux traverse des poumons qui n'oxygènent pas. On diminue la consommation et le débit cardiaque (fièvre, sédation), on corrige l'anémie selon les objectifs du service, puis on augmente le débit ECMO si l'accès le permet."],
+      ["La membrane n'oxygène plus assez : préparer un changement en urgence","g-bad","PO₂ post-membrane à 470 mmHg, ΔP normal : la membrane fonctionne. La saturation pré-membrane basse (66 %) exclut aussi une recirculation."],
+      ["Augmenter le balayage à 9 L/min pour améliorer la saturation artérielle","g-bad","Le balayage épure le CO₂ ; le sang sortant de la membrane est déjà saturé à 100 %. Cela ne change pas la SaO₂ du patient."],
+      ["Reprendre une ventilation à 6 mL/kg avec une FiO₂ à 100 % pour aider l'ECMO","g-mid","Gain faible chez ce poumon très atteint, au prix de la protection pulmonaire. Le levier principal est le rapport débit ECMO / débit cardiaque."]]},
+  {day:"J3, 2 h plus tard",text:"Fièvre contrôlée, sédation approfondie. En augmentant le débit vers 5,5 L/min, les lignes se mettent à trembler et le débit devient instable.",
+   p:{pat:[["SaO₂","86 %"],["PAM","62 mmHg","w"],["Échographie","VCI collabée","w"]],
+      mem:[["Post : PO₂","470 mmHg"],["ΔP membrane","22 mmHg"]],
+      ecmo:[["Débit sang","5,5 → 4,1 L/min, instable","a"],["P aspiration","−140 mmHg","a"],["Tours de pompe","3 900 /min"]],
+      vent:[["Vt / FR","240 mL / 14"],["PEP / FiO₂","12 / 50 %"]]},
+   q:"Que se passe-t-il, et que faites-vous ?",
+   c:[["Aspiration excessive : baisser les tours, remplissage prudent","g-ok","Pression d'aspiration très négative, lignes qui tremblent (« chattering »), VCI collabée : la veine se collabe sur la canule de drainage. On baisse les tours, on corrige une hypovolémie avec prudence et on vérifie la position de la canule. L'aspiration excessive favorise aussi l'hémolyse."],
+      ["Augmenter les tours de pompe pour stabiliser le débit à 5,5 L/min","g-bad","Plus de tours, plus de dépression : le collapsus de la veine s'aggrave, l'hémolyse aussi, et le débit ne remonte pas."],
+      ["Changer la membrane, car la baisse du débit vient d'une obstruction","g-bad","Le ΔP est normal : la membrane n'est pas obstruée. Le problème est en amont de la pompe."],
+      ["Ignorer : le tremblement des lignes est fréquent et sans conséquence","g-bad","Le « chattering » signale une aspiration excessive : il expose à l'hémolyse et à une perte brutale de débit."]]}
+ ]},
+ {id:"va1",mode:"VA",title:"Choc cardiogénique sous ECMO VA",sub:"Homme 62 ans, 175 cm, 85 kg",steps:[
+  {day:"H2",text:"Infarctus antérieur étendu, choc réfractaire. ECMO VA fémoro-fémorale posée. Sous sonde d'intubation, aspiration d'un liquide mousseux rosé.",
+   p:{pat:[["PAM","72 mmHg"],["Pression pulsée","4 mmHg","a"],["PaO₂ radiale droite","75 mmHg","w"],["Lactate","6,1 mmol/L","a"]],
+      mem:[["Post : PO₂ / PCO₂","480 / 33 mmHg"],["ΔP membrane","20 mmHg"]],
+      ecmo:[["Débit sang","4,5 L/min"],["Balayage / FdO₂","3 L/min / 100 %"],["Échographie","VG dilaté, valve aortique fermée, contraste spontané","a"]],
+      vent:[["PEP / FiO₂","10 / 80 %"],["Noradrénaline","0,2 µg/kg/min"]]},
+   q:"Quelle est votre priorité ?",
+   c:[["Décharger le VG : débit ECMO réduit si possible, inotrope, discuter Impella","g-ok","Pression pulsée plate, valve aortique qui ne s'ouvre plus, VG dilaté avec contraste spontané, œdème pulmonaire : le VG ne peut plus éjecter contre la postcharge du flux rétrograde. Risque de thrombus et d'OAP. On décharge (réduction prudente du débit, inotrope, Impella ou atrioseptostomie selon l'équipe)."],
+      ["Augmenter le débit ECMO à 6 L/min pour mieux soutenir la circulation","g-bad","Plus de débit rétrograde, plus de postcharge pour le VG : la distension et l'œdème pulmonaire s'aggravent."],
+      ["Monter la noradrénaline pour obtenir une PAM de 90 mmHg de sécurité","g-bad","Augmenter la pression artérielle augmente encore la postcharge du VG, qui n'éjecte déjà plus."],
+      ["Augmenter le balayage et la FdO₂ pour traiter l'œdème pulmonaire","g-bad","La membrane oxygène déjà le sang de l'ECMO à 480 mmHg. L'œdème vient de la distension du VG, pas d'un réglage de la membrane."]]},
+  {day:"J3",text:"Impella en place, le cœur récupère. Une pneumopathie d'inhalation s'est installée. La surveillance se fait par la radiale droite.",
+   p:{pat:[["Pression pulsée","28 mmHg"],["PaO₂ radiale droite","48 mmHg","a"],["SaO₂ radiale droite","82 %","a"],["SpO₂ pied","100 %"]],
+      mem:[["Post : PO₂ / PCO₂","470 / 34 mmHg"],["ΔP membrane","22 mmHg"]],
+      ecmo:[["Débit sang","3,0 L/min"],["Balayage / FdO₂","3 L/min / 100 %"]],
+      vent:[["PEP / FiO₂","8 / 60 %"],["Radiographie","condensation bilatérale","w"]]},
+   q:"Comment interprétez-vous la discordance ?",
+   c:[["Arlequin : optimiser la ventilation, discuter une configuration VAV","g-ok","Le VG récupéré éjecte du sang passé par des poumons qui n'oxygènent pas : coronaires et cerveau reçoivent ce sang (radiale droite à 82 %), alors que les jambes reçoivent le sang de l'ECMO. On optimise la ventilation (FiO₂, PEP) et on discute une configuration VAV."],
+      ["Augmenter la FdO₂ et le balayage pour mieux oxygéner le haut du corps","g-bad","Le sang de l'ECMO est déjà saturé à 100 % : il n'atteint simplement pas le haut du corps. Changer les réglages de la membrane ne modifie pas la zone de mélange."],
+      ["Réduire le débit ECMO pour laisser le cœur éjecter davantage de sang","g-bad","Moins de débit ECMO, plus de sang désaturé éjecté par le VG : l'hypoxie du haut du corps s'aggrave."],
+      ["Se fier à la SpO₂ du pied, normale : la radiale droite est un artéfact","g-bad","C'est l'inverse : la radiale droite reflète le sang qui perfuse le cerveau et les coronaires. C'est elle qu'il faut surveiller en ECMO VA fémorale."]]},
+  {day:"J6",text:"Poumons améliorés. Test de sevrage : débit ECMO réduit à 1,5 L/min sous dobutamine 5 µg/kg/min pendant 30 minutes.",
+   p:{pat:[["PAM","75 mmHg"],["Pression pulsée","35 mmHg"],["SaO₂ radiale droite","96 %"],["Lactate","1,2 mmol/L"]],
+      mem:[["Post : PO₂","460 mmHg"],["ΔP membrane","10 mmHg"]],
+      ecmo:[["Débit sang","1,5 L/min"],["Balayage / FdO₂","1 L/min / 60 %"]],
+      vent:[["ITV sous-aortique","13 cm"],["FEVG","35 %"],["VD","non dilaté"]]},
+   q:"Que concluez-vous de ce test ?",
+   c:[["Critères de sevrage réunis : programmer le retrait de l'ECMO","g-ok","À bas débit, pression artérielle stable, pulsatilité franche, ITV sous-aortique > 10 cm, FEVG > 20–25 %, VD correct, lactate normal : ce sont les repères habituels d'un sevrage réussi."],
+      ["Poursuivre une semaine à plein débit pour laisser reposer le cœur","g-bad","Prolonger inutilement l'ECMO expose aux complications (saignement, infection, ischémie de jambe, thrombose) sans bénéfice démontré."],
+      ["Passer en ECMO VV avant tout retrait, par précaution respiratoire","g-bad","La fonction respiratoire est correcte (SaO₂ 96 %) : rien ne justifie une assistance respiratoire."],
+      ["Arrêter le débit et observer 24 h en laissant les canules en place","g-mid","Un circuit à l'arrêt thrombose vite. Le test se fait à bas débit, puis on décide du retrait."]]}
+ ]},
+ {id:"mb1",mode:"VV",title:"Incidents de membrane et de pompe",sub:"Femme 52 ans, J10 d'ECMO VV",steps:[
+  {day:"J10",text:"Depuis ce matin, la PaCO₂ monte sans modification des réglages. L'infirmière signale des gouttes d'eau à la sortie des gaz de l'oxygénateur.",
+   p:{pat:[["pH","7,29","w"],["PaCO₂","65 mmHg (48 hier)","w"],["SaO₂","92 %"]],
+      mem:[["Post : PO₂","460 mmHg"],["Post : PCO₂","44 mmHg (30 hier)","w"],["ΔP membrane","16 mmHg, stable"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Balayage / FdO₂","6 L/min / 100 %"]],
+      vent:[["Vt / FR","280 mL / 12"],["PEP / FiO₂","10 / 40 %"]]},
+   q:"Quelle est la cause la plus probable, et que faites-vous ?",
+   c:[["Condensation dans la membrane : balayage bref à fort débit","g-ok","Oxygénation intacte, ΔP stable, mais CO₂ mal épuré et eau à la sortie des gaz : la condensation obstrue les fibres côté gaz. Un balayage bref à fort débit (selon la procédure du service) chasse l'eau ; on recontrôle ensuite les gaz post-membrane."],
+      ["Thrombose de la membrane : la changer en urgence avant qu'elle ne lâche","g-bad","Une thrombose ferait monter le ΔP et baisser la PO₂ post-membrane. Ici les deux sont normaux."],
+      ["Augmenter la FdO₂ et la FiO₂ pour compenser la défaillance de la membrane","g-bad","Le problème est l'épuration du CO₂, sur laquelle la FdO₂ et la FiO₂ n'agissent pas."],
+      ["Monter durablement le balayage à 10 L/min sans chercher d'autre cause","g-mid","Compense en partie, mais sans traiter la condensation, qui continuera de limiter les échanges de CO₂."]]},
+  {day:"J12",text:"Urines de couleur rouge foncé. Le débit de 4 L/min demande désormais 3 900 tours/min au lieu de 3 200.",
+   p:{pat:[["Hb libre plasmatique","0,9 g/L (< 0,1)","a"],["LDH","1 800 UI/L","a"],["Haptoglobine","effondrée","a"],["Créatinine","en hausse","w"]],
+      mem:[["Post : PO₂","450 mmHg"],["ΔP membrane","18 mmHg"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Tours de pompe","3 900 /min (3 200 à J8)","w"],["P aspiration","−110 mmHg","w"]],
+      vent:[["Vt / FR","280 mL / 12"],["PEP / FiO₂","10 / 40 %"]]},
+   q:"Quelle est votre analyse ?",
+   c:[["Hémolyse : chercher un thrombus de pompe ou une aspiration excessive","g-ok","Hémoglobine libre plasmatique très élevée (au-delà de 0,5 g/L, l'hémolyse est significative), LDH élevée, haptoglobine effondrée, urines foncées. Plus de tours pour le même débit avec un ΔP normal oriente vers la pompe (thrombus de la tête) ou l'aspiration : on inspecte et on change la pompe si besoin."],
+      ["Augmenter encore les tours pour maintenir le débit malgré l'aspiration","g-bad","Plus de tours, plus de cisaillement et de dépression : l'hémolyse s'aggrave."],
+      ["Transfuser pour compenser les pertes et poursuivre sans rien modifier","g-bad","L'hémolyse est toxique pour le rein et signale une anomalie du circuit qu'il faut corriger."],
+      ["Changer uniquement la membrane, la pompe ne peut pas être en cause","g-mid","Le ΔP et la PO₂ post-membrane sont normaux : la membrane n'est pas la cause principale. C'est la pompe (ou l'aspiration) qu'il faut inspecter."]]}
+ ]}
+];
+function kShuf(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+let K={order:kShuf(KC.length),c:0,s:0,ans:null,perm:{},score:0,done:0};K.c=K.order[0];
+function kStart(ci){K.c=ci;K.s=0;K.ans=null;for(const k in K.perm)if(k.startsWith(KC[ci].id))delete K.perm[k];}
+function kPerm(key,n){if(!K.perm[key])K.perm[key]=kShuf(n);return K.perm[key];}
+const kv=a=>`<div class="kv">${a.map(x=>`<span>${x[0]}</span><span class="${x[2]||""}">${x[1]}</span>`).join("")}</div>`;
+function kRender(){
+  const cs=KC[K.c],st=cs.steps[K.s];
+  $("kList").innerHTML=K.order.map(i=>[KC[i],i]).map(([c,i])=>`<button class="casebtn" type="button" data-kc="${i}" aria-pressed="${i===K.c}"><b><span class="badge">${c.mode}</span> ${c.title}</b><span>${c.sub}</span></button>`).join("");
+  $("kHead").innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0"><span class="day">${st.day}</span>${cs.title}</h2><span class="mut small">cas ${K.order.indexOf(K.c)+1} sur ${KC.length} · étape ${K.s+1} sur ${cs.steps.length}</span></div><p style="margin-top:8px">${st.text}</p>`;
+  $("kPanels").innerHTML=[["Patient",st.p.pat],["Membrane (gaz pré / post)",st.p.mem],["Circuit d'ECMO",st.p.ecmo],[cs.mode==="VA"?"Respirateur et hémodynamique":"Respirateur",st.p.vent]].map(x=>`<div class="pan"><h3>${x[0]}</h3>${kv(x[1])}</div>`).join("");
+  const key=cs.id+K.s,perm=kPerm(key,st.c.length),a=K.ans;
+  $("kBody").innerHTML=`<p><b>${st.q}</b></p><div class="choices">${perm.map((ci,j)=>{const c=st.c[ci],cl=a===null?"":c[1]==="g-ok"?" right":ci===a?" wrong":"";return `<button class="choice${cl}" type="button" data-kch="${ci}" ${a!==null?"disabled":""}><b>${"ABCD"[j]}</b><span>${c[0]}</span></button>`;}).join("")}</div>
+   ${a!==null?`<div class="fb"><p><span class="grade ${st.c[a][1]}">${st.c[a][1]==="g-ok"?"Conduite adaptée":st.c[a][1]==="g-mid"?"Discutable":"Délétère"}</span></p><p>${st.c[a][2]}</p>${st.c[a][1]!=="g-ok"?`<p class="mut">Conduite attendue : ${st.c.find(c=>c[1]==="g-ok")[0]}. ${st.c.find(c=>c[1]==="g-ok")[2]}</p>`:""}</div>
+   <p class="row" style="margin-top:10px">${K.s<cs.steps.length-1?`<button class="go" type="button" id="kNext">Étape suivante</button>`:K.order.indexOf(K.c)<KC.length-1?`<button class="go" type="button" id="kNextCase">Cas suivant</button>`:`<button class="go" type="button" id="kAgain">Nouvelle série, dans un autre ordre</button>`}</p>`:""}`;
+  $("kScore").textContent=K.done?`Score ${K.score}/${K.done}`:"";
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-kc]");if(b){kStart(+b.dataset.kc);kRender();return;}
+  const ch=e.target.closest("[data-kch]");if(ch&&K.ans===null){K.ans=+ch.dataset.kch;K.done++;if(KC[K.c].steps[K.s].c[K.ans][1]==="g-ok")K.score++;kRender();return;}
+  if(e.target.closest("#kNext")){K.s++;K.ans=null;kRender();$("p-cas").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#kNextCase")){kStart(K.order[K.order.indexOf(K.c)+1]);kRender();$("p-cas").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#kAgain")){K.order=kShuf(KC.length);K.perm={};K.score=0;K.done=0;kStart(K.order[0]);kRender();return;}
+});
+
+/* ===== Onglets ===== */
+const TABS=["flux","membrane","cas"];
+function showTab(t){if(!TABS.includes(t))t="flux";
+  for(const x of TABS){$("p-"+x).hidden=x!==t;$("t-"+x).setAttribute("aria-selected",x===t?"true":"false");}
+  try{if(location.hash!=="#"+t)history.replaceState(null,"","#"+t);}catch(e){}
+  if(t==="flux")render();if(t==="membrane")memRender();if(t==="cas")kRender();}
+document.querySelector(".tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.dataset.t);});
+showTab((location.hash||"").slice(1)||"flux");
 
 }
 </script>
