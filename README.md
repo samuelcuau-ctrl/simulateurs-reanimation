@@ -15,7 +15,7 @@ Site statique : chaque page est un fichier HTML autonome, sans serveur ni base d
 | /erreurs/ | `erreurs/index.html` (chambre à erreurs) |
 | /mentions-legales/ | `mentions-legales/index.html` (à compléter) |
 
-Plus `manifest.webmanifest` et `icon.svg`, qui permettent d'ajouter le site à l'écran d'accueil d'un téléphone comme une application.
+Plus `manifest.webmanifest`, `icon.svg` (icône d'application SIM-ICU), `favicon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` et `logo-sim-icu.svg` (logo affiché sur l'accueil), qui permettent d'ajouter le site à l'écran d'accueil d'un téléphone comme une application.
 
 Les liens sont relatifs : l'adresse d'une page ne change jamais quand on met à jour un simulateur. Pour mettre à jour un simulateur, on remplace seulement son fichier.
 

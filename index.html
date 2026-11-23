@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulateurs de réanimation</title>
-<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><meta name="theme-color" content="#0b1215"><link rel="preconnect" href="https://fonts.googleapis.com">
+<title>SIM-ICU · Simulateurs de réanimation</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#0b1215"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* VOICE clinique, calme, précis : un outil de salle de simulation
@@ -19,6 +19,7 @@ html{scroll-padding-top:24px}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
 .wrap{max-width:1280px;margin:0 auto;padding:clamp(18px,3vw,40px) max(3vw,16px)}
 h1{font:600 clamp(34px,4.4vw,52px)/1.05 "Barlow Condensed",Barlow,sans-serif;letter-spacing:-.01em;margin:0 0 8px;text-wrap:balance}
+.brand{display:flex;flex-direction:column;gap:10px}.brand img{display:block;height:clamp(52px,7vw,84px);width:auto;max-width:100%}.brand span{font-size:clamp(24px,2.6vw,30px);color:var(--mut)}
 h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 14px}
 h3{font:600 22px/1.15 "Barlow Condensed",sans-serif;margin:0 0 4px}
 p{margin:0}
@@ -80,7 +81,7 @@ footer strong{color:var(--ink);font-weight:600}
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Simulateurs de réanimation</h1>
+      <h1 class="brand"><img src="logo-sim-icu.svg" alt="SIM-ICU" width="715" height="180"><span>Simulateurs de réanimation</span></h1>
       <p class="lede">Des cas cliniques interactifs pour s'entraîner aux gestes et aux réglages de réanimation, sur ordinateur ou téléphone. Chaque lit est un simulateur.</p>
     </div>
     <div class="counts" aria-label="État des simulateurs">
