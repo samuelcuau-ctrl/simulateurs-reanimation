@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Épuration extrarénale</title>
-<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="../apple-touch-icon.png"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 /* VOICE clinique, calme, précis : la salle de réanimation, côté rein
@@ -73,6 +73,14 @@ label.f.off{opacity:.35}
 .ax{fill:var(--mut);font:12px Barlow,sans-serif}
 .note{font-size:15px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
 .note b{color:var(--ink)}
+.recs summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.recs summary::-webkit-details-marker{display:none}
+.recs summary h2{margin:0}
+.recs summary::after{content:"▾";margin-left:auto;color:var(--mut)}
+.recs:not([open]) summary::after{content:"▸"}
+.recgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:12px}
+.recgrid ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:15px}
+@media(max-width:800px){.recgrid{grid-template-columns:minmax(0,1fr)}}
 table.t{width:100%;border-collapse:collapse;font-size:15px}
 table.t th,table.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
 table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
@@ -153,7 +161,7 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
 @media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.charts,.panels{grid-template-columns:minmax(0,1fr)}.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tab small{display:none}}
 </style>
-</head>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icon.svg"></head>
 <body>
 <nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
 <div class="wrap">
@@ -166,7 +174,7 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
   <nav class="tabs" role="tablist" aria-label="Modules">
     <button class="tab" role="tab" id="t-modalites" data-t="modalites">Modalités<small>le circuit pas à pas</small></button>
     <button class="tab" role="tab" id="t-reglages" data-t="reglages">Réglages<small>paramètres et situations</small></button>
-    <button class="tab" role="tab" id="t-citrate" data-t="citrate">Citrate<small>protocole du service</small></button>
+    <button class="tab" role="tab" id="t-citrate" data-t="citrate">Citrate<small>recommandations et protocole</small></button>
     <button class="tab" role="tab" id="t-depannage" data-t="depannage">Dépannage<small>l'alarme sonne</small></button>
     <button class="tab" role="tab" id="t-decisions" data-t="decisions">Décisions<small>démarrer, arrêter</small></button>
   </nav>
@@ -221,7 +229,36 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
 
   <!-- ============ CITRATE ============ -->
   <section id="p-citrate" role="tabpanel" hidden>
-    <div class="grid">
+    <details class="card recs" open>
+      <summary><h2>Ce que disent les recommandations</h2><span class="mut small">puis ce que le protocole du service précise</span></summary>
+      <div class="recgrid">
+        <div>
+          <h3>Recommandations</h3>
+          <ul>
+            <li><b>EER continue, risque hémorragique faible :</b> citrate plutôt qu'héparine (HNF ou HBPM) (SRLF 2025, GRADE 2+ ; KDIGO 2012).</li>
+            <li><b>EER continue, risque hémorragique élevé :</b> citrate plutôt qu'aucune anticoagulation, en l'absence de contre-indication au citrate (SRLF 2025, GRADE 2+).</li>
+            <li><b>HDI chez un patient à haut risque hémorragique :</b> pas de recommandation entre citrate et héparine.</li>
+            <li><b>Bénéfice démontré :</b> durée de vie du filtre presque doublée par rapport à l'héparine (RICH : médiane 47 contre 26 heures).</li>
+            <li><b>Surveillance :</b> alcalose métabolique (surcharge en citrate), hypo- et hypercalcémie. Accumulation : rapport calcium total / Ca²⁺ &gt; 2,5.</li>
+            <li><b>Foie :</b> en cirrhose ou insuffisance hépatique aiguë, le citrate reste possible avec un protocole adapté visant un rapport &lt; 2,5 (SRLF 2025). À éviter en acidose lactique sévère avec choc (métabolisme du citrate effondré).</li>
+            <li><b>Repères habituels des protocoles :</b> Ca²⁺ post-filtre autour de 0,25 à 0,35 mmol/L, Ca²⁺ du patient dans les valeurs normales.</li>
+            <li><b>Verrous :</b> citrate ≤ 4 % ou héparine ≤ 5 000 UI/mL ; pas de verrou hépariné si risque hémorragique (SRLF 2025).</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Ce que le protocole du service précise</h3>
+          <ul>
+            <li>Technique : CVVH en post-dilution, Regiocit 18/0, compensation calcique automatique (Cit/Cal).</li>
+            <li>Réglages de départ selon le poids : débit sang, dose de citrate, compensation, réinjection.</li>
+            <li>Cibles du service : Ca²⁺ post-filtre 0,35 à 0,45 mmol/L, Ca²⁺ patient 1,1 à 1,3 mmol/L, un peu plus hautes que celles de nombreux protocoles publiés.</li>
+            <li>Contre-indications du service, plus larges que les recommandations : TP &lt; 50 %, rhabdomyolyse, acidose lactique aux biguanides, intoxication au paracétamol ou au trichloréthylène, choc sévère avec acidose lactique, allergie.</li>
+            <li>Contrôles à H1, H2, H3, H6 puis toutes les 6 heures, avec une grille d'adaptation de la dose et de la compensation, et la conduite en cas de surcharge ou d'accumulation.</li>
+          </ul>
+          <p class="note">L'exercice ci-dessous applique le protocole du service. Ailleurs, suivez le protocole de votre équipe.</p>
+        </div>
+      </div>
+    </details>
+    <div class="grid" style="margin-top:14px">
       <div>
         <div class="gridfig" id="cGrid"></div>
         <p class="small mut" style="margin-top:6px">Grille d'adaptation du protocole : calcium ionisé du patient en ordonnée, calcium ionisé post-filtre en abscisse. Chaque point est un contrôle.</p>
@@ -261,10 +298,12 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
         <div class="card" style="margin-top:14px">
           <h2>Repères</h2>
           <ul class="small mut" style="padding-left:18px;margin:0">
-            <li>Indications impératives (critères AKIKI) : K⁺ &gt; 6 mmol/L, ou &gt; 5,5 persistant malgré le traitement ; pH &lt; 7,15 en acidose métabolique ; OAP de surcharge avec hypoxémie sévère.</li>
-            <li>Sans urgence vitale, attendre est sûr et évite des EER inutiles (AKIKI, IDEAL-ICU, STARRT-AKI).</li>
-            <li>Mais ne pas attendre au-delà : oligo-anurie &gt; 72 h ou urée &gt; 40 mmol/L, retarder encore n'apporte rien et pourrait nuire (AKIKI 2).</li>
-            <li>Sevrage : une diurèse spontanée d'au moins 400 à 500 mL/24 h sans diurétique prédit le succès.</li>
+            <li>EER urgente (SRLF 2025) : K⁺ &gt; 6,5 mmol/L malgré le traitement médical (selon l'anurie, l'ECG et le risque d'aggravation) ; OAP de surcharge avec hypoxémie modérée à sévère persistante (repères : PaO₂/FiO₂ &lt; 200, ou SpO₂ ≤ 95 % sous 5 L/min d'O₂).</li>
+            <li>Pas de seuil de créatinine ; l'acidose métabolique seule n'est pas une indication. Intoxication : avis d'un centre antipoison.</li>
+            <li>IRA KDIGO 3 sans critère d'urgence : ne pas démarrer avant 72 heures (recommandation forte ; AKIKI, IDEAL-ICU, STARRT-AKI).</li>
+            <li>Urée &gt; 40 mmol/L sans signe de récupération : envisager l'EER. Retarder encore n'apporte rien et pourrait nuire (AKIKI 2).</li>
+            <li>Technique : continue en première intention (ICRAKI, 2026 : mortalité à J90 plus élevée avec l'HDI initiale). Dose effluent de 25 mL/kg/h au maximum.</li>
+            <li>Sevrage : évaluer chaque jour la reprise de la diurèse (seuils autour de 400 mL/24 h sans diurétique dans les études) ; relais par HDI si besoin.</li>
           </ul>
         </div>
       </div>
@@ -272,12 +311,15 @@ footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(
   </section>
 
   <footer>
-    <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Les patients et les valeurs sont simulés par des modèles simplifiés. L'onglet Citrate suit le protocole de CVVH au citrate du service (Médecine intensive et réanimation, 2019).</p>
+    <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Les patients et les valeurs sont simulés par des modèles simplifiés. Contenu aligné sur la conférence de consensus SRLF-GFRUP 2025 et l'essai ICRAKI (2026) ; mise à jour du 23 novembre 2026. Dans l'onglet Citrate, les recommandations sont complétées par le protocole de CVVH au citrate du service (Médecine intensive et réanimation, 2019) pour les réglages et la grille d'adaptation.</p>
     <ol class="refs">
-      <li>KDIGO Clinical Practice Guideline for Acute Kidney Injury, 2012.</li>
+      <li>SRLF-GFRUP. Renal replacement therapy in an intensive care unit : guidelines from the SRLF-GFRUP consensus conference. Ann Intensive Care 2025 (doi 10.1186/s13613-025-01517-0).</li>
+      <li>Gaudry S et al. Intermittent or continuous renal-replacement therapy in acute kidney injury (ICRAKI). N Engl J Med 2026.</li>
+      <li>KDIGO Clinical Practice Guideline for Acute Kidney Injury, 2012 (mise à jour 2026 en cours de publication).</li>
       <li>RENAL Replacement Therapy Study Investigators, N Engl J Med 2009 ; VA/NIH ATN Study, N Engl J Med 2008.</li>
       <li>Gaudry S et al. AKIKI, N Engl J Med 2016 ; AKIKI 2, Lancet 2021. Barbar SD et al. IDEAL-ICU, N Engl J Med 2018. STARRT-AKI Investigators, N Engl J Med 2020.</li>
       <li>Zarbock A et al. RICH (citrate contre héparine), JAMA 2020.</li>
+      <li>Calello DP et al. Extracorporeal treatment for metformin poisoning (EXTRIP). Crit Care Med 2015.</li>
     </ol>
   </footer>
 </div>
@@ -328,14 +370,15 @@ const MODES={
   CVVHDF:{lab:"CVVHDF",cont:true,help:"Hémodiafiltration continue : convection et diffusion associées. Souple : la diffusion apporte la dose sans augmenter la fraction de filtration."},
   HDI:{lab:"HDI",cont:false,help:"Hémodialyse intermittente : clairance élevée sur une séance courte. La plus rapide pour corriger une hyperkaliémie ou une intoxication, mais l'ultrafiltration horaire est mal tolérée en cas d'instabilité, et le rebond est la règle."}
 };
-const DEF={CVVH:{qb:150,pre:1000,post:800,dial:0,uf:100,down:2},CVVHD:{qb:150,pre:0,post:0,dial:2000,uf:100,down:2},CVVHDF:{qb:150,pre:600,post:400,dial:1000,uf:100,down:2},HDI:{qb:300,qd:500,dur:4,uft:2000}};
+const DEF={CVVH:{qb:150,pre:900,post:800,dial:0,uf:100,down:2},CVVHD:{qb:150,pre:0,post:0,dial:1700,uf:100,down:2},CVVHDF:{qb:150,pre:600,post:300,dial:800,uf:100,down:2},HDI:{qb:300,qd:500,dur:4,uft:2000,na:145,temp:35.5,freq:3}};
 let M={preset:"hyperk",mode:"CVVHDF",sol:"bic",...structuredClone(DEF.CVVHDF)};
 const FIELDS={
   qb:["Débit sang",50,400,10,"mL/min"],pre:["Prédilution",0,3000,100,"mL/h"],post:["Post-dilution",0,3000,100,"mL/h"],
   dial:["Dialysat",0,3000,100,"mL/h"],uf:["Perte patient (UF nette)",0,400,10,"mL/h"],down:["Arrêts par 24 h",0,8,0.5,"h"],
-  qd:["Débit dialysat",100,800,50,"mL/min"],dur:["Durée de séance",2,12,1,"h"],uft:["UF totale de la séance",0,4000,250,"mL"]
+  qd:["Débit dialysat",100,800,50,"mL/min"],dur:["Durée de séance",2,12,1,"h"],uft:["UF totale de la séance",0,4000,250,"mL"],
+  na:["Sodium du dialysat",135,160,1,"mmol/L"],temp:["Température du dialysat",34.5,37.5,0.5,"°C"],freq:["Séances par semaine",3,7,0.5,"/ sem."]
 };
-function mFieldsFor(mode){return MODES[mode].cont?["qb","pre","post","dial","uf","down"]:["qb","qd","dur","uft"];}
+function mFieldsFor(mode){return MODES[mode].cont?["qb","pre","post","dial","uf","down"]:["qb","qd","dur","uft","na","temp","freq"];}
 function mCompute(){
   const P=PRESETS[M.preset],w=P.w,cont=MODES[M.mode].cont;
   const qp=M.qb*(1-P.ht)*60; // mL/h
@@ -355,7 +398,7 @@ function mCompute(){
     r.kml=Math.min(0.75*M.qb,0.85*M.qd);
     r.K=r.kml*60/1000;
     const V=0.55*w;r.ktv=r.K*M.dur/V;r.urr=1-Math.exp(-r.ktv);
-    r.ufh=M.uft/M.dur/w;
+    r.ufh=M.uft/M.dur/w;r.ktvw=r.ktv*M.freq;
   }
   return r;
 }
@@ -425,24 +468,31 @@ function mUpdate(){
   $("circuit").innerHTML=mCircuit(r);
   const m=[];const fl=[];
   if(r.cont){
-    const cls=v=>v<20?"bad":v>35?"warn":"ok";
-    m.push(["Débit plasmatique",nf(r.qp/1000,1),"L/h",""],["Effluent",Math.round(r.eff),"mL/h",""],["Dose prescrite",nf(r.doseP,1),"mL/kg/h",""],
+    const cls=v=>v<20?"warn":"ok";
+    m.push(["Débit plasmatique",nf(r.qp/1000,1),"L/h",""],["Effluent",Math.round(r.eff),"mL/h",""],["Dose prescrite",nf(r.doseP,1),"mL/kg/h",r.doseP>25.05?"warn":""],
       ["Facteur de prédilution",nf(r.fd,2),"",""],["Dose corrigée",nf(r.doseC,1),"mL/kg/h",""],["Dose délivrée estimée",nf(r.doseD,1),"mL/kg/h",cls(r.doseD)],
       ["Fraction de filtration",Math.round(r.ff*100),"%",r.ff>0.25?"bad":r.ff>0.2?"warn":"ok"],["Clairance de l'urée",Math.round(r.kml),"mL/min",""]);
-    if(r.doseD<20)fl.push(["bad",`Dose délivrée ${nf(r.doseD)} mL/kg/h : sous l'objectif de 20 à 25 mL/kg/h (KDIGO). Pour l'atteindre malgré les arrêts et la prédilution, prescrire 25 à 30 mL/kg/h.`]);
-    else if(r.doseD>35)fl.push(["warn",`Dose délivrée ${nf(r.doseD)} mL/kg/h : les fortes doses n'améliorent pas la survie (RENAL, ATN) et augmentent les pertes en phosphate, potassium, acides aminés et antibiotiques.`]);
-    else fl.push(["ok",`Dose délivrée dans la cible de 20 à 25 mL/kg/h${r.doseD>25?" (un peu au-dessus, acceptable)":""}.`]);
+    if(r.doseP>25.05&&M.preset==="metf")fl.push(["ok",`Dose prescrite ${nf(r.doseP)} mL/kg/h : en intoxication, l'objectif est d'épurer le toxique au plus vite, pas la dose standard de l'IRA.`]);
+    else if(r.doseP>25.05)fl.push(["warn",`Dose prescrite ${nf(r.doseP)} mL/kg/h : la conférence SRLF 2025 recommande une dose effluent de 25 mL/kg/h au maximum (recommandation forte). Les fortes doses n'améliorent pas la survie (RENAL, ATN) et augmentent les pertes en phosphate, potassium, acides aminés et antibiotiques.`]);
+    if(r.doseD<20)fl.push(["warn",`Dose délivrée ${nf(r.doseD)} mL/kg/h, sous les 20 à 25 mL/kg/h des grands essais. Réduire les arrêts et la part de prédilution avant d'augmenter la prescription au-delà de 25.`]);
+    else if(r.doseP<=25.05)fl.push(["ok",`Dose prescrite ≤ 25 mL/kg/h et dose délivrée de ${nf(r.doseD)} mL/kg/h : conforme aux recommandations.`]);
     if(r.ff>0.25)fl.push(["bad",`Fraction de filtration ${Math.round(r.ff*100)} % : hémoconcentration dans le filtre, coagulation rapide. Augmenter le débit sang, passer une partie de la post-dilution en prédilution, ou convertir en diffusion (CVVHDF).`]);
     else if(r.ff>0.2)fl.push(["warn",`Fraction de filtration ${Math.round(r.ff*100)} % : à la limite haute (20 à 25 %).`]);
     if(r.pre>0&&r.fd<0.8)fl.push(["warn",`Prédilution importante : facteur ${nf(r.fd,2)}. La dose réelle est ${Math.round((1-r.fd)*100)} % plus faible que la dose prescrite.`]);
     if(M.down>=4)fl.push(["warn",`${nf(M.down)} h d'arrêt par jour (changements de poches, de filtre, examens) : ${Math.round(M.down/24*100)} % de dose perdue.`]);
     if(M.qb>250)fl.push(["warn","Débit sang élevé pour une technique continue : pressions d'accès plus négatives, alarmes plus fréquentes."]);
     if(M.uf/P.w>2.5)fl.push(["warn",`UF nette ${nf(M.uf/P.w)} mL/kg/h : risque d'hypotension chez un patient sous vasopresseur.`]);
+    if(M.mode==="CVVH")fl.push(["ok","La CVVHDF prolonge probablement la durée de vie du filtre par rapport à la CVVH (SRLF 2025)."]);
   }else{
-    m.push(["Clairance de l'urée",Math.round(r.kml),"mL/min",""],["Kt/V de la séance",nf(r.ktv,2),"",r.ktv<1?"warn":"ok"],["Réduction de l'urée",Math.round(r.urr*100),"%",""],["UF horaire",nf(r.ufh,1),"mL/kg/h",r.ufh>13?"bad":r.ufh>10?"warn":"ok"]);
+    m.push(["Clairance de l'urée",Math.round(r.kml),"mL/min",""],["Kt/V de la séance",nf(r.ktv,2),"",r.ktv<1?"warn":"ok"],["Kt/V hebdomadaire",nf(r.ktvw,1),"",r.ktvw>3.9?"warn":"ok"],["Réduction de l'urée",Math.round(r.urr*100),"%",""],["UF horaire",nf(r.ufh,1),"mL/kg/h",r.ufh>13?"bad":r.ufh>10?"warn":"ok"]);
     if(r.ufh>13)fl.push(["bad",`UF horaire ${nf(r.ufh)} mL/kg/h : au-delà de 10 à 13 mL/kg/h, le risque d'hypotension per-dialytique est majeur. Allonger la séance ou réduire l'UF.`]);
     if(P.urea>35&&r.urr>0.4)fl.push(["warn",`Urée initiale ${P.urea} mmol/L et réduction de ${Math.round(r.urr*100)} % : risque de syndrome de déséquilibre. Pour une première séance, viser une réduction d'environ 30 % (séance courte, débit sang modéré).`]);
-    if(M.mode==="HDI")fl.push(["ok","Clairance maximale : c'est la technique de choix pour une hyperkaliémie menaçante ou une intoxication dialysable, si l'hémodynamique le permet. Attendre un rebond du potassium après la séance."]);
+    if(M.na<145)fl.push(["warn",`Sodium du dialysat ${M.na} mmol/L : un sodium élevé en début de séance (≥ 145, ou 150 à 160 puis décroissant vers 138 à 140) améliore la tolérance hémodynamique (SRLF 2025).`]);
+    if(M.temp>36)fl.push(["warn",`Dialysat à ${nf(M.temp)} °C : un dialysat refroidi, 1,5 à 2 °C sous la température du patient (souvent 35 à 35,5 °C), réduit l'hypotension per-dialytique (SRLF 2025).`]);
+    if(M.freq>=6)fl.push(["warn","HDI quotidienne pour augmenter la dose hebdomadaire : non recommandée (SRLF 2025). Un rythme un jour sur deux est acceptable ; on adapte aux besoins (kaliémie, volémie)."]);
+    if(r.ktvw>3.9)fl.push(["warn",`Kt/V hebdomadaire estimé ${nf(r.ktvw,1)} : ne pas dépasser 3,9 (SRLF 2025).`]);
+    if(M.uft>0)fl.push(["ok","Avant l'ultrafiltration, évaluer la volémie : pas d'UF en cas d'hypovolémie, et l'arrêter si une intolérance apparaît (SRLF 2025)."]);
+    if(M.mode==="HDI")fl.push(["ok","Clairance maximale : utile pour une hyperkaliémie menaçante ou une intoxication dialysable chez un patient stable. Hors urgence, une technique continue est le premier choix (ICRAKI, 2026). Attendre un rebond du potassium après la séance."]);
   }
   if(M.sol==="k0")fl.push(["warn","Solution sans potassium : à réserver aux hyperkaliémies sévères, avec contrôles rapprochés. Le risque d'hypokaliémie arrive vite."]);
   if(M.sol!=="phox"&&r.cont)fl.push(["ok","Pas de phosphate dans la solution : sur plusieurs jours d'EER continue, surveiller l'hypophosphatémie."]);
@@ -473,7 +523,7 @@ const isCont=m=>["CVVH","CVVHD","CVVHDF"].includes(m);
 const ST={
  acces:{x:150,y:165,in:TMODES,t:"Cathéter, branche « artérielle »",
   f:m=>"Le sang quitte le patient par la branche rouge du cathéter double lumière. Ses orifices sont situés en amont de ceux du retour (plus loin de la pointe) : le sang est aspiré avant de croiser le sang épuré, ce qui limite la recirculation. « Artérielle » est un terme historique : le cathéter est veineux.",
-  r:m=>"Site (KDIGO 2012) : jugulaire interne droite en premier, puis fémorale, puis jugulaire interne gauche ; la sous-clavière en dernier (sténose, et elle compromet une future fistule). Longueur habituelle : environ 15 cm en jugulaire droite, 20 cm à gauche, 20 à 25 cm en fémoral. Calibre 12 à 14 Fr.",
+  r:m=>"Site (SRLF 2025) : jugulaire interne droite en premier, puis fémorale, puis jugulaire interne gauche, selon le risque de dysfonction ; jugulaire et fémorale sont équivalentes pour le risque infectieux. Sous-clavière seulement sans autre choix (sténose, future fistule). Éviter la fémorale en cas de syndrome du compartiment abdominal ou de mobilisation précoce prévue. Calibre d'environ 12 Fr ; longueur 12 cm en jugulaire droite, 20 cm à gauche, au moins 24 cm en fémoral.",
   s:m=>"Facilité d'aspiration à la seringue au branchement, pression d'accès stable, absence de recirculation (l'urée doit baisser comme prévu).",
   a:m=>"Cathéter qui « colle » à la paroi, coudé ou thrombosé : pression d'accès très négative, alarmes répétées, arrêts de pompe. Corriger la position du patient, rincer ; inverser les lignes seulement en dernier recours (et jamais sous citrate)."},
  pacc:{x:215,y:90,in:TMODES,t:"Capteur de pression d'accès",
@@ -483,7 +533,7 @@ const ST={
   a:m=>"Plus négative : aspiration contre la paroi, coudure, caillot, débit sang trop élevé pour l'accès. Qui remonte vers zéro brusquement : déconnexion ou fuite en amont du capteur."},
  anticoag:{x:285,y:90,in:TMODES,t:"Anticoagulation du circuit",
   f:m=>isCont(m)?"Empêche le sang de coaguler au contact du circuit. Le citrate, injecté juste après le cathéter, chélate le calcium et bloque la coagulation dans le circuit seulement ; le calcium est rendu au patient sur le retour. L'héparine, injectée à la seringue avant le filtre, anticoagule aussi le patient.":"Empêche le sang de coaguler dans les lignes et le dialyseur. En hémodialyse intermittente, la séance est courte : héparine en bolus puis continu, ou séance sans anticoagulation avec rinçages si le risque hémorragique est élevé.",
-  r:m=>isCont(m)?"Le citrate est l'anticoagulation de première intention en technique continue en l'absence de contre-indication (KDIGO 2012), avec une durée de vie du filtre plus longue qu'avec l'héparine (RICH). Dose de citrate réglée sur le calcium ionisé post-filtre, compensation calcique réglée sur le calcium ionisé du patient (détail dans l'onglet Citrate). Héparine : dose selon le TCA ou l'anti-Xa.":"Héparine non fractionnée : bolus puis débit continu, arrêté avant la fin de la séance. Sans anticoagulation : débit sang élevé, rinçages réguliers au sérum physiologique. Le citrate est possible, selon l'équipe.",
+  r:m=>isCont(m)?"En technique continue, le citrate est préféré à l'héparine si le risque hémorragique est faible, et à l'absence d'anticoagulation s'il est élevé, en l'absence de contre-indication (SRLF 2025, KDIGO 2012). Durée de vie du filtre plus longue qu'avec l'héparine (RICH). Dose de citrate réglée sur le calcium ionisé post-filtre, compensation calcique réglée sur le calcium ionisé du patient (détail dans l'onglet Citrate). Héparine : dose selon le TCA ou l'anti-Xa.":"Héparine non fractionnée : bolus puis débit continu, arrêté avant la fin de la séance. Sans anticoagulation : débit sang élevé, rinçages réguliers au sérum physiologique. Le citrate est possible, selon l'équipe : en HDI chez un patient à haut risque hémorragique, pas de recommandation entre citrate et héparine (SRLF 2025).",
   s:m=>isCont(m)?"Citrate : calcium ionisé post-filtre (cible 0,25 à 0,35 mmol/L) et calcium ionisé du patient. Héparine : TCA ou anti-Xa, plaquettes (thrombopénie induite).":"Aspect du dialyseur et des pièges en fin de séance, saignement aux points de ponction, plaquettes.",
   a:m=>"Anticoagulation insuffisante : filtre qui coagule, pressions qui montent, perte de sang dans le circuit. Excessive : saignement (héparine), hypocalcémie ou accumulation de citrate (citrate)."},
  pompe:{x:365,y:90,in:TMODES,t:"Pompe à sang",
@@ -521,7 +571,7 @@ const ST={
   a:m=>"Effluent rosé et alarme de fuite de sang : membrane rompue, arrêter et changer le circuit sans restituer. Pression effluent de plus en plus négative : filtre qui se colmate."},
  peff:{x:760,y:140,in:["CVVH","CVVHD","CVVHDF"],t:"Pompe effluent",
   f:m=>"Elle fixe le débit qui sort du filtre, donc la quantité d'eau ultrafiltrée et, avec le dialysat, la dose.",
-  r:m=>"Débit effluent = réinjection + dialysat + perte patient. Dose prescrite = effluent / poids : 25 à 30 mL/kg/h pour délivrer 20 à 25 (KDIGO).",
+  r:m=>"Débit effluent = réinjection + dialysat + perte patient. Dose prescrite = effluent / poids : 25 mL/kg/h au maximum (SRLF 2025, d'après RENAL et ATN). La dose délivrée est plus faible (arrêts, prédilution) : on limite les interruptions plutôt que d'augmenter la prescription.",
   s:m=>"Débit effluent horaire, cohérent avec la prescription.",
   a:m=>"Ce débit est le meilleur reflet de la dose : toute baisse (arrêts, poches) fait baisser la dose délivrée."},
  bal:{x:850,y:225,in:["CVVH","CVVHD","CVVHDF"],t:"Balances",
@@ -566,7 +616,7 @@ const ST={
   a:m=>"Bain sans potassium chez un patient normokaliémique : hypokaliémie et troubles du rythme."},
  cond:{x:700,y:365,in:["HDI"],t:"Conductivité, chauffage, dégazage",
   f:m=>"La conductivité vérifie que le mélange est correct (elle reflète surtout le sodium). Le dialysat est chauffé et dégazé avant d'entrer dans le dialyseur.",
-  r:m=>"Température du dialysat 35,5 à 36 °C : un bain un peu frais améliore la tolérance hémodynamique.",
+  r:m=>"Dialysat 1,5 à 2 °C sous la température du patient (souvent 35 à 35,5 °C) : un bain plus frais améliore la tolérance hémodynamique (SRLF 2025).",
   s:m=>"Conductivité stable, température affichée.",
   a:m=>"Alarme de conductivité : le générateur met le dialysat en dérivation (il ne passe plus dans le dialyseur). Vérifier les concentrés."},
  dialHD:{x:640,y:310,in:["HDI"],t:"Débit de dialysat",
@@ -602,33 +652,33 @@ const tStations=m=>(isCont(m)?ORDER_C:ORDER_H).filter(k=>ST[k].in.includes(m));
 const TECH={
  CVVH:{full:"Hémofiltration veino-veineuse continue",meca:"Convection",
   prin:"La pompe effluent crée une pression transmembranaire : l'eau plasmatique traverse la membrane et entraîne avec elle les solutés jusqu'au seuil de coupure de la membrane (convection). L'eau retirée est remplacée par une solution de substitution, avant le filtre (prédilution) et/ou après (post-dilution). La clairance est à peu près égale au débit d'ultrafiltration, corrigé du facteur de prédilution.",
-  set:[["Débit sang","150 à 200 mL/min"],["Dose (effluent)","25 à 30 mL/kg/h prescrits"],["Réinjection","répartie pré / post"],["Fraction de filtration","&lt; 20 à 25 %"],["Perte patient","0 à 2 mL/kg/h"]],
+  set:[["Débit sang","150 à 200 mL/min"],["Dose (effluent)","25 mL/kg/h prescrits au maximum"],["Réinjection","répartie pré / post"],["Fraction de filtration","&lt; 20 à 25 %"],["Perte patient","0 à 2 mL/kg/h"]],
   plus:["Épure petites et moyennes molécules","Tolérance hémodynamique","Correction lente et régulière"],
   moins:["Fraction de filtration limitante : filtre qui coagule si trop de post-dilution","Prédilution qui réduit la dose","Pertes en phosphate, potassium, antibiotiques"],
-  quand:"Patient instable ou à risque d'hypertension intracrânienne (KDIGO 2012)."},
+  quand:"Patient instable ou à risque d'hypertension intracrânienne. Depuis ICRAKI (2026), une technique continue est le choix de première intention en réanimation."},
  CVVHD:{full:"Hémodialyse veino-veineuse continue",meca:"Diffusion",
   prin:"Le dialysat circule autour des fibres à contre-courant du sang : les petites molécules passent du sang vers le dialysat selon leur gradient de concentration (diffusion). Le débit de dialysat étant très inférieur au débit plasmatique, le dialysat sort saturé en urée : la clairance de l'urée est à peu près égale au débit de dialysat. Seule la perte patient est ultrafiltrée.",
-  set:[["Débit sang","100 à 150 mL/min"],["Dialysat","25 à 30 mL/kg/h"],["Perte patient","0 à 2 mL/kg/h"]],
+  set:[["Débit sang","100 à 150 mL/min"],["Dialysat","jusqu'à 25 mL/kg/h"],["Perte patient","0 à 2 mL/kg/h"]],
   plus:["Fraction de filtration très faible : filtre durable","Débit sang modeste suffisant"],
   moins:["Moins efficace sur les moyennes molécules (impact clinique non démontré)"],
   quand:"Accès vasculaire au débit limité, ou filtres qui coagulent vite en convection."},
  CVVHDF:{full:"Hémodiafiltration veino-veineuse continue",meca:"Convection et diffusion",
   prin:"On associe une réinjection (convection) et un dialysat à contre-courant (diffusion). La diffusion apporte une partie de la dose sans augmenter la fraction de filtration : c'est la technique la plus souple.",
-  set:[["Débit sang","environ 150 mL/min"],["Dose totale","25 à 30 mL/kg/h"],["Répartition","environ moitié réinjection, moitié dialysat"],["Perte patient","0 à 2 mL/kg/h"]],
+  set:[["Débit sang","environ 150 mL/min"],["Dose totale","25 mL/kg/h au maximum"],["Répartition","environ moitié réinjection, moitié dialysat"],["Perte patient","0 à 2 mL/kg/h"]],
   plus:["Souple : on règle la dose sans pousser la fraction de filtration","Épure petites et moyennes molécules"],
   moins:["Plus de poches et de réglages"],
-  quand:"Choix polyvalent en réanimation, notamment avec un débit sang limité."},
+  quand:"Choix polyvalent en réanimation, notamment avec un débit sang limité. Probablement une durée de vie du filtre plus longue qu'en CVVH (SRLF 2025)."},
  HDI:{full:"Hémodialyse intermittente",meca:"Diffusion à haut débit",
   prin:"Le générateur fabrique le dialysat à partir d'eau traitée et de concentrés. Le dialysat circule à 500 mL/min à contre-courant d'un débit sang élevé : la clairance de l'urée dépasse 200 mL/min. La séance dure quelques heures ; l'ultrafiltration est contrôlée par le générateur.",
-  set:[["Débit sang","250 à 350 mL/min"],["Dialysat","500 mL/min"],["Durée","4 h ou plus en réanimation"],["Bain","Na⁺ 145, K⁺ selon kaliémie, 35,5 à 36 °C"],["UF horaire","&lt; 10 à 13 mL/kg/h"]],
+  set:[["Débit sang","250 à 350 mL/min"],["Dialysat","500 mL/min"],["Durée","4 h ou plus en réanimation"],["Bain","Na⁺ ≥ 145 (ou 150 à 160 décroissant), K⁺ selon kaliémie, 1,5 à 2 °C sous le patient"],["UF horaire","&lt; 10 à 13 mL/kg/h"]],
   plus:["Correction la plus rapide (hyperkaliémie, intoxications dialysables)","Patient libre entre les séances","Moins d'anticoagulation"],
-  moins:["Hypotension si UF horaire élevée","Rebond du potassium et de l'urée","Risque de syndrome de déséquilibre, à éviter en cas d'hypertension intracrânienne","Eau traitée et équipe formée nécessaires"],
-  quand:"Hémodynamique stable, ou urgence métabolique (hyperkaliémie menaçante, intoxication). Pas de différence de survie avec les techniques continues (Hemodiafe)."}
+  moins:["Hypotension si UF horaire élevée","Rebond du potassium et de l'urée","Risque de syndrome de déséquilibre, à éviter en cas d'hypertension intracrânienne","Eau traitée et équipe formée nécessaires","Pas d'HDI quotidienne pour augmenter la dose ; Kt/V hebdomadaire ≤ 3,9 (SRLF 2025)"],
+  quand:"Urgence métabolique chez un patient stable (hyperkaliémie menaçante, intoxication dialysable), ou relais au sevrage d'une technique continue. En première intention, l'essai ICRAKI (NEJM 2026, 554 patients) n'a pas montré la non-infériorité de l'HDI face à l'EER continue, avec une mortalité à J90 plus élevée (63,1 contre 53,5 %). La conférence SRLF 2025, antérieure à ICRAKI, jugeait les deux techniques probablement équivalentes."}
 };
 function tProc(m){
   if(isCont(m))return [
-   ["Prescrire",`Technique (${m}), dose effluent 25 à 30 mL/kg/h, débit sang, répartition ${m==="CVVHD"?"en dialysat":m==="CVVH"?"pré / post-dilution":"réinjection / dialysat"}, perte patient horaire, anticoagulation, solution (potassium, phosphate), cibles biologiques.`,"La machine n'exécute que ce qui est écrit. La dose délivrée sera inférieure à la dose prescrite : on prescrit plus pour délivrer 20 à 25 mL/kg/h."],
-   ["Vérifier l'abord","Cathéter double lumière dédié, site et longueur adaptés, position contrôlée en jugulaire. Aspirer le verrou de chaque branche, rincer, tester l'aspiration et le refoulement à la seringue.","Un accès qui aspire mal donne des alarmes, des arrêts et de la recirculation. Le verrou (citrate concentré ou héparine) ne doit pas partir dans le patient."],
+   ["Prescrire",`Technique (${m}), dose effluent jusqu'à 25 mL/kg/h, débit sang, répartition ${m==="CVVHD"?"en dialysat":m==="CVVH"?"pré / post-dilution":"réinjection / dialysat"}, perte patient horaire, anticoagulation, solution (potassium, phosphate), cibles biologiques.`,"La machine n'exécute que ce qui est écrit. La dose délivrée est inférieure à la dose prescrite (arrêts, prédilution) : on limite les interruptions plutôt que de dépasser 25 mL/kg/h prescrits (SRLF 2025)."],
+   ["Vérifier l'abord","Cathéter double lumière dédié, site et longueur adaptés, position contrôlée en jugulaire. Avant toute perte nette, évaluer la volémie. Aspirer le verrou de chaque branche, rincer, tester l'aspiration et le refoulement à la seringue.","Un accès qui aspire mal donne des alarmes, des arrêts et de la recirculation. Le verrou (citrate concentré ou héparine) ne doit pas partir dans le patient."],
    ["Installer le kit et les poches","Monter les lignes et le filtre en suivant le guidage de la machine. Suspendre les poches de solution (et de citrate et de calcium sous citrate), la poche d'effluent vide, la seringue d'héparine le cas échéant. Vérifier les clamps.","Chaque ligne a sa pompe, son capteur et sa balance : une ligne mal placée fausse les pressions ou le bilan."],
    ["Amorcer","Remplir le circuit de sérum physiologique (hépariné ou non selon les pratiques locales). La machine chasse l'air, mouille la membrane et fait son autotest.","Pas d'air dans le circuit, membrane prête, capteurs vérifiés. Un autotest en échec impose de changer le kit."],
    ["Brancher","Connecter la ligne d'accès, démarrer la pompe à sang à bas débit (50 à 100 mL/min). Chez le patient instable, connecter le retour d'emblée (purge restituée) ; sinon remplir le circuit de sang puis connecter le retour. Avoir la noradrénaline prête.","Le circuit contient 150 à 200 mL : les soustraire d'un coup à un patient instable peut faire chuter la pression."],
@@ -636,11 +686,11 @@ function tProc(m){
    ["Surveiller","Chaque heure : pressions (accès, retour, pré-filtre, PTM, chute de pression du filtre), bilan entrées-sorties, pression artérielle, température. Toutes les 6 à 12 h : ionogramme, calcium, phosphore, magnésium, gaz du sang. Anticoagulation : calcium ionisé post-filtre et patient sous citrate, TCA ou anti-Xa sous héparine.","Repérer tôt un filtre qui se colmate, un bilan qui dérive, un trouble ionique (hypophosphatémie, hypokaliémie) ou une accumulation de citrate."],
    ["Changer les poches sans perdre la dose","Anticiper les changements, utiliser des poches de 5 L, regrouper les soins et les transports.","Dose délivrée = dose prescrite × temps de fonctionnement : 4 h d'arrêt par jour, c'est 17 % de dose en moins."],
    ["Restituer","En fin de traitement, quand le filtre se colmate ou à la durée maximale du kit (en général 72 h) : rendre le sang du circuit au patient en le rinçant au sérum physiologique.","Restituer avant la coagulation complète évite de perdre 150 à 200 mL de sang."],
-   ["Débrancher et verrouiller","Rincer chaque branche au sérum physiologique, injecter lentement le verrou au volume inscrit sur chaque branche, clamper, refaire le pansement.","Le cathéter reste perméable jusqu'à la séance suivante, sans bolus d'anticoagulant au patient."],
+   ["Débrancher et verrouiller","Rincer chaque branche au sérum physiologique, injecter lentement le verrou au volume inscrit sur chaque branche (citrate ≤ 4 % ou héparine ≤ 5 000 UI/mL ; pas d'héparine si risque hémorragique), clamper, refaire le pansement.","Le cathéter reste perméable jusqu'à la séance suivante, sans bolus d'anticoagulant au patient."],
    ["Tracer","Durée de fonctionnement, dose délivrée, bilan, durée de vie du filtre, cause de l'arrêt.","Ajuster la prescription suivante : dose réellement délivrée, anticoagulation, accès."]
   ];
   return [
-   ["Prescrire","Durée (4 h ou plus ; première séance plus courte si l'urée est très élevée), débit sang, débit dialysat, UF totale, composition du bain (Na⁺ 145, K⁺ selon la kaliémie, bicarbonate, calcium), température 35,5 à 36 °C, anticoagulation.","Les réglages du bain et de l'UF font la tolérance de la séance chez un patient de réanimation."],
+   ["Prescrire","Durée (4 h ou plus ; première séance à faible clairance si l'urée est très élevée ou en cas de risque d'hypertension intracrânienne), débit sang, débit dialysat, UF totale (après évaluation de la volémie), bain (sodium élevé : ≥ 145 mmol/L, ou 150 à 160 décroissant vers 138 à 140 ; K⁺ selon la kaliémie ; bicarbonate, calcium), température 1,5 à 2 °C sous celle du patient, anticoagulation. Pas de rétrocontrôle automatique du volume sanguin ou de la température (SRLF 2025).","Les réglages du bain et de l'UF font la tolérance de la séance chez un patient de réanimation."],
    ["Vérifier l'eau et le générateur","Osmoseur raccordé, désinfection du générateur faite et tracée, autotest.","Le sang est exposé à plus de 100 L d'eau par séance : une eau contaminée donne une réaction pyrogène."],
    ["Monter le circuit et les concentrés","Lignes et dialyseur, concentré acide et cartouche de bicarbonate conformes à la prescription. Vérifier la conductivité obtenue.","C'est le mélange eau-concentrés qui donne la composition du bain."],
    ["Amorcer","Rinçage du circuit au sérum physiologique, purge de l'air, rinçage du compartiment dialysat.","Pas d'air, membrane prête, résidus éliminés."],
@@ -721,7 +771,7 @@ $("p-modalites").addEventListener("click",e=>{
 });
 $("p-modalites").addEventListener("keydown",e=>{const g=e.target.closest("[data-st]");if(g&&(e.key==="Enter"||e.key===" ")){e.preventDefault();T.st=+g.dataset.st;tRender();$("tCircuit").querySelector(`[data-st="${T.st}"]`)?.focus();}});
 
-/* ===== CITRATE (protocole du service) ===== */
+/* ===== CITRATE (recommandations, puis protocole du service pour l'exercice) ===== */
 const CCASES={
   standard:{name:"Choc septique pulmonaire",w:72,ht:.30,tp:72,lac:2.1,lacT:[[0,1.6]],metf:false,cpk:"normale",ca0:1.04,kpf:0.8,caOff:-0.07,caOffT:[[0,-0.07],[8,-0.14]],liver:[[0,20]],hOff:0,naOff:0,
     txt:"72 kg. Pneumonie à pneumocoque, choc septique sous noradrénaline 0,2 µg/kg/min, IRA KDIGO 3 anurique depuis 48 h. TP 72 %, lactate 2,1 mmol/L, CPK normales. Pas de metformine. Ca²⁺ 1,04 mmol/L."},
@@ -853,7 +903,7 @@ function cRender(){
   $("cGrid").innerHTML=cGridSVG();cCharts();
   const P=$("cPanel");
   if(!C||C.phase==="intro"){
-    P.innerHTML=`<h2>Choisir un patient</h2><p class="mut">Chaque cas suit le protocole de CVVH au citrate du service : contre-indications, réglages de démarrage, puis 24 heures de contrôles avec la grille d'adaptation.</p>
+    P.innerHTML=`<h2>Choisir un patient</h2><p class="mut">Les recommandations sont résumées au-dessus. L'exercice applique ensuite le protocole de CVVH au citrate du service : contre-indications, réglages de démarrage, puis 24 heures de contrôles avec la grille d'adaptation.</p>
     <div class="caselist">${Object.entries(CCASES).map(([k,c])=>`<button class="casebtn" type="button" data-cc="${k}"><b>${c.name}</b><span>${c.w} kg, TP ${c.tp} %, lactate ${nf(c.lac)}</span></button>`).join("")}</div>`;
     return;
   }
@@ -918,7 +968,7 @@ function cRender(){
     const ok=C.checks.reduce((a,c)=>a+c.grades.filter(g=>g[0]==="g-ok").length,0),tot=C.checks.reduce((a,c)=>a+c.grades.length,0);
     P.innerHTML=`<h2>Bilan</h2>${C.phase==="endci"?`<p>${C.endTxt}</p>`:`<p>${ok} décisions conformes au protocole sur ${tot}.</p>
       <div class="scroll"><table class="t"><tr><th>Heure</th><th>Ca²⁺ patient</th><th>Ca²⁺ post-filtre</th><th>pH</th><th>Décisions</th></tr>${C.checks.map(c=>`<tr><td>H${c.L.t}</td><td class="n">${nf(c.L.ca,2)}</td><td class="n">${nf(c.L.pf,2)}</td><td class="n">${nf(c.L.ph,2)}</td><td>${c.grades.map(g=>`<span class="grade ${g[0]}" style="margin:0 4px 0 0">${g[1].split(" :")[0]}</span>`).join("")}</td></tr>`).join("")}</table></div>`}
-      <div class="note"><b>À retenir.</b> Le citrate est l'anticoagulation de première intention de l'EER continue en l'absence de contre-indication (KDIGO) : dans RICH, il a presque doublé la durée de vie du filtre par rapport à l'héparine (médiane 47 contre 26 heures). Le Ca²⁺ post-filtre règle la dose de citrate, le Ca²⁺ patient règle la compensation. Une alcalose signe la surcharge, une hypocalcémie avec rapport Ca total / Ca²⁺ &gt; 2,5 signe l'accumulation.</div>
+      <div class="note"><b>À retenir.</b> En EER continue, le citrate est préféré à l'héparine si le risque hémorragique est faible, et à l'absence d'anticoagulation s'il est élevé (SRLF 2025, KDIGO 2012) : dans RICH, il a presque doublé la durée de vie du filtre par rapport à l'héparine (médiane 47 contre 26 heures). Le Ca²⁺ post-filtre règle la dose de citrate, le Ca²⁺ patient règle la compensation. Une alcalose signe la surcharge, une hypocalcémie avec rapport Ca total / Ca²⁺ &gt; 2,5 signe l'accumulation.</div>
       <p style="margin-top:12px"><button class="go" type="button" id="cAgain">Autre patient</button></p>`;
   }
 }
@@ -929,7 +979,7 @@ function cPreValidate(){
   g.push(ci===exCi?["g-ok","Contre-indications : correct"]:["g-bad","Contre-indications : erreur"]);
   const exCa=k.ca0<1.1?"cacl":"rien";
   g.push(ca===exCa?["g-ok","Calcium avant branchement : correct"]:["g-bad","Calcium avant branchement : erreur"]);
-  const txt=[`Contre-indications formelles du protocole : insuffisance hépatocellulaire avec TP &lt; 50 %, acidose lactique aux biguanides, allergie au citrate, rhabdomyolyse, intoxication au paracétamol ou au trichloréthylène, choc sévère avec acidose lactique. Ici : TP ${k.tp} %, lactate ${nf(k.lac)}, CPK ${k.cpk}. ${k.ci?"<b>La rhabdomyolyse contre-indique le citrate.</b>":"Pas de contre-indication formelle."}${k.key==="accum"?" Le TP à 58 % reste au-dessus du seuil, mais c'est un terrain à surveiller de près.":""}`,
+  const txt=[`Contre-indications du protocole du service : insuffisance hépatocellulaire avec TP &lt; 50 %, acidose lactique aux biguanides, allergie au citrate, rhabdomyolyse, intoxication au paracétamol ou au trichloréthylène, choc sévère avec acidose lactique. Ici : TP ${k.tp} %, lactate ${nf(k.lac)}, CPK ${k.cpk}. ${k.ci?"<b>Le protocole du service contre-indique le citrate en cas de rhabdomyolyse</b> ; ce n'est pas une contre-indication des recommandations, mais c'est la règle locale.":"Pas de contre-indication."} Les recommandations sont moins restrictives : la conférence SRLF 2025 admet le citrate en cas d'atteinte hépatique avec un protocole adapté (rapport Ca total / Ca²⁺ &lt; 2,5).${k.key==="accum"?" Le TP à 58 % reste au-dessus du seuil, mais c'est un terrain à surveiller de près.":""}`,
     k.ca0<1.1?`Ca²⁺ ${nf(k.ca0,2)} &lt; 1,1 : 1 g de <b>chlorure</b> de calcium IVL sur la voie veineuse centrale, contrôle 15 min après, cible 1,1 à 1,3 avant de brancher.`:`Ca²⁺ ${nf(k.ca0,2)} dans la cible : pas de supplémentation avant branchement.`];
   if(ca==="cacl"&&k.ca0<1.1)C.m.caSys=1.12;
   $("cPreFb").innerHTML=`<div class="fb"><p>${g.map(x=>`<span class="grade ${x[0]}">${x[1]}</span>`).join("")}</p>${txt.map(t=>`<p>${t}</p>`).join("")}</div>
@@ -1034,7 +1084,7 @@ const DCASES=[
   p:{acc:-70,ret:80,pre:150,eff:-20,ptm:80,dp:35},al:[],
   q:"Cause la plus probable ?",
   o:["Dose insuffisante : il faut passer à 35 mL/kg/h pour couvrir le catabolisme","Cathéter trop court à gauche : son extrémité n'atteint pas l'oreillette, il recircule","Hypercatabolisme seul, qui produit plus d'urée que la machine n'en épure","Filtre colmaté : la membrane encrassée ne laisse presque plus passer l'urée"],a:1,
-  w:"Longueurs habituelles : environ 15 cm en jugulaire interne droite, 20 cm à gauche, 20 à 25 cm en fémoral. Un cathéter trop court ou des lignes inversées font recirculer le sang déjà épuré : la dose « délivrée » sur l'écran n'atteint pas le patient."},
+  w:"Longueurs recommandées : 12 cm en jugulaire interne droite, 20 cm à gauche, au moins 24 cm en fémoral (SRLF 2025). Un cathéter trop court ou des lignes inversées font recirculer le sang déjà épuré : la dose « délivrée » sur l'écran n'atteint pas le patient."},
  {t:"Air dans la ligne de retour",lvl:"red",ctx:"Alarme « air détecté » au détecteur de la ligne de retour, la pompe à sang s'est arrêtée. Une poche de réinjection vient d'être changée.",
   p:{acc:-90,ret:0,pre:120,eff:-20,ptm:70,dp:30},al:["ret"],
   q:"Conduite ?",
@@ -1059,7 +1109,7 @@ const DCASES=[
   p:{acc:-110,ret:95,pre:150,eff:-30,ptm:85,dp:30},al:[],
   q:"Qu'est-il arrivé ?",
   o:["Une embolie gazeuse par la branche artérielle restée ouverte au branchement","Un bolus de citrate concentré du verrou : il fallait l'aspirer avant de brancher","Une réaction allergique à la membrane du filtre, fréquente au premier circuit","Une hypoglycémie, car le circuit épure le glucose dès les premières minutes"],a:1,
-  w:"Le verrou contient du citrate concentré. Il doit toujours être aspiré avant le branchement, et injecté lentement, au volume exact de la branche, en fin de procédure."}
+  w:"Le verrou contient du citrate concentré. Il doit toujours être aspiré avant le branchement, et injecté lentement, au volume exact de la branche, en fin de procédure. Pour les verrous, éviter les concentrations de citrate au-delà de 4 % (SRLF 2025)."}
 ];
 let D={order:[],i:0,score:0,done:0,ans:null,perm:[]};
 function dShuffle(){const a=DCASES.map((_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}D={order:a,i:0,score:0,done:0,ans:null,perm:DCASES.map(c=>{const p=c.o.map((_,i)=>i);for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}return p;})};}
@@ -1096,8 +1146,8 @@ const KC=[
       gaz:[["pH","7,24","w"],["Bicarbonates","15 mmol/L","w"],["PaCO₂","34 mmHg"]],
       diu:[["Diurèse","0 mL depuis 6 h","a"],["Bilan","+1,8 L"]],dial:null},
    q:"Conduite immédiate ?",
-   c:[["Calcium, insuline-glucose, salbutamol, puis HDI en urgence, anticoagulation par héparine","g-ok","Stabiliser la membrane (calcium), faire entrer le potassium dans les cellules (insuline-glucose, salbutamol), puis l'épurer. Hémodynamique stable : l'HDI est la technique qui fait baisser le potassium le plus vite. Séance courte : une héparine standard suffit."],
-      ["Traitement médical seul (calcium, insuline-glucose), puis réévaluation à 6 heures","g-bad","Le traitement médical ne fait que gagner du temps : chez un patient anurique avec une hyperkaliémie menaçante et des signes ECG, il faut épurer. K⁺ &gt; 6 mmol/L est un critère impératif."],
+   c:[["Calcium, insuline-glucose, salbutamol, puis HDI en urgence, anticoagulation par héparine","g-ok","Stabiliser la membrane (calcium), faire entrer le potassium dans les cellules (insuline-glucose, salbutamol), puis l'épurer. K⁺ &gt; 6,5 mmol/L malgré le traitement médical, anurie et signes ECG : EER urgente (SRLF 2025). Hémodynamique stable : l'HDI fait baisser le potassium le plus vite ; hors urgence de ce type, une technique continue reste le premier choix (ICRAKI). Séance courte : une héparine standard suffit."],
+      ["Traitement médical seul (calcium, insuline-glucose), puis réévaluation à 6 heures","g-bad","Le traitement médical ne fait que gagner du temps : chez un patient anurique avec une hyperkaliémie menaçante et des signes ECG, il faut épurer. K⁺ &gt; 6,5 mmol/L malgré le traitement, avec anurie et signes ECG : critère d'EER urgente (SRLF 2025)."],
       ["CVVH au citrate d'emblée : la machine corrigera le potassium sans traitement médical","g-bad","Deux erreurs : le traitement médical de stabilisation ne doit jamais attendre la machine, et une technique continue fait baisser le potassium bien plus lentement qu'une HDI chez un patient stable."],
       ["Bicarbonate de sodium 8,4 % pour faire rentrer le potassium, puis contrôle à 1 heure","g-bad","Effet modeste et inconstant sur la kaliémie, surcharge sodée chez un patient anurique. Ce n'est pas un traitement de l'hyperkaliémie menaçante."]],
    sim:{preset:"hyperk",mode:"HDI",over:{qb:300,qd:500,dur:4,uft:1500},label:"Simuler une séance d'HDI de 4 h"}},
@@ -1112,7 +1162,7 @@ const KC=[
   {day:"J1",text:"72 ans, 78 kg. Pneumonie, choc septique sous noradrénaline 0,3 µg/kg/min, ventilé. Créatinine de base 80 µmol/L.",
    p:{clin:[["Noradrénaline","0,3 µg/kg/min","w"],["PaO₂/FiO₂","210"],["Lactate","2,8 mmol/L","w"]],bio:[["Créatinine","290 µmol/L","w"],["Urée","19 mmol/L"],["K⁺","5,2 mmol/L"]],gaz:[["pH","7,29","w"],["Bicarbonates","17 mmol/L"],["PaCO₂","36 mmHg"]],diu:[["Diurèse","0,2 mL/kg/h depuis 14 h","w"],["Bilan","+4 L"]],dial:null},
    q:"KDIGO 3, sans critère impératif. Que faites-vous ?",
-   c:[["Attendre sous surveillance rapprochée, démarrer dès qu'un critère impératif apparaît","g-ok","Sans urgence vitale, la stratégie d'attente est sûre (AKIKI, IDEAL-ICU, STARRT-AKI) : une partie importante des patients récupère sans jamais être dialysée, sans les risques du cathéter et de l'EER."],
+   c:[["Attendre sous surveillance rapprochée, démarrer dès qu'un critère impératif apparaît","g-ok","Sans critère d'urgence, ne pas démarrer avant 72 heures d'IRA KDIGO 3 (SRLF 2025, recommandation forte, d'après AKIKI, IDEAL-ICU, STARRT-AKI) : 38 à 49 % des patients récupèrent sans jamais être dialysés, sans les risques du cathéter et de l'EER. La créatinine ne sert pas de seuil."],
       ["Démarrer maintenant pour prévenir la surcharge et les troubles métaboliques","g-mid","Défendable en apparence, mais non supporté : le démarrage précoce n'améliore pas la survie (STARRT-AKI) et expose à plus d'EER, de dépendance à la dialyse à J90 et d'effets indésirables."],
       ["Furosémide 1 g en bolus pour relancer la diurèse et éviter la dialyse","g-bad","Les diurétiques ne modifient pas l'évolution de l'IRA. Une dose aussi massive expose à l'ototoxicité. Le furosémide sert à gérer la volémie chez un patient qui y répond, pas à « relancer » le rein."]]},
   {day:"J3",text:"Noradrénaline 0,1. La diurèse remonte depuis 24 heures.",
@@ -1125,7 +1175,7 @@ const KC=[
   {day:"J4",text:"64 ans, 80 kg. Choc septique résolu, noradrénaline arrêtée hier. Toujours ventilé, sans critère impératif. Anurie depuis 76 heures.",
    p:{clin:[["Hémodynamique","stable sans amine"],["PaO₂/FiO₂","230"]],bio:[["Urée","41 mmol/L","a"],["Créatinine","540 µmol/L","w"],["K⁺","5,4 mmol/L","w"]],gaz:[["pH","7,31","w"],["Bicarbonates","18 mmol/L"]],diu:[["Diurèse","anurie depuis 76 h","a"],["Bilan","+3 L"]],dial:null},
    q:"Que faites-vous ?",
-   c:[["Démarrer l'EER maintenant, sans attendre de critère impératif","g-ok","Oligo-anurie &gt; 72 h et urée &gt; 40 mmol/L : dans AKIKI 2, retarder encore jusqu'à un critère impératif ou une urée à 50 n'a pas augmenté le nombre de jours sans EER, et a pu être délétère. C'est le moment de démarrer. Hémodynamique stable : technique continue ou intermittente, selon l'organisation."],
+   c:[["Démarrer l'EER maintenant, sans attendre de critère impératif","g-ok","Oligo-anurie &gt; 72 h et urée &gt; 40 mmol/L sans signe de récupération : la conférence SRLF 2025 propose d'envisager l'EER. Dans AKIKI 2, retarder encore jusqu'à un critère impératif ou une urée à 50 n'a pas augmenté le nombre de jours sans EER, et a pu être délétère. Technique continue en première intention (ICRAKI, 2026)."],
       ["Attendre encore, jusqu'à une urée de 50 mmol/L ou un critère impératif","g-bad","C'est la stratégie « plus retardée » d'AKIKI 2 : pas de bénéfice, et un signal de surmortalité. Attendre est utile au début, pas indéfiniment."],
       ["Faire un test au furosémide et ne démarrer qu'en l'absence de réponse","g-bad","Chez un patient anurique depuis 3 jours, le test n'apporte rien : la réponse est connue."]],
    sim:{preset:"sepsis",mode:"CVVHDF",over:{},label:"Simuler une CVVHDF pour ce patient"}}
@@ -1134,7 +1184,7 @@ const KC=[
   {day:"J2",text:"90 kg. Péritonite opérée, choc septique, bilan cumulé +9 L. Furosémide 250 mg puis 20 mg/h : 15 mL/h de diurèse.",
    p:{clin:[["Noradrénaline","0,15 µg/kg/min","w"],["FiO₂ / PEP","70 % / 10","a"],["PaO₂/FiO₂","110","a"],["Échographie","lignes B diffuses, VCI 24 mm"]],bio:[["Créatinine","260 µmol/L"],["K⁺","5,0 mmol/L"],["Na⁺","132 mmol/L"]],gaz:[["pH","7,33"],["PaCO₂","48 mmHg","w"]],diu:[["Diurèse","15 mL/h","a"],["Bilan","+9 L","a"]],dial:null},
    q:"Conduite ?",
-   c:[["EER continue avec une perte nette prudente, 100 à 150 mL/h selon la tolérance","g-ok","OAP de surcharge avec hypoxémie sévère résistant aux diurétiques : critère impératif. Sous noradrénaline, la technique continue permet une déplétion lente et mieux tolérée."],
+   c:[["EER continue avec une perte nette prudente, 100 à 150 mL/h selon la tolérance","g-ok","OAP de surcharge avec hypoxémie modérée à sévère qui persiste malgré le traitement (repères des essais : PaO₂/FiO₂ &lt; 200 ou SpO₂ ≤ 95 % sous 5 L/min d'O₂) : critère d'EER urgente (SRLF 2025). Sous noradrénaline, la technique continue permet une déplétion lente et mieux tolérée."],
       ["HDI avec 4 L d'ultrafiltration en 4 heures pour décharger rapidement","g-bad","Plus de 11 mL/kg/h d'ultrafiltration chez un patient sous noradrénaline : collapsus quasi certain. Le volume vient d'abord du secteur vasculaire, qui se recharge lentement."],
       ["Doubler le furosémide et associer un thiazidique avant d'envisager l'EER","g-bad","Échec déjà documenté. Poursuivre l'escalade retarde un traitement efficace chez un patient de plus en plus hypoxémique."],
       ["Remplissage de 1 L pour améliorer la perfusion rénale et la diurèse","g-bad","Le patient est surchargé et non précharge-dépendant : le remplissage aggrave l'OAP sans bénéfice rénal."]],
@@ -1150,7 +1200,7 @@ const KC=[
   {day:"J0",text:"70 kg, diabétique sous metformine. Vomissements et diarrhée depuis 3 jours.",
    p:{clin:[["PAM","62 mmHg sous noradrénaline 0,4","a"],["Glasgow","13"]],bio:[["Créatinine","450 µmol/L","w"],["K⁺","5,9 mmol/L","w"],["Lactate","18 mmol/L","a"]],gaz:[["pH","6,95","a"],["Bicarbonates","5 mmol/L","a"],["PaCO₂","22 mmHg"]],diu:[["Diurèse","10 mL/h","a"]],dial:null},
    q:"Conduite ?",
-   c:[["EER en urgence à haute clairance, sous héparine ou sans anticoagulation","g-ok","Acidose métabolique sévère (pH &lt; 7,15) et intoxication dialysable : double indication. En acidose lactique sévère avec choc, le citrate est à éviter : son métabolisme hépatique est altéré et il risque de s'accumuler (KDIGO). Sous forte dose de noradrénaline, une technique continue à haut débit est souvent mieux tolérée que l'HDI."],
+   c:[["EER en urgence à haute clairance, sous héparine ou sans anticoagulation","g-ok","L'acidose seule ne suffit pas à poser l'indication (SRLF 2025), mais elle accompagne ici une intoxication à la metformine : pH ≤ 7,0 et choc figurent parmi les critères d'épuration du groupe EXTRIP. Prendre l'avis d'un centre antipoison (SRLF 2025). En acidose lactique sévère avec choc, le citrate est à éviter : le foie hypoperfusé le métabolise mal et il risque de s'accumuler. EXTRIP privilégie l'HDI quand elle est tolérée ; sous forte dose de noradrénaline, une technique continue à haut débit est l'alternative."],
       ["Bicarbonate de sodium seul pour remonter le pH, sans EER à ce stade","g-bad","Ne traite ni l'accumulation de metformine ni la cause de l'acidose, et apporte une charge sodée et du CO₂."],
       ["CVVH au citrate à 25 mL/kg/h, l'anticoagulation de référence en continu","g-bad","Le citrate est à éviter en acidose lactique sévère avec choc : le foie hypoperfusé ne le métabolise plus, il s'accumule. Et la dose est trop faible pour une intoxication."],
       ["Attendre la baisse du lactate sous réanimation et arrêt de la metformine","g-bad","La metformine s'accumule tant que le rein ne l'élimine pas : sans épuration, l'acidose s'aggrave."]],
@@ -1160,10 +1210,10 @@ const KC=[
   {day:"J8",text:"68 ans, 75 kg. CVVH au citrate depuis 7 jours. Noradrénaline arrêtée depuis 48 heures. La diurèse revient depuis 3 jours, sans diurétique.",
    p:{clin:[["Hémodynamique","stable sans amine"],["Ventilation","extubé à J6"]],bio:[["Urée","14 mmol/L"],["K⁺","4,2 mmol/L"]],gaz:[["pH","7,40"],["Bicarbonates","24 mmol/L"]],diu:[["Diurèse","1 100 mL/24 h sans diurétique"],["Bilan","−1,5 L"]],dial:[["Technique","CVVH au citrate"],["Débit sang","140 mL/min"],["Citrate / compensation","3 mmol/L / 120 %"],["Réinjection / perte","1 400 / 50 mL/h"]]},
    q:"Que faites-vous ?",
-   c:[["Arrêter l'EER et surveiller chaque jour diurèse, urée et K⁺","g-ok","Une diurèse spontanée au-delà de 400 à 500 mL/24 h sans diurétique prédit le succès du sevrage. Hémodynamique stable, pas de critère d'urgence : on arrête et on surveille."],
+   c:[["Arrêter l'EER et surveiller chaque jour diurèse, urée et K⁺","g-ok","La reprise de la diurèse guide le sevrage, à évaluer chaque jour (SRLF 2025) : les études retiennent des seuils autour de 400 mL/24 h sans diurétique. Hémodynamique stable, pas de critère d'urgence : on arrête et on surveille."],
       ["Continuer l'EER jusqu'à la normalisation de la créatinine","g-bad","Sous EER, la créatinine reflète surtout la machine : elle ne renseigne pas sur la récupération. Attendre sa normalisation prolonge inutilement l'EER."],
       ["Faire d'abord un test au furosémide avant de décider l'arrêt","g-mid","Un outil d'appoint, pas indispensable ici : la diurèse spontanée parle déjà d'elle-même."],
-      ["Relais par HDI trois fois par semaine jusqu'à récupération","g-bad","La fonction rénale récupère : programmer des séances, c'est entretenir une dépendance qui n'existe plus."]]},
+      ["Relais par HDI trois fois par semaine jusqu'à récupération","g-bad","La fonction rénale récupère : programmer des séances, c'est entretenir une dépendance qui n'existe plus. Le relais par HDI sert quand la diurèse ne suffit pas encore à l'arrêt de la technique continue."]]},
   {day:"J10",text:"48 heures après l'arrêt.",
    p:{clin:[["Hémodynamique","stable"]],bio:[["Urée","18 mmol/L"],["Créatinine","230 µmol/L"],["K⁺","4,5 mmol/L"]],gaz:[["pH","7,38"]],diu:[["Diurèse","1 800 mL/24 h"]],dial:null},
    q:"L'urée a pris 4 mmol/L. Conclusion ?",
