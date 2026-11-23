@@ -122,7 +122,7 @@ footer strong{color:var(--ink);font-weight:600}
 
 <script>
 {
-const THEMES=[["all","Tous"],["resp","Ventilation et voies aériennes"],["hemo","Hémodynamique et circulation"],["rein","Rein et métabolisme"],["infect","Infectiologie"],["secu","Sécurité des soins"]];
+const THEMES=[["all","Tous"],["resp","Ventilation et voies aériennes"],["hemo","Hémodynamique et circulation"],["rein","Rein et métabolisme"],["infect","Infectiologie"],["secu","Sécurité des soins"],["neuro","Neurologie"]];
 const BEDS=[
  {id:"vent",bed:1,st:"on",th:"resp",name:"Ventilation mécanique",col:"#ffc53d",lab:"Paw",wave:"paw",url:"ventilation/",
   desc:"Réglez le ventilateur face à des patients qui réagissent : SDRA, obstruction bronchique, auto-PEP. Courbes pression, débit et volume en direct, gaz du sang et boucles. Quiz d'asynchronies avec de nouveaux patients à chaque partie.",
@@ -139,6 +139,9 @@ const BEDS=[
  {id:"erreurs",bed:11,st:"on",th:"secu",name:"Chambre à erreurs",col:"#ffe066",lab:"SpO₂",wave:"pleth",url:"erreurs/",
   desc:"Entrez dans une chambre de réanimation et inspectez chaque équipement : respirateur, BAVU, pousse-seringues, voie centrale, lit, drain. Trouvez les erreurs cachées, corrigez-les, puis lisez le débriefing.",
   vals:[],tags:["Interne et IDE","4 scénarios","Sécurité des soins"]},
+ {id:"eeg",bed:12,st:"on",th:"neuro",name:"EEG continu en réanimation",col:"#9fd3ff",lab:"EEG",wave:"eeg",url:"eeg/",
+  desc:"Lire un EEG au lit du patient : tracé en direct avec réglages, stimulation, sédations et artefacts ; atlas des aspects (ralentissement, suppression-bouffées, décharges périodiques, crises) ; cas cliniques avec traitements et quiz de lecture.",
+  vals:[],tags:["DES MIR","Terminologie ACNS","Cas et quiz"]},
  {id:"ab",bed:5,st:"plan",th:"rein",name:"Acide-base et gaz du sang",col:"#b4a0ff",lab:"EtCO₂",wave:"capno",desc:"Analyse guidée : trou anionique, delta/delta et compensations attendues."},
  {id:"ecmo",bed:6,st:"on",th:"hemo",name:"ECMO VA et VV",col:"#ff9a6b",lab:"Débit",wave:"ecmo",url:"ecmo/",
   desc:"Le patient entier sous ECMO, canules en place : réglez le débit d'ECMO, le débit cardiaque et les poumons, et voyez où va le sang oxygéné. Zone de mélange, syndrome d'Arlequin, VAV, recirculation. Onglet membrane (gaz pré et post, ΔP, valeurs usuelles) et cas cliniques VA et VV.",
@@ -209,6 +212,7 @@ const W={
  eer:t=>.45+.07*Math.abs(Math.sin(Math.PI*1.6*t)),
  ecmo:t=>.55+.06*Math.sin(2*Math.PI*1.2*t),
  capno:t=>{const p=t%4;if(p<.25)return .15+.5*(p/.25);if(p<1.8)return .65+.08*(p-.25)/1.55;if(p<2)return .73-.58*((p-1.8)/.2);return .15},
+ eeg:t=>.5+.16*Math.sin(2*Math.PI*9.5*t)*(.6+.4*Math.sin(2*Math.PI*.4*t))+.14*Math.sin(2*Math.PI*2.1*t+1)+.06*Math.sin(2*Math.PI*17*t),
  pleth:t=>{const p=(t%.9)/.9;return .2+.6*g(p,.2,.08)+.22*g(p,.45,.07)},
  temp:t=>.5+.25*Math.sin(2*Math.PI*t/5)+.04*Math.sin(2*Math.PI*t*1.3),
  hyperk:t=>{const p=(t%.85)/.85;return .45+.06*g(p,.1,.02)+.42*g(p,.25,.012)-.1*g(p,.28,.012)+.38*g(p,.5,.035)}

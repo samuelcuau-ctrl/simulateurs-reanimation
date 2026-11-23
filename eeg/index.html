@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EEG continu en réanimation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE clinique, calme, précis : relire un EEG au lit du patient
+   IDEA l'écran d'EEG continu de la chambre, que l'on fait défiler page par page
+   PICTURE 8 voies (ou 18) et l'ECG qui défilent, avec les annotations des soins en jaune
+   COLOUR fond bleu nuit ; voies gauches bleutées, droites rosées, ECG rouge, annotations ambre
+   TYPE Barlow Condensed pour titres et valeurs, Barlow pour le texte, comme les autres simulateurs
+   LAYOUT quatre onglets ; le tracé en pleine largeur, réglages dessous, explications à côté ; empilé sous 900px */
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--red:#ff5a4e;--ok:#5fe0a6}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1320px;margin:0 auto;padding:clamp(14px,2.4vw,30px) max(2.4vw,16px)}
+h1{font:600 clamp(30px,3.6vw,44px)/1.05 "Barlow Condensed",Barlow,sans-serif;margin:0;text-wrap:balance}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:0 0 10px}
+h3{font:600 18px/1.25 Barlow,sans-serif;margin:0 0 6px}
+p{margin:0 0 10px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.top{margin-bottom:14px}.top p{color:var(--mut);margin:4px 0 0}
+.grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.mut{color:var(--mut)}.small{font-size:14px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{min-height:44px;padding:6px 16px;background:var(--panel2);border:0;border-right:1px solid var(--line);font-weight:600}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.seg button small{display:block;font-weight:500;font-size:12px;opacity:.8}
+select{min-height:44px;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:16px}
+label.f{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+label.f span{color:var(--mut)}
+label.f output{font:600 20px "Barlow Condensed",sans-serif;white-space:nowrap;text-align:right}
+label.f input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--cy);height:28px}
+label.chk{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+label.chk input{width:20px;height:20px;accent-color:var(--cy)}
+.fig{position:relative;background:#04090b;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.fig svg{display:block;width:100%;height:auto}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.fl{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.an{stroke-dasharray:3 9;animation:flow linear infinite;stroke:rgba(255,255,255,.55);stroke-width:2}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rot{animation:spin linear infinite}
+@keyframes pulse{50%{opacity:.35}}
+.ws{animation:pulse 1.4s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.an,.rot,.ws{animation:none}}
+.mon{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.6em,1fr));gap:8px;margin-top:12px}
+.m{background:#070d10;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.m small{display:block;color:var(--mut);font-size:13px;line-height:1.25}
+.m b{font:600 28px/1.1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.m i{font-style:normal;color:var(--mut);font-size:13px;margin-left:3px}
+.m.lo{border-color:#7a2a24}.m.lo b{color:#ff8a7a}.m.mid b{color:var(--amb)}
+.flags{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px}
+.flags li{padding:8px 12px;border-radius:8px;font-size:15px;background:var(--panel2);border-left:3px solid var(--line)}
+.flags li.bad{border-left-color:var(--red)}.flags li.warn{border-left-color:var(--amb)}.flags li.ok{border-left-color:var(--ok)}
+.presets{display:grid;gap:6px;margin:8px 0 6px}
+.pre{text-align:left;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);min-height:44px}
+.pre:hover{border-color:#3b5862}
+.pre b{display:block;font-weight:600}.pre span{font-size:14px;color:var(--mut)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:14px;color:var(--mut);margin-top:8px}
+.bar{display:inline-block;width:140px;height:10px;border-radius:5px;vertical-align:middle;margin:0 6px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+.cn{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.cn li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.cn b.k{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-size:13px}
+.note{font-size:15px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
+.note b{color:var(--ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.tab[aria-selected=true]{background:var(--ink);color:#0b1215;border-color:var(--ink)}
+.tab small{display:block;font-weight:500;font-size:13px;opacity:.75}
+.gas{stroke-width:6;stroke-dasharray:6 8;animation:flow linear infinite}
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+table.t th,table.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+td.badv{color:var(--red)}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.pan{background:var(--panel2);border-radius:12px;padding:10px 12px}
+.pan h3{font-size:15px;color:var(--mut);margin:0 0 6px;font-weight:600}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;font-size:15px}
+.kv span:nth-child(even){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.kv .a{color:var(--red)}.kv .w{color:var(--amb)}
+.caselist{display:grid;gap:8px}
+.casebtn{text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);min-height:56px}
+.casebtn[aria-pressed=true]{border-color:var(--ink);background:#1d2f36}
+.casebtn b{display:block}.casebtn span{font-size:14px;color:var(--mut)}
+.badge{display:inline-block;font:700 12px Barlow,sans-serif;padding:1px 6px;border-radius:5px;background:#2c4650;color:#e9f1f3;margin-right:4px}
+.casebtn span.badge{color:#e9f1f3;font-size:12px}
+.day{font:600 20px "Barlow Condensed",sans-serif;color:var(--amb);margin-right:8px}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;min-height:50px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.choice:hover:not(:disabled){border-color:var(--ink)}
+.choice b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-weight:700}
+.choice.right{border-color:var(--ok)}.choice.wrong{border-color:var(--red)}.choice:disabled{cursor:default}
+.fb{background:var(--panel2);border-radius:12px;padding:12px 14px;margin-top:10px}.fb p{margin:0 0 6px}
+.grade{display:inline-block;font:600 14px Barlow,sans-serif;padding:2px 10px;border-radius:6px}
+.g-ok{color:#06251a;background:var(--ok)}.g-mid{color:#2a1d00;background:var(--amb)}.g-bad{color:#fff;background:#c9362c}
+.score{font:600 18px "Barlow Condensed",sans-serif;color:var(--amb)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.go{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;border:0}
+.go::after{content:"→"}
+@media(max-width:600px){.panels{grid-template-columns:minmax(0,1fr)}.tab small{display:none}}
+footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.refs{padding-left:18px;margin:6px 0 0}
+.vopts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.vopts .seg button{min-height:40px;padding:4px 14px}
+.tg{min-height:40px;padding:4px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.tg[aria-pressed=true]{background:var(--ink);color:#0b1215}
+.vsw{display:none!important}
+.figs{display:grid;grid-template-columns:minmax(0,0.7fr) minmax(0,1fr);gap:10px;align-items:start}
+.dots{stroke:rgba(255,255,255,.9);stroke-width:4;stroke-dasharray:0.1 16;stroke-linecap:round;animation:flow2 linear infinite}
+@keyframes flow2{to{stroke-dashoffset:-32.2}}
+.jet{stroke:#fff;stroke-width:5}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+@keyframes flap{0%,55%{transform:rotate(0)}70%,90%{transform:rotate(-22deg)}}
+.aov line{transform-box:fill-box;transform-origin:bottom;animation:flap 0.85s ease-in-out infinite}
+.aov line:last-child{animation-name:flap2}
+@keyframes flap2{0%,55%{transform:rotate(0)}70%,90%{transform:rotate(22deg)}}
+@media(prefers-reduced-motion:reduce){.dots,.aov line{animation:none}}
+@media(max-width:1100px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.vsw{display:inline-flex!important}.figs{grid-template-columns:minmax(0,1fr)}.figs[data-view=heart] #figBody,.figs[data-view=body] #figHeart{display:none}
+ .left{position:sticky;top:0;z-index:2;background:var(--bg);padding:4px 0 6px}.left .orient{display:none}.fig svg{height:42vh;width:auto;margin:0 auto}.vopts{gap:6px;margin-bottom:6px}.vopts .seg button,.tg{min-height:36px;padding:2px 10px;font-size:14px}.leg{font-size:13px;margin-top:4px}}
+@media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{min-height:44px;padding:8px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.tab[aria-selected=true]{background:var(--ink);color:#0b1215;border-color:var(--ink)}
+.tab small{display:block;font-weight:500;font-size:13px;opacity:.75}
+.view{background:#04090b;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:10px}
+.view canvas{display:block}
+.tbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:10px}
+.ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ctl>span{color:var(--mut);font-size:14px}
+.ctls .seg button,.pg .seg button{min-height:38px;padding:4px 10px;font-size:14px;font-weight:500}
+.btn{min-height:40px;padding:6px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:500}
+.btn:hover:not(:disabled){border-color:#3b5862}.btn:disabled{opacity:.35;cursor:default}
+.tg{min-height:38px;padding:4px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:500;font-size:14px}
+.tg[aria-pressed=true]{background:var(--amb);color:#1a1300;border-color:var(--amb)}
+.tgs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;margin-top:14px;align-items:start}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px;align-items:start}
+.ga{display:grid;grid-template-columns:minmax(0,.55fr) minmax(0,1.6fr);gap:14px;align-items:start}
+dl.st{margin:0}dl.st dt{font-weight:600;color:var(--cy);margin-top:10px;font-size:15px}dl.st dd{margin:2px 0 0}
+.card ul,.card ol{padding-left:18px;margin:0}.card li{margin-bottom:5px}
+.grp{font-size:14px;color:var(--mut);margin:12px 0 6px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.caselist{display:grid;gap:8px}
+.casebtn{text-align:left;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);min-height:44px;width:100%;margin-bottom:6px}
+.casebtn[aria-pressed=true]{border-color:var(--ink);background:#1d2f36}
+.casebtn b{display:block;font-weight:600}.casebtn span{font-size:14px;color:var(--mut)}
+.day{font:600 20px "Barlow Condensed",sans-serif;color:var(--amb);margin-right:8px}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.pan{background:var(--panel2);border-radius:12px;padding:10px 12px}
+.pan h3{font-size:15px;color:var(--mut);margin:0 0 6px;font-weight:600}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;font-size:15px}
+.kv span:nth-child(even){text-align:right;font-weight:600}
+.kv .a{color:var(--red)}.kv .w{color:var(--amb)}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;min-height:50px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.choice:hover:not(:disabled){border-color:var(--ink)}
+.choice b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#0b1215;font-weight:700}
+.choice.right{border-color:var(--ok)}.choice.wrong{border-color:var(--red)}.choice:disabled{cursor:default}
+.fb{background:var(--panel2);border-radius:12px;padding:12px 14px;margin-top:10px}.fb p{margin:0 0 6px}
+.grade{display:inline-block;font:600 14px Barlow,sans-serif;padding:2px 10px;border-radius:6px}
+.g-ok{color:#06251a;background:var(--ok)}.g-mid{color:#2a1d00;background:var(--amb)}.g-bad{color:#fff;background:#c9362c}
+.score{font:600 18px "Barlow Condensed",sans-serif;color:var(--amb)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.go{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 18px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;border:0}
+.go::after{content:"→"}
+.pg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.head svg{display:block;width:100%;max-width:240px;margin:6px auto 0}
+.note{font-size:15px;color:var(--mut);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
+footer{color:var(--mut);font-size:14px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.refs{padding-left:18px;margin:6px 0 0}
+@media(max-width:1000px){.g3{grid-template-columns:minmax(0,1fr)}.g2,.ga{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.panels{grid-template-columns:minmax(0,1fr)}.tab small{display:none}}
+</style>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="../apple-touch-icon.png"></head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div class="wrap">
+  <header class="top">
+    <h1>EEG continu en réanimation</h1>
+    <p>Lire un tracé au lit du patient : fond, réactivité, décharges, crises, artefacts. Tracés synthétiques, générés à chaque affichage.</p>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Parties du module">
+    <button class="tab" role="tab" id="t-bases" data-t="bases">Comment ça marche<small>tracé en direct, réglages</small></button>
+    <button class="tab" role="tab" id="t-interp" data-t="interp">Interprétation<small>les aspects à connaître</small></button>
+    <button class="tab" role="tab" id="t-cas" data-t="cas">Cas cliniques<small>conduite et traitements</small></button>
+    <button class="tab" role="tab" id="t-quiz" data-t="quiz">Quiz<small>lire le tracé</small></button>
+  </nav>
+
+  <section id="p-bases" role="tabpanel">
+    <div class="card">
+      <div class="tbar">
+        <label class="sr-only" for="sbPat">Aspect</label><select id="sbPat" style="width:auto;max-width:100%;flex:1 1 260px"></select>
+        <button class="btn" type="button" data-stim="voix">Appeler</button>
+        <button class="btn" type="button" data-stim="douleur">Stimulation douloureuse</button>
+        <button class="btn" type="button" data-stim="aspi">Aspiration</button>
+        <button class="btn" type="button" id="sbPause">Pause</button>
+      </div>
+      <div class="view" id="sbView"></div>
+      <div class="ctls" id="sbCtl"></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <h2>Ajouter des artefacts</h2>
+        <div class="tgs" id="sbArts"></div>
+        <h2>Sédation et température</h2>
+        <div id="sbSed"></div>
+      </div>
+      <div class="card" id="sbInfo"></div>
+    </div>
+    <div class="g3">
+      <div class="card"><h2>Les bases</h2>
+        <p><b>D'où vient le signal.</b> L'EEG enregistre l'activité électrique du cortex, de l'ordre de quelques dizaines de microvolts, avec des électrodes placées selon le système international 10-20 : Fp (frontopolaire), F, C (central), T (temporal), P, O (occipital) ; chiffres impairs à gauche, pairs à droite.</p>
+        <p><b>Les voies.</b> Chaque voie est la différence entre deux électrodes voisines (montage bipolaire longitudinal, dit « double banane »). En réanimation, un montage réduit à 8 voies suffit souvent pour dépister. Une anomalie sous une électrode apparaît en sens opposé dans les deux voies qui la partagent.</p>
+        <p><b>Les rythmes.</b> Delta moins de 4 Hz, thêta 4 à 7 Hz, alpha 8 à 12 Hz, bêta 13 Hz et plus.</p>
+        <p><b>Les réglages.</b> Vitesse 30 mm/s (10 secondes par page), sensibilité 7 µV/mm, filtre haute fréquence à 70 Hz, filtre 50 Hz. Un filtre à 15 Hz émousse les pointes et peut déguiser le muscle en activité cérébrale.</p>
+        <div class="head" id="head"></div>
+      </div>
+      <div class="card"><h2>Lire un EEG en cinq questions</h2>
+        <ol>
+          <li><b>Le contexte :</b> sédatifs et doses, température, troubles métaboliques, médicaments (céfépime, lithium, baclofène).</li>
+          <li><b>Le fond :</b> fréquence dominante, amplitude, continuité (continu, discontinu, suppression-bouffées, supprimé), symétrie.</li>
+          <li><b>La réactivité :</b> stimulation standardisée (appel, douleur) ; le fond change-t-il de façon reproductible ? Un artefact de mouvement n'est pas de la réactivité.</li>
+          <li><b>Les figures :</b> décharges périodiques (généralisées, latéralisées), delta rythmique ; fréquence, abondance, « plus » (rapide ou rythmique surajouté).</li>
+          <li><b>Les crises :</b> plus de 2,5 Hz pendant 10 secondes ou plus, ou évolution nette pendant 10 secondes ou plus. État de mal : 10 minutes continues, ou plus de 20 % d'une heure.</li>
+        </ol>
+        <p class="note"><b>Toujours se demander : artefact ?</b> Une activité cérébrale a un champ (plusieurs électrodes voisines). Regarder la voie ECG, les annotations de soins, le patient.</p>
+      </div>
+      <div class="card"><h2>Quand demander un EEG continu ?</h2>
+        <ul>
+          <li>Trouble de conscience inexpliqué, ou plus profond que ne l'expliquent les lésions et la sédation.</li>
+          <li>Pas de réveil attendu après un état de mal convulsif : les crises peuvent continuer sans convulsion.</li>
+          <li>Mouvements discrets : clonies palpébrales ou faciales, nystagmus, mâchonnements, fluctuations.</li>
+          <li>Lésion cérébrale aiguë avec trouble de conscience : hémorragie, encéphalite, AVC, traumatisme.</li>
+          <li>Titration d'une anesthésie pour état de mal réfractaire.</li>
+          <li>Après un arrêt cardiaque : dépister les crises dès le premier jour, puis aider au pronostic après 24 heures.</li>
+        </ul>
+        <p class="note"><b>Durée.</b> La plupart des crises apparaissent dans les 24 premières heures d'enregistrement ; il faut souvent prolonger chez le patient comateux ou en présence de décharges périodiques. L'interprétation se fait avec un neurophysiologiste.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="p-interp" role="tabpanel" hidden>
+    <div class="ga">
+      <div class="card" id="atList"></div>
+      <div>
+        <div class="card">
+          <div class="view" id="atView" style="margin-top:0"></div>
+          <div class="pg" id="atCtl"></div>
+        </div>
+        <div class="card" id="atInfo" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="p-cas" role="tabpanel" hidden>
+    <div class="ga" style="grid-template-columns:minmax(0,1.6fr) minmax(0,.55fr)">
+      <div class="card">
+        <div id="kHead"></div>
+        <div class="view" id="kView"></div>
+        <div class="pg" id="kPg"></div>
+        <div class="panels" id="kPanels"></div>
+        <div id="kBody" style="margin-top:12px"></div>
+      </div>
+      <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Les cas</h2><span class="score" id="kScore"></span></div><div class="caselist" id="kList" style="margin-top:10px"></div>
+        <p class="note">Les traitements suivent les recommandations SRLF-SFMU 2018 sur l'état de mal épileptique et ERC-ESICM 2025 sur le post-arrêt cardiaque.</p></div>
+    </div>
+  </section>
+
+  <section id="p-quiz" role="tabpanel" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:flex-end"><span class="score" id="qScore"></span></div>
+      <div id="qHead"></div>
+      <div class="view" id="qView"></div>
+      <div class="pg" id="qPg"></div>
+      <div id="qBody" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Les tracés sont synthétiques, produits par un modèle simplifié : ils reproduisent l'aspect des grands types de tracés, pas un enregistrement réel. L'interprétation d'un EEG se fait avec un neurophysiologiste.</p>
+    <ol class="refs">
+      <li>Hirsch LJ et al. American Clinical Neurophysiology Society's Standardized Critical Care EEG Terminology : 2021 version. J Clin Neurophysiol 2021.</li>
+      <li>Outin H et al. Recommandations formalisées d'experts SRLF-SFMU : prise en charge des états de mal épileptiques en préhospitalier, en structure d'urgence et en réanimation dans les 48 premières heures. 2018.</li>
+      <li>Nolan JP et al. European Resuscitation Council and European Society of Intensive Care Medicine guidelines 2025 : post-resuscitation care. Intensive Care Med 2025;51:2213-88.</li>
+      <li>Westhall E et al. Standardized EEG interpretation accurately predicts prognosis after cardiac arrest. Neurology 2016.</li>
+      <li>Claassen J et al. Detection of electrographic seizures with continuous EEG monitoring in critically ill patients. Neurology 2004.</li>
+      <li>Kapur J et al. Randomized trial of three anticonvulsant medications for status epilepticus (ESETT). N Engl J Med 2019.</li>
+    </ol>
+  </footer>
+</div>
+<script>
+{
+/* ===== Générateur de tracés EEG (signal synthétique, à visée pédagogique) ===== */
+const TAU=Math.PI*2;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const smooth=(x,a,b)=>{const u=clamp((x-a)/(b-a),0,1);return u*u*(3-2*u);};
+const gs=(x,s)=>Math.exp(-x*x/(2*s*s));
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const hsh=(i,s=0)=>{const x=Math.sin(i*12.9898+s*78.233+0.5)*43758.5453;return x-Math.floor(x);};
+
+/* Voies : nom, hémisphère, position antéro-postérieure (0 avant, 1 arrière), chaîne (T temporale, P parasagittale, Z médiane) */
+const mk=a=>a.map(x=>({n:x[0],h:x[1],ap:x[2],lat:x[3],el:x[0].split("-")}));
+const CH8=mk([["Fp1-T3","L",.25,"T"],["T3-O1","L",.75,"T"],["Fp1-C3","L",.25,"P"],["C3-O1","L",.75,"P"],["Fp2-C4","R",.25,"P"],["C4-O2","R",.75,"P"],["Fp2-T4","R",.25,"T"],["T4-O2","R",.75,"T"]]);
+const CH18=mk([["Fp1-F7","L",.05,"T"],["F7-T3","L",.3,"T"],["T3-T5","L",.6,"T"],["T5-O1","L",.9,"T"],["Fp1-F3","L",.05,"P"],["F3-C3","L",.3,"P"],["C3-P3","L",.6,"P"],["P3-O1","L",.9,"P"],["Fz-Cz","Z",.35,"Z"],["Cz-Pz","Z",.65,"Z"],["Fp2-F4","R",.05,"P"],["F4-C4","R",.3,"P"],["C4-P4","R",.6,"P"],["P4-O2","R",.9,"P"],["Fp2-F8","R",.05,"T"],["F8-T4","R",.3,"T"],["T4-T6","R",.6,"T"],["T6-O2","R",.9,"T"]]);
+const BANDS=[[0.6,3.5],[4,7.5],[8,12],[13,24]];
+
+/* poids d'un champ sur une voie. F={side:"G"|"L"|"R", lat, ap, ant} */
+function fieldW(F,c){
+  if(!F)return 1;
+  let w=F.side==="G"?1:(c.h===F.side?1:c.h==="Z"?0.45:0.12);
+  if(F.lat&&F.side!=="G")w*=c.lat===F.lat?1:0.55;
+  if(F.ap!=null)w*=0.25+0.75*gs(c.ap-F.ap,0.28);
+  if(F.ant)w*=1.25-0.75*c.ap;
+  return w;
+}
+/* formes d'onde (s) */
+const WAVES={
+  sharp:(t,k)=>gs(t,0.03*k)-0.45*gs(t-0.13,0.07),
+  tri:(t,k)=>-0.35*gs(t+0.07,0.03*k)+1.05*gs(t,0.04*k)-0.6*gs(t-0.16,0.08),
+  spike:(t,k)=>gs(t,0.016*k)-0.3*gs(t-0.05,0.02)+0.55*gs(t-0.2,0.08)
+};
+const blurK=(s,hf)=>{const sg=1/(TAU*hf);return Math.sqrt(s*s+sg*sg)/s;};
+
+function ecgVal(t,hr){const P=60/hr,k=Math.floor(t/P),tau=t-k*P-(hsh(k,9)-0.5)*0.03;
+  return 0.12*gs(tau-0.1,0.025)-0.15*gs(tau-0.2,0.008)+1*gs(tau-0.22,0.009)-0.25*gs(tau-0.24,0.01)+0.3*gs(tau-0.46,0.05);}
+function qrs(t,hr){const P=60/hr,k=Math.floor(t/P),tau=t-k*P-(hsh(k,9)-0.5)*0.03;return gs(tau-0.22,0.012)-0.3*gs(tau-0.25,0.015);}
+
+/* Instance : état + tirage aléatoire + voies */
+function makeInst(st,seed,chans){
+  const r=rng(seed||1),I={st,seed,ch:chans,stims:[],fkey:""};
+  const bg=st.bg||{amp:40,w:[.3,.4,1,.3]};
+  const mx=Math.max(...bg.w),NORM=0.4/Math.sqrt(bg.w.reduce((q,w)=>q+(w/mx)*(w/mx),0)*0.64);
+  const shared={};
+  for(const h of ["L","R","Z"]){shared[h]=[];BANDS.forEach((b,bi)=>{for(let k=0;k<3;k++)shared[h].push({b:bi,f:b[0]+r()*(b[1]-b[0]),ph:r()*TAU,mf:0.05+r()*0.3,mph:r()*TAU});});}
+  I.comps=chans.map(c=>{
+    const L=[];
+    const add=(f,a,ph,mf,mph)=>L.push(f,a,ph,mf,mph);
+    BANDS.forEach((b,bi)=>{
+      let A=bg.amp*bg.w[bi]/mx*NORM;
+      if(bi===2)A*=0.35+0.9*c.ap;
+      if(bi===3)A*=0.8;
+      if(st.asym&&c.h===st.asym.side)A*=st.asym.f;
+      const hemi=shared[c.h==="Z"?"Z":c.h].filter(x=>x.b===bi);
+      hemi.forEach(x=>add(x.f,A*0.42,x.ph+c.ap*0.6,x.mf,x.mph));
+      for(let k=0;k<3;k++)add(b[0]+r()*(b[1]-b[0]),A*0.5,r()*TAU,0.05+r()*0.35,r()*TAU);
+    });
+    if(st.frontBeta){const A=st.frontBeta*(1.25-c.ap);for(let k=0;k<4;k++)add(13+r()*9,A*0.45,r()*TAU,0.1+r()*0.4,r()*TAU);}
+    if(st.fast){for(let k=0;k<4;k++)add(20+r()*12,st.fast*0.4,r()*TAU,0.1+r()*0.4,r()*TAU);}
+    if(st.focalSlow){const w=fieldW(st.focalSlow,c);for(let k=0;k<3;k++)add(0.8+r()*1.8,st.focalSlow.amp*w*0.6,r()*TAU,0.05+r()*0.2,r()*TAU);}
+    return new Float64Array(L);
+  });
+  I.musc=chans.map(()=>{const L=[];for(let k=0;k<7;k++)L.push(22+r()*50,r()*TAU);return L;});
+  I.eff=null;
+  return I;
+}
+function prepFilter(I,flt){
+  const key=flt.hf+"|"+flt.notch;if(I.fkey===key)return;I.fkey=key;
+  const g=f=>1/Math.sqrt(1+Math.pow(f/flt.hf,4))*(flt.notch&&Math.abs(f-50)<3?0.03:1);
+  I.eff=I.comps.map(a=>{const b=new Float64Array(a.length);for(let i=0;i<a.length;i+=5){b[i]=a[i];b[i+1]=a[i+1]*g(a[i]);b[i+2]=a[i+2];b[i+3]=a[i+3];b[i+4]=a[i+4];}return b;});
+  I.gm=g;I.hf=flt.hf;
+}
+/* enveloppe de continuité du fond */
+function contEnv(I,t){
+  const st=I.st;
+  if(st.cont==="supp")return {m:st.suppLevel||0.08,burst:0,start:0};
+  if(st.cont==="bs"){
+    const B=st.bs,P=B.Pm;const i0=Math.round(t/P);
+    for(let i=i0-1;i<=i0+1;i++){
+      const s=i*P+(B.identical?0.15:(hsh(i,3)-0.5)*0.5)*P,d=P*(1-B.supp)*(B.identical?1:0.7+0.6*hsh(i,4));
+      if(t>=s-0.2&&t<=s+d+0.2){const e=smooth(t,s-0.1,s+0.1)*(1-smooth(t,s+d-0.15,s+d+0.15));if(e>0)return {m:(B.floor||0.07)+e*(B.identical?0.35:1.5),burst:e,start:s};}
+    }
+    return {m:B.floor||0.07,burst:0,start:0};
+  }
+  return {m:1,burst:0,start:0};
+}
+/* crise : profil temporel */
+const SZSEG=[[0,.15,9,6,18,30,"sin"],[.15,.75,5,2.8,35,100,"sw"],[.75,1,2.8,1.6,100,80,"sw"]];
+function szAt(I,ci,t){
+  const Z=I.st.sz;if(!Z)return null;
+  if(Z.suppressed)return null;
+  const per=Z.period*(Z.slow||1),u=((t-Z.off)%per+per)%per,c=I.ch[ci];
+  const D=Z.dur;
+  const F=Z.onset;
+  const wFoc=F.side==="G"?(1.15-0.3*c.ap):fieldW({side:F.side,lat:F.lat,ap:F.ap},c);
+  const wH=F.side==="G"?1:(c.h===F.side?1:c.h==="Z"?0.5:0);
+  if(u<D){
+    const x=u/D;
+    let w=F.side==="G"?wFoc:Math.max(wFoc,smooth(x,.2,.45)*wH*0.9,Z.gen?smooth(x,.45,.6)*0.6:0);
+    let cyc=0,seg=null,ux=0;
+    for(const s of SZSEG){const u0=s[0]*D,u1=s[1]*D;if(u>=u1){cyc+=s[2]*(u1-u0)+(s[3]-s[2])*(u1-u0)/2;continue;}
+      ux=u-u0;cyc+=s[2]*ux+(s[3]-s[2])*ux*ux/(2*(u1-u0));seg=s;break;}
+    const fr=(x-seg[0])/(seg[1]-seg[0]),f=seg[2]+(seg[3]-seg[2])*fr,A=(seg[4]+(seg[5]-seg[4])*fr)*(Z.amp||1);
+    let v;
+    if(seg[6]==="sin")v=Math.sin(TAU*cyc)*I.gm(f);
+    else{const cf=cyc-Math.floor(cyc),P=1/f,tau=cf*P,k=blurK(0.016,I.hf);v=(WAVES.spike(tau,k)+WAVES.spike(tau-P,k))/k*1.1;}
+    return {v:A*w*v,att:1-0.65*Math.min(1,w)};
+  }
+  if(u<D+20){const p=(u-D)/20,w=F.side==="G"?1:Math.max(wFoc,wH*0.8);return {v:25*w*(1-p)*Math.sin(TAU*1.1*t),att:1-(0.75*(1-p))*Math.min(1,w)};}
+  return null;
+}
+function inCare(I,t){const C=I.st.care;if(!C)return 0;const u=((t-C.off)%C.period+C.period)%C.period;return u<C.dur?smooth(u,0,0.15)*(1-smooth(u,C.dur-0.15,C.dur)):0;}
+function evalCh(I,ci,t){
+  const st=I.st,c=I.ch[ci],a=I.eff[ci];
+  const ce=contEnv(I,t);let bm=ce.m;
+  const sz=szAt(I,ci,t);if(sz)bm*=sz.att;
+  let extra=0;
+  /* stimulations */
+  for(const S of I.stims){const d=t-S.t;if(d<0||d>9)continue;
+    const env=smooth(d,0,0.6)*(1-smooth(d,6,9));
+    if(st.react==="react"){bm*=1-0.45*env;extra+=14*env*Math.sin(TAU*7.3*t+ci)*I.gm(7.3);}
+    if(S.k!=="voix"&&d<2.2){const e=smooth(d,0,0.15)*(1-smooth(d,1.4,2.2));const m=I.musc[ci];let s=0;for(let k=0;k<m.length;k+=2)s+=Math.sin(TAU*m[k]*t+m[k+1])*I.gm(m[k]);extra+=e*(c.lat==="T"||c.ap<0.3?7:3)*s+e*60*gs(d-0.7,0.35)*(c.ap<0.3?1:0.3);}
+  }
+  let s=0;
+  for(let i=0;i<a.length;i+=5){s+=a[i+1]*(0.72+0.28*Math.sin(TAU*a[i+3]*t+a[i+4]))*Math.sin(TAU*a[i]*t+a[i+2]);}
+  let v=s*bm*(st.gainBg||1)+extra;
+  /* bouffées identiques */
+  if(st.cont==="bs"&&st.bs.identical&&ce.burst>0){const tau=t-ce.start,k=blurK(0.04,I.hf);
+    v+=ce.burst*(1.1-0.3*c.ap)*(110*(gs(tau-0.18,0.04*k)/k)-60*gs(tau-0.45,0.12)+45*Math.sin(TAU*4*tau)*Math.exp(-tau/0.5)*I.gm(4));}
+  /* décharges périodiques */
+  const PD=st.pd;
+  if(PD&&!(PD.suppressed)){
+    const w=fieldW(PD.field,c);
+    if(w>0.02){
+      const lag=PD.lag?c.ap*0.07:0,P=1/PD.f,tt=t-lag,k0=Math.floor(tt/P),sh=WAVES[PD.shape||"sharp"],bs=PD.shape==="tri"?0.04:PD.shape==="spike"?0.016:0.03,kb=blurK(bs,I.hf);
+      for(let k=k0-1;k<=k0+1;k++){const tk=k*P+(hsh(k,5)-0.5)*P*(PD.jit??0.12),tau=tt-tk;if(tau<-0.3||tau>0.6)continue;
+        const A=PD.amp*(0.85+0.3*hsh(k,6))*w;v+=A*sh(tau,kb)/kb;
+        if(PD.plus&&tau>0.02&&tau<0.3)v+=22*w*Math.sin(TAU*11*tau)*I.gm(11)*smooth(tau,0.02,0.06)*(1-smooth(tau,0.2,0.3));}
+    }
+  }
+  /* activité delta rythmique */
+  const R=st.rda;
+  if(R){const w=fieldW(R.field,c);if(w>0.02){const env=R.runs?clamp((Math.sin(TAU*t/R.runs+R.ph)+0.15)*2.5,0,1):1,ph=TAU*R.f*t+0.4*Math.sin(TAU*0.07*t);
+    v+=R.amp*w*env*(Math.sin(ph)+0.28*Math.sin(2*ph+0.8)*I.gm(2*R.f));}}
+  if(sz)v+=sz.v;
+  /* artefacts */
+  const A=st.arts||[];
+  if(A.includes("ecg"))v+=(st.ecgA||8)*qrs(t,st.hr||80)*(c.lat==="T"?1.15:0.75)*(c.h==="R"?-1:1)*I.gm(18);
+  if(A.includes("blink")&&c.el[0].startsWith("Fp")){const P=3.7,k=Math.floor(t/P),tau=t-k*P-hsh(k,7)*1.5;v+=60*gs(tau-0.2,0.11)*(1.2-c.ap);}
+  if(A.includes("muscle")||A.includes("shiver")){const m=I.musc[ci],on=A.includes("shiver")?1:clamp((Math.sin(TAU*t/7+ci*0.3)+0.1)*3,0,1);if(on>0){let s2=0;for(let k=0;k<m.length;k+=2)s2+=Math.sin(TAU*m[k]*t+m[k+1])*I.gm(m[k]);v+=on*(c.lat==="T"||c.ap<0.2?6:2.5)*s2;}}
+  if(A.includes("electrode")){const E=st.badEl||"T4",ix=c.el.indexOf(E);if(ix>=0){const sg=ix===0?1:-1,P=1.9,k=Math.floor(t/P),tau=t-k*P-hsh(k,8)*0.8;if(tau>0)v+=sg*(80+50*hsh(k,2))*Math.exp(-tau/0.28)*(hsh(k,11)>0.25?1:0);}}
+  if(A.includes("hz50")&&c.el.includes(st.humEl||"O2"))v+=28*Math.sin(TAU*50*t)*I.gm(50);
+  if(A.includes("ventil")&&(c.el.includes("O1")||c.el.includes("O2")||c.el.includes("T5")||c.el.includes("T6"))){const f=(st.fr||18)/60;v+=85*(Math.pow(Math.sin(Math.PI*((t*f)%1)),3)-0.4)*(c.el.includes("O2")?1:0.75);}
+  const care=inCare(I,t);
+  if(care>0){const f=3.6,ph=(t*f)%1;v+=care*(1.05-0.2*c.ap)*(55*gs(ph-0.1,0.04)-20*gs(ph-0.35,0.08))*I.gm(10);const m=I.musc[ci];let s3=0;for(let k=0;k<m.length;k+=2)s3+=Math.sin(TAU*m[k]*t+m[k+1])*I.gm(m[k]);v+=care*2.5*s3;}
+  return v;
+}
+/* annotations visibles sur la bande du bas */
+function notesIn(I,t0,t1){
+  const N=[];const C=I.st.care;
+  if(C){for(let k=Math.floor((t0-C.off)/C.period)-1;k<=Math.ceil((t1-C.off)/C.period);k++){const s=C.off+k*C.period;if(s>=t0-0.01&&s<t1)N.push([s,C.label||"Soins"]);}}
+  for(const S of I.stims)if(S.t>=t0&&S.t<t1)N.push([S.t,{voix:"Appel par le nom",douleur:"Stimulation douloureuse",aspi:"Aspiration trachéale"}[S.k]||S.k]);
+  for(const n of (I.st.notes||[]))if(n[0]>=t0&&n[0]<t1)N.push(n);
+  return N;
+}
+
+/* ===== Affichage du tracé (relecture page par page, ou défilement en direct) ===== */
+class EEGView{
+  constructor(wrap,o={}){
+    this.wrap=wrap;this.cv=document.createElement("canvas");wrap.appendChild(this.cv);this.cx=this.cv.getContext("2d");
+    this.o=Object.assign({sec:10,gain:7,hf:70,notch:true,montage:8,live:false,ecg:true},o);
+    this.t0=0;this.ts=0;this.run=false;this.inst=null;this.st=null;this.seed=1;this.prev=null;
+    this.ro=new ResizeObserver(()=>this.resize());this.ro.observe(wrap);
+  }
+  chans(){return this.o.montage===18?CH18:CH8;}
+  set(st,seed){this.st=st;this.seed=seed??this.seed;this.inst=makeInst(st,this.seed,this.chans());if(this.o.live){this.full();}else this.draw();}
+  rebuild(){if(this.st){const stims=this.inst?this.inst.stims:[];this.inst=makeInst(this.st,this.seed,this.chans());this.inst.stims=stims;}this.full();}
+  opt(k,v){this.o[k]=v;if(k==="montage")this.rebuild();else this.full();}
+  resize(){const r=this.wrap.getBoundingClientRect(),d=devicePixelRatio||1;const n=this.chans().length+(this.o.ecg?1:0);
+    const rowH=this.o.montage===18?(r.width<600?22:28):(r.width<600?34:44);
+    this.W=Math.max(300,r.width);this.H=n*rowH+46;this.cv.style.width=this.W+"px";this.cv.style.height=this.H+"px";this.cv.width=this.W*d;this.cv.height=this.H*d;this.cx.setTransform(d,0,0,d,0,0);
+    this.lx=this.W<600?50:62;this.top=18;this.rowH=rowH;this.pw=this.W-this.lx-8;this.full();}
+  full(){if(!this.W||!this.inst)return;if(this.o.live){this.cx.fillStyle="#04090b";this.cx.fillRect(0,0,this.W,this.H);this.frame0();this.prev=null;this.lastX=null;}else this.draw();}
+  tFor(x,base){return base+x/this.pw*this.o.sec;}
+  yFor(i,v){const pxmm=this.rowH/10;return this.top+(i+0.5)*this.rowH-v/this.o.gain*pxmm;}
+  frame0(){this.cx.fillStyle="#04090b";this.cx.fillRect(0,0,this.W,this.H);this.frame0lbl();}
+  grid(x0,x1,base){const c=this.cx,s=this.o.sec,ch=this.chans().length+(this.o.ecg?1:0),yb=this.top+ch*this.rowH;
+    c.fillStyle="#04090b";c.fillRect(this.lx+x0,0,x1-x0,yb+18);
+    for(let k=Math.ceil(this.tFor(x0,base)*5);k<=this.tFor(x1,base)*5;k++){const x=this.lx+(k/5-base)/s*this.pw;const maj=k%5===0;c.strokeStyle=maj?"rgba(147,168,175,.28)":"rgba(147,168,175,.09)";c.lineWidth=1;c.beginPath();c.moveTo(x+0.5,this.top-4);c.lineTo(x+0.5,yb);c.stroke();
+      if(maj&&!this.o.live){c.fillStyle="#5d7178";c.font="11px Barlow, sans-serif";c.fillText(`${Math.round(k/5)} s`,x+3,11);}}
+  }
+  traces(x0,x1,base,cont){
+    const c=this.cx,I=this.inst,ch=this.chans(),flt={hf:this.o.hf,notch:this.o.notch};prepFilter(I,flt);
+    const sub=3,dx=1/sub;if(!this.prev||!cont)this.prev=new Array(ch.length+1).fill(null);
+    c.lineWidth=1.1;c.lineJoin="round";
+    for(let i=0;i<ch.length;i++){c.strokeStyle=ch[i].h==="L"?"#cfe6ff":ch[i].h==="R"?"#ffe1dc":"#e9f1f3";c.beginPath();let p=this.prev[i];
+      if(p)c.moveTo(p[0],p[1]);
+      for(let x=x0;x<=x1;x+=dx){const t=this.tFor(x,base),y=clamp(this.yFor(i,evalCh(I,i,t)),this.top-6,this.top+(ch.length+(this.o.ecg?1:0))*this.rowH);const X=this.lx+x;if(!p){c.moveTo(X,y);p=1;}else c.lineTo(X,y);this.prev[i]=[X,y];}
+      c.stroke();}
+    if(this.o.ecg){const i=ch.length;c.strokeStyle="#ff8a7a";c.beginPath();let p=this.prev[i];if(p)c.moveTo(p[0],p[1]);
+      for(let x=x0;x<=x1;x+=dx){const t=this.tFor(x,base),y=this.top+(i+0.6)*this.rowH-ecgVal(t,I.st.hr||80)*this.rowH*0.55,X=this.lx+x;if(!p){c.moveTo(X,y);p=1;}else c.lineTo(X,y);this.prev[i]=[X,y];}c.stroke();}
+    // annotations
+    const yb=this.top+(ch.length+(this.o.ecg?1:0))*this.rowH;
+    for(const n of notesIn(I,this.tFor(x0,base),this.tFor(x1,base)+1e-6)){const X=this.lx+(n[0]-base)/this.o.sec*this.pw;
+      c.strokeStyle="#ffe066";c.setLineDash([3,3]);c.beginPath();c.moveTo(X+0.5,this.top-4);c.lineTo(X+0.5,yb);c.stroke();c.setLineDash([]);
+      c.fillStyle="#ffe066";c.font="600 12px Barlow, sans-serif";c.textBaseline="alphabetic";const w=c.measureText(n[1]).width;c.fillText(n[1],Math.min(X+3,this.W-w-4),yb+14);}
+  }
+  draw(){if(!this.W||!this.inst)return;this.frame0();this.prev=null;this.grid(0,this.pw,this.t0);this.traces(0,this.pw,this.t0,false);this.frame0lbl();}
+  frame0lbl(){const c=this.cx,ch=this.chans(),n=ch.length+(this.o.ecg?1:0),yb=this.top+n*this.rowH;
+    c.fillStyle="#04090b";c.fillRect(0,0,this.lx,this.H);
+    c.font=`600 ${this.W<600?11:13}px Barlow, sans-serif`;c.textBaseline="middle";
+    ch.forEach((h,i)=>{c.fillStyle=h.h==="L"?"#9fd3ff":h.h==="R"?"#ffb3a8":"#e9f1f3";c.fillText(h.n,4,this.top+(i+0.5)*this.rowH);});
+    if(this.o.ecg){c.fillStyle="#ff8a7a";c.fillText("ECG",4,this.top+(ch.length+0.5)*this.rowH);}
+    let uv=50;if(uv/this.o.gain*this.rowH/10>56)uv=20;if(uv/this.o.gain*this.rowH/10>56)uv=10;const hpx=uv/this.o.gain*this.rowH/10,x=this.lx-8,y1=this.H-6;
+    c.strokeStyle="#ffe066";c.lineWidth=2;c.beginPath();c.moveTo(x,y1);c.lineTo(x,y1-hpx);c.stroke();
+    c.fillStyle="#ffe066";c.font="11px Barlow, sans-serif";c.textBaseline="alphabetic";c.textAlign="right";c.fillText(uv+" µV",x-4,y1);c.textAlign="left";}
+  page(d){this.t0=Math.max(0,this.t0+d*this.o.sec);this.draw();}
+  /* direct : balayage */
+  start(){if(this.run)return;this.run=true;this.o.live=true;this.full();let last=performance.now();
+    const step=now=>{if(!this.run)return;const dt=Math.min(0.1,(now-last)/1000);last=now;
+      if(this.W&&this.inst&&this.wrap.offsetParent!==null){this.ts+=dt;const s=this.o.sec,base=Math.floor(this.ts/s)*s,x=(this.ts-base)/s*this.pw;
+        if(this.lastX==null||this.base!==base){if(this.lastX!=null&&this.base!==base){this.grid(this.lastX,this.pw,this.base);this.traces(this.lastX,this.pw,this.base,true);}this.prev=null;this.lastX=0;this.base=base;}
+        if(x>this.lastX){this.grid(this.lastX,Math.min(this.pw,x+10),base);this.traces(this.lastX,x,base,true);this.lastX=x;}
+        this.frame0lbl();}
+      requestAnimationFrame(step);};requestAnimationFrame(step);}
+  stop(){this.run=false;}
+  stim(k){if(!this.inst)return;this.inst.stims.push({t:this.o.live?this.ts+0.05:this.t0+2,k});if(!this.o.live)this.draw();}
+}
+
+/* ===== Bibliothèque des aspects (onglets Comment ça marche et Interprétation) ===== */
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const GROUPS=[["fond","Fond de tracé"],["fig","Figures périodiques et rythmiques"],["crise","Crises"],["sed","Sédation"],["art","Artefacts"]];
+const PAT={
+ normal:{g:"fond",name:"Tracé normal de l'adulte éveillé",st:{bg:{amp:38,w:[.15,.25,1,.35]},arts:["blink"],react:"react",hr:72},
+  see:"Rythme alpha (8 à 12 Hz) sur les régions postérieures, activités rapides de faible amplitude en avant, tracé continu et symétrique. Les clignements font de grandes ondes lentes dans les voies frontales (Fp).",
+  mean:"Référence. Rare en réanimation chez un patient sédaté, mais utile pour reconnaître ce qui ne l'est pas.",
+  todo:"Rien. Le rythme alpha est réactif : il s'atténue à l'ouverture des yeux ou à la stimulation."},
+ slowdiff:{g:"fond",name:"Ralentissement diffus",st:{bg:{amp:55,w:[1,.9,.12,.15]},react:"react",hr:96},
+  see:"Activités thêta (4 à 7 Hz) et delta (moins de 4 Hz) qui dominent partout, de façon continue et symétrique. Le tracé change à la stimulation (réactif).",
+  mean:"Encéphalopathie, sans spécificité de cause : sepsis, troubles métaboliques, médicaments, sédation. Plus le tracé est lent, peu ample et peu réactif, plus l'encéphalopathie est profonde.",
+  todo:"Chercher et traiter la cause. Un ralentissement n'est pas une indication d'antiépileptique."},
+ slowfocal:{g:"fond",name:"Ralentissement focal",st:{bg:{amp:40,w:[.5,.9,.35,.3]},focalSlow:{side:"L",lat:"T",ap:.4,amp:55},asym:{side:"L",f:0.8},react:"react",hr:84},
+  see:"Ondes delta irrégulières (polymorphes) limitées à une région, ici temporale gauche, avec une asymétrie du fond.",
+  mean:"Lésion structurelle de cette région : AVC, hématome, contusion, tumeur, abcès, encéphalite.",
+  todo:"Imagerie cérébrale si la lésion n'est pas connue. Surveiller l'apparition de décharges ou de crises dans la même région."},
+ disc:{g:"fond",name:"Tracé discontinu",st:{bg:{amp:38,w:[1,.7,.2,.25]},cont:"bs",bs:{Pm:2.6,supp:0.3,floor:0.15},react:"react",hr:78},
+  see:"Le fond s'atténue par périodes, sur 10 à 49 % du temps, entre des séquences d'activité plus ample.",
+  mean:"Encéphalopathie plus profonde, ou effet de la sédation et de l'hypothermie. Il faut toujours interpréter la continuité en connaissant les doses de sédatifs.",
+  todo:"Relire les sédations et la température avant de conclure. Réévaluer après allègement."},
+ bs:{g:"fond",name:"Suppression-bouffées",st:{bg:{amp:45,w:[1,.7,.3,.4]},cont:"bs",bs:{Pm:6,supp:0.78},react:"none",arts:["ecg"],ecgA:4,hr:70},vo:{sec:20},
+  see:"Bouffées d'activité ample séparées par des périodes de suppression (moins de 10 µV) qui occupent 50 à 99 % du tracé.",
+  mean:"Soit un effet recherché (anesthésie titrée pour un état de mal réfractaire), soit une souffrance cérébrale sévère (anoxie). Sans sédation, c'est un aspect de mauvais pronostic.",
+  todo:"Sous anesthésie pour état de mal : c'est souvent l'objectif. Hors sédation : à intégrer dans une évaluation pronostique multimodale."},
+ bsid:{g:"fond",name:"Suppression-bouffées, bouffées identiques",st:{bg:{amp:40,w:[1,.6,.2,.2]},cont:"bs",bs:{Pm:5.5,supp:0.84,identical:true},react:"none",arts:["ecg"],ecgA:4,hr:66},vo:{sec:20},
+  see:"Les bouffées se ressemblent toutes, comme copiées : même forme, même durée, dans toutes les voies.",
+  mean:"Après un arrêt cardiaque, c'est un des aspects « hautement malins », fortement associé à un pronostic défavorable quand il est observé après 24 heures, sans sédation confondante.",
+  todo:"Ne jamais conclure sur l'EEG seul : évaluation multimodale à 72 heures ou plus (au moins deux critères concordants)."},
+ supp:{g:"fond",name:"Tracé supprimé",st:{bg:{amp:40,w:[1,.6,.3,.3]},cont:"supp",suppLevel:0.07,react:"none",arts:["ecg"],ecgA:5,hr:64},vo:{gain:3},
+  see:"Activité de moins de 10 µV dans toutes les voies. En augmentant le gain, on ne voit plus que le bruit et l'artefact ECG, calé sur les QRS.",
+  mean:"Sédation très profonde, hypothermie profonde, intoxication (barbituriques), ou anoxie sévère. Après un arrêt cardiaque, à plus de 24 heures et sans facteur confondant : aspect hautement malin.",
+  todo:"Éliminer les facteurs confondants (sédation, température, métabolique), puis intégrer dans l'évaluation multimodale."},
+ tri:{g:"fig",name:"Ondes triphasiques",st:{bg:{amp:35,w:[1,.8,.1,.15]},pd:{f:1.8,shape:"tri",field:{side:"G",ant:true},amp:62,lag:true,jit:0.18},react:"react",hr:92},
+  see:"Décharges périodiques généralisées à 1,5 à 2,5 Hz, à trois phases, plus amples en avant, avec un léger décalage d'avant en arrière.",
+  mean:"Le plus souvent une encéphalopathie métabolique ou toxique : insuffisance hépatique ou rénale, sepsis, céfépime, lithium, baclofène. Mais un état de mal non convulsif peut avoir le même aspect.",
+  todo:"Traiter la cause (arrêter ou adapter le médicament en cause). En cas de doute, test thérapeutique par antiépileptique non sédatif, jugé sur l'EEG et sur la clinique."},
+ gpd:{g:"fig",name:"Décharges périodiques généralisées sur fond supprimé",st:{bg:{amp:40,w:[1,.5,.2,.2]},cont:"supp",suppLevel:0.1,pd:{f:1,shape:"sharp",field:{side:"G"},amp:55,jit:0.05},react:"none",arts:["ecg"],ecgA:3,hr:70},
+  see:"Grapho-éléments pointus, réguliers, environ un par seconde, dans toutes les voies, sur un fond presque plat.",
+  mean:"Après un arrêt cardiaque, c'est un aspect hautement malin (fond supprimé avec décharges périodiques continues). Ailleurs : causes toxiques, métaboliques, après un état de mal.",
+  todo:"Post-arrêt : un critère parmi d'autres, à 72 heures ou plus. Si myoclonies associées : antiépileptique (lévétiracétam ou valproate) en plus de la sédation."},
+ lpd:{g:"fig",name:"Décharges périodiques latéralisées (LPD)",st:{bg:{amp:42,w:[.8,.8,.3,.3]},asym:{side:"R",f:0.75},pd:{f:1,shape:"sharp",field:{side:"R",lat:"T",ap:.45},amp:110,jit:0.15},react:"react",hr:88},
+  see:"Décharges pointues qui reviennent à intervalles réguliers (environ 1 Hz) sur un seul hémisphère, ici temporal droit.",
+  mean:"Lésion corticale aiguë ou subaiguë (AVC, encéphalite herpétique, tumeur, hématome). Le risque de crises est élevé.",
+  todo:"Imagerie, recherche de la cause, EEG prolongé pour dépister les crises. Antiépileptique non sédatif discuté, surtout si la fréquence dépasse 1 Hz ou s'il existe un « plus »."},
+ iic:{g:"fig",name:"Continuum critique-intercritique",st:{bg:{amp:40,w:[.8,.8,.3,.3]},asym:{side:"R",f:0.75},pd:{f:2,shape:"sharp",field:{side:"R",lat:"T",ap:.45},amp:100,jit:0.1,plus:true},react:"none",hr:96},
+  see:"LPD à 2 Hz avec une activité rapide surajoutée après chaque décharge (« plus »). Pas encore une crise (moins de 2,5 Hz, pas d'évolution), mais proche.",
+  mean:"Aspect qui peut contribuer au trouble de conscience ou léser le cortex. Zone grise entre décharges et crise.",
+  todo:"Test par antiépileptique non sédatif (par exemple lévétiracétam), en jugeant à la fois l'EEG et la clinique. Pas d'anesthésie générale pour un aspect de continuum seul."},
+ lrda:{g:"fig",name:"Activité delta rythmique latéralisée (LRDA)",st:{bg:{amp:40,w:[.7,.8,.3,.3]},rda:{f:1.6,field:{side:"L",lat:"T",ap:.4},amp:60,runs:11,ph:0},react:"react",hr:86},vo:{sec:20},
+  see:"Ondes delta régulières, presque sinusoïdales, à 1 à 2 Hz, par bouffées, sur un seul hémisphère (ici temporal gauche).",
+  mean:"Comme les LPD, associée à une lésion et à un risque de crises.",
+  todo:"EEG prolongé, recherche de crises, imagerie."},
+ grda:{g:"fig",name:"Activité delta rythmique généralisée frontale (GRDA)",st:{bg:{amp:40,w:[.8,.8,.2,.3]},rda:{f:2,field:{side:"G",ant:true},amp:50,runs:9,ph:1},react:"react",hr:90},vo:{sec:20},
+  see:"Ondes delta rythmiques bilatérales, prédominant en avant, par bouffées.",
+  mean:"Encéphalopathie (toxique, métabolique, hydrocéphalie). Risque de crises faible.",
+  todo:"Traiter la cause. Pas d'antiépileptique sur cet aspect seul."},
+ sz:{g:"crise",name:"Crise électrographique focale",st:{bg:{amp:40,w:[.7,.8,.3,.3]},sz:{period:110,dur:55,off:8,onset:{side:"L",lat:"T",ap:.4},gen:false},react:"react",hr:96},vo:{sec:20},
+  see:"Début focal (temporal gauche) par une activité rapide de faible amplitude, qui ralentit, s'amplifie et s'étend : c'est l'évolution. Puis arrêt brutal et atténuation post-critique. Faites défiler les pages.",
+  mean:"Crise : décharges à plus de 2,5 Hz pendant au moins 10 secondes, ou aspect qui évolue nettement pendant au moins 10 secondes. En réanimation, la plupart des crises passent inaperçues cliniquement.",
+  todo:"Traiter (antiépileptique de deuxième ligne si non encore fait), chercher la cause, poursuivre l'EEG."},
+ ncse:{g:"crise",name:"État de mal électrographique",st:{bg:{amp:35,w:[.8,.7,.2,.3]},sz:{period:68,dur:60,off:2,onset:{side:"G"},amp:0.6},react:"none",hr:104},vo:{sec:20},t0:20,
+  see:"Crises généralisées presque continues, séparées de courtes pauses.",
+  mean:"État de mal électrographique : crise continue de 10 minutes ou plus, ou crises qui occupent plus de 20 % d'une heure d'enregistrement.",
+  todo:"Urgence : protocole d'état de mal. Chez un patient comateux après un état de mal convulsif, traiter comme un état de mal réfractaire."},
+ prop:{g:"sed",name:"Effet du propofol",st:{bg:{amp:40,w:[.7,.7,.5,.3]},frontBeta:28,react:"react",hr:76},
+  see:"Activités rapides (bêta) plus amples en avant, sur un fond un peu ralenti. Aux fortes doses, le tracé devient discontinu puis en suppression-bouffées.",
+  mean:"Effet attendu de la sédation (benzodiazépines et propofol donnent le même type d'aspect).",
+  todo:"Rien. Ne pas confondre avec une activité épileptique : pas de rythme qui évolue."},
+ a_ecg:{g:"art",name:"Artefact ECG",st:{bg:{amp:40,w:[1,.6,.3,.3]},cont:"supp",suppLevel:0.08,arts:["ecg"],ecgA:7,react:"none",hr:78},vo:{gain:3},
+  see:"Petits grapho-éléments pointus, réguliers, exactement calés sur les QRS de la voie ECG. Très visibles quand le fond est supprimé et le gain augmenté.",
+  mean:"Artefact : le cœur, pas le cerveau. Piège classique : on le prend pour des décharges périodiques.",
+  todo:"Comparer avec la voie ECG. Aucun traitement."},
+ a_muscle:{g:"art",name:"Artefact musculaire",st:{bg:{amp:50,w:[1,.9,.15,.15]},arts:["muscle"],react:"react",hr:92},
+  see:"Activité très rapide, irrégulière, « en brosse », surtout dans les voies frontales et temporales, par bouffées (mâchoires, frissons, toux).",
+  mean:"Artefact. Le filtre haute fréquence à 15 Hz l'atténue, mais peut lui donner l'aspect d'une activité rapide ou de pointes.",
+  todo:"Regarder le patient. Garder le filtre à 70 Hz pour lire, ne le baisser que ponctuellement."},
+ a_el:{g:"art",name:"Électrode défectueuse",st:{bg:{amp:50,w:[1,.9,.15,.15]},arts:["electrode"],badEl:"T4",react:"react",hr:90},
+  see:"Grandes déflexions brutales, isolées, dans les deux seules voies qui contiennent T4, en sens opposé (Fp2-T4 et T4-O2). Rien dans les voies voisines.",
+  mean:"Artefact d'électrode (gel sec, électrode décollée). Une activité cérébrale aurait un champ, c'est-à-dire qu'elle toucherait plusieurs électrodes voisines.",
+  todo:"Faire refixer l'électrode et vérifier les impédances."},
+ a_50:{g:"art",name:"Parasite secteur (50 Hz)",st:{bg:{amp:50,w:[1,.9,.15,.15]},arts:["hz50"],humEl:"O2",react:"react",hr:90},vo:{notch:false},
+  see:"Épaississement régulier de la ligne dans les voies d'une électrode (ici O2), qui disparaît quand on active le filtre 50 Hz.",
+  mean:"Artefact électrique : impédance élevée de l'électrode, appareils voisins (pousse-seringues, lit, matelas).",
+  todo:"Refixer l'électrode ; le filtre 50 Hz masque l'artefact mais ne corrige pas la cause."},
+ a_vent:{g:"art",name:"Artefact du respirateur ou du lit",st:{bg:{amp:45,w:[1,.9,.15,.15]},arts:["ventil"],fr:18,react:"react",hr:90},vo:{sec:20},
+  see:"Ondes lentes régulières dans les voies postérieures (tête posée sur les électrodes O1, O2), au rythme exact de la fréquence respiratoire (18 par minute).",
+  mean:"Artefact de mouvement transmis par le circuit du respirateur ou le matelas. Il peut imiter une activité delta rythmique.",
+  todo:"Comparer avec la fréquence du respirateur ; repositionner la tête ou les tuyaux."},
+ a_care:{g:"art",name:"Artefact de soins (percussions)",st:{bg:{amp:45,w:[1,.9,.15,.15]},care:{off:4,period:60,dur:11,label:"Kinésithérapie : percussions thoraciques"},react:"react",hr:96},vo:{sec:20},
+  see:"Décharges rythmiques amples, généralisées, très régulières, qui commencent et s'arrêtent d'un coup, exactement pendant les soins annotés. Aucune évolution de fréquence.",
+  mean:"Artefact. C'est la fausse « crise » la plus fréquente en réanimation.",
+  todo:"Vérifier les annotations (et la vidéo si disponible). Demander aux soignants d'annoter les soins."}
+};
+
+/* ===== Comment ça marche : bac à sable ===== */
+const MODS={prop:0,mdz:0,ket:0,temp:37};
+const SART=[["ecg","ECG"],["muscle","Muscle"],["electrode","Électrode T4"],["hz50","50 Hz"],["ventil","Respirateur"],["care","Soins"],["blink","Clignements"]];
+let SB={pat:"slowdiff",arts:new Set()};
+function applyMods(base){
+  const st=structuredClone(base),m=MODS;
+  const sed=m.prop/4+m.mdz/0.3;
+  if(m.prop>0)st.frontBeta=(st.frontBeta||0)+30*Math.min(m.prop,2)/2*(m.prop>3.5?0.4:1);
+  if(m.mdz>0)st.frontBeta=(st.frontBeta||0)+25*Math.min(m.mdz,0.15)/0.15*(sed>0.9?0.4:1);
+  if(m.ket>0){st.fast=(st.fast||0)+10*m.ket;st.bg.w=st.bg.w.slice();st.bg.w[1]+=0.25*m.ket;}
+  if(sed>0.3){st.bg.w=st.bg.w.slice();st.bg.w[0]+=(sed-0.3)*1.5;st.bg.w[2]*=1-Math.min(sed,1)*0.8;}
+  if(m.temp<36){st.bg.amp*=1-(36-m.temp)*0.07;st.bg.w=st.bg.w.slice();st.bg.w[0]+=(36-m.temp)*0.25;}
+  if(sed>0.55&&st.cont!=="supp"){const s=clamp(0.35+(sed-0.55)*1.4,0.35,0.97);if(st.cont==="bs")st.bs.supp=Math.max(st.bs.supp,s);else{st.cont="bs";st.bs={Pm:5,supp:s,floor:0.07};}}
+  if(m.temp<33.5&&st.cont!=="supp"&&st.cont!=="bs"){st.cont="bs";st.bs={Pm:3,supp:0.3,floor:0.15};}
+  if(sed>1.05)st.cont="supp";
+  if(st.sz){if(sed>=0.75)st.sz.suppressed=true;else if(sed>=0.4)st.sz.slow=2.2;}
+  if(st.pd){st.pd.amp*=1-Math.min(sed,1)*0.55;if(sed>1)st.pd.suppressed=true;}
+  if(sed>0.8)st.react="none";
+  const A=new Set(st.arts||[]);for(const a of SB.arts)A.add(a);
+  if(SB.arts.has("care")&&!st.care)st.care={off:3,period:40,dur:10,label:"Kinésithérapie : percussions thoraciques"};
+  st.arts=[...A];return st;
+}
+let VS=null;
+function sbState(){return applyMods(PAT[SB.pat].st);}
+function sbRender(){
+  const P=PAT[SB.pat];
+  $("sbInfo").innerHTML=`<h2>${P.name}</h2><dl class="st"><dt>Ce que l'on voit</dt><dd>${P.see}</dd><dt>Ce que cela signifie</dt><dd>${P.mean}</dd><dt>Ce que l'on fait</dt><dd>${P.todo}</dd></dl>${sbSedNote()}`;
+}
+function sbSedNote(){const sed=MODS.prop/4+MODS.mdz/0.3;const n=[];
+  if(sed>0.3)n.push(sed>1.05?"Sédation très profonde : tracé supprimé. L'EEG ne renseigne plus sur le cerveau du patient, seulement sur la sédation.":sed>0.55?"Sédation profonde : le tracé devient discontinu puis en suppression-bouffées. C'est l'objectif d'une anesthésie pour état de mal réfractaire, mais on ne peut plus juger le pronostic.":"Sédation modérée : activités rapides antérieures et ralentissement du fond.");
+  if(MODS.ket>0)n.push("Kétamine : activités rapides et thêta plus amples, sans suppression aux doses usuelles.");
+  if(MODS.temp<36)n.push("Hypothermie : ralentissement et baisse d'amplitude, discontinuité en dessous de 33 à 34 °C.");
+  if(PAT[SB.pat].st.sz&&sed>=0.4)n.push(sed>=0.75?"Les crises ont cessé sous anesthésie : c'est ce que l'on cherche dans un état de mal réfractaire.":"Les crises s'espacent mais persistent : anesthésie encore insuffisante.");
+  return n.length?`<p class="note">${n.join(" ")}</p>`:"";}
+function sbInit(){
+  $("sbPat").innerHTML=GROUPS.map(g=>`<optgroup label="${g[1]}">${Object.entries(PAT).filter(([k,p])=>p.g===g[0]).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join("")}</optgroup>`).join("");
+  $("sbPat").value=SB.pat;
+  $("sbArts").innerHTML=SART.map(a=>`<button type="button" class="tg" data-art="${a[0]}" aria-pressed="false">${a[1]}</button>`).join("");
+  const S=[["prop","Propofol",0,6,0.25,"mg/kg/h"],["mdz","Midazolam",0,0.4,0.02,"mg/kg/h"],["ket","Kétamine",0,3,0.25,"mg/kg/h"],["temp","Température",32,37.5,0.5,"°C"]];
+  $("sbSed").innerHTML=S.map(f=>`<label class="f"><span>${f[1]}</span><output id="o-${f[0]}">${fmtMod(f[0],MODS[f[0]],f[5])}</output><input type="range" data-mod="${f[0]}" min="${f[2]}" max="${f[3]}" step="${f[4]}" value="${MODS[f[0]]}"></label>`).join("");
+  VS=new EEGView($("sbView"),{live:true});VS.set(sbState(),7);if(!reduce)VS.start();else VS.draw();
+  sbRender();sbSettings();
+}
+const fmtMod=(k,v,u)=>`${String(+(+v).toFixed(2)).replace(".",",")} ${u}`;
+function sbUpdate(){VS.st=sbState();const stims=VS.inst.stims;VS.inst=makeInst(VS.st,VS.seed,VS.chans());VS.inst.stims=stims;if(!VS.run)VS.draw();sbRender();}
+function sbSettings(){
+  const o=VS.o;
+  $("sbCtl").innerHTML=`
+  <div class="ctl"><span>Montage</span><div class="seg" data-o="montage">${[[8,"8 voies"],[18,"18 voies"]].map(x=>`<button type="button" data-v="${x[0]}" aria-pressed="${o.montage===x[0]}">${x[1]}</button>`).join("")}</div></div>
+  <div class="ctl"><span>Vitesse</span><div class="seg" data-o="sec">${[[10,"30 mm/s"],[20,"15 mm/s"]].map(x=>`<button type="button" data-v="${x[0]}" aria-pressed="${o.sec===x[0]}">${x[1]}</button>`).join("")}</div></div>
+  <div class="ctl"><span>Sensibilité</span><div class="seg" data-o="gain">${[2,3,5,7,10,15].map(x=>`<button type="button" data-v="${x}" aria-pressed="${o.gain===x}">${x}</button>`).join("")}</div><small class="mut">µV/mm</small></div>
+  <div class="ctl"><span>Filtre haute fréquence</span><div class="seg" data-o="hf">${[15,35,70].map(x=>`<button type="button" data-v="${x}" aria-pressed="${o.hf===x}">${x} Hz</button>`).join("")}</div></div>
+  <div class="ctl"><span>Filtre 50 Hz</span><div class="seg" data-o="notch">${[[1,"Actif"],[0,"Coupé"]].map(x=>`<button type="button" data-v="${x[0]}" aria-pressed="${(o.notch?1:0)===x[0]}">${x[1]}</button>`).join("")}</div></div>`;
+}
+function bindViewCtl(root,getV,after){
+  root.addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;const g=b.closest("[data-o]");if(!g)return;const k=g.dataset.o;let v=+b.dataset.v;if(k==="notch")v=!!v;
+    g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));const V=getV();if(k==="sec"&&!V.o.live)V.t0=Math.floor(V.t0/v)*v;V.opt(k,v);if(after)after();});
+}
+document.addEventListener("DOMContentLoaded",()=>{});
+
+/* ===== Interprétation : atlas ===== */
+let AT={k:"slowdiff"},VA=null;
+function atRender(){
+  $("atList").innerHTML=GROUPS.map(g=>`<h3 class="grp">${g[1]}</h3>`+Object.entries(PAT).filter(([k,p])=>p.g===g[0]).map(([k,p])=>`<button type="button" class="casebtn" data-at="${k}" aria-pressed="${k===AT.k}"><b>${p.name}</b></button>`).join("")).join("");
+  const P=PAT[AT.k];
+  $("atInfo").innerHTML=`<h2>${P.name}</h2><dl class="st"><dt>Ce que l'on voit</dt><dd>${P.see}</dd><dt>Ce que cela signifie</dt><dd>${P.mean}</dd><dt>Ce que l'on fait</dt><dd>${P.todo}</dd></dl>`;
+  if(!VA)VA=new EEGView($("atView"),{});
+  Object.assign(VA.o,{sec:10,gain:7,hf:70,notch:true},P.vo||{});VA.t0=P.t0||0;VA.set(P.st,3+Object.keys(PAT).indexOf(AT.k));
+  atCtl();
+}
+function atCtl(){const o=VA.o;$("atCtl").innerHTML=`<button class="btn" type="button" data-pg="-1" ${VA.t0<=0?"disabled":""}>◀ Page précédente</button><span class="mut small">${Math.round(VA.t0)} à ${Math.round(VA.t0+o.sec)} s</span><button class="btn" type="button" data-pg="1">Page suivante ▶</button>
+  <div class="seg" data-o="gain" style="margin-left:auto">${[2,3,7,15].map(x=>`<button type="button" data-v="${x}" aria-pressed="${o.gain===x}">${x} µV/mm</button>`).join("")}</div>
+  <div class="seg" data-o="notch">${[[1,"50 Hz filtré"],[0,"non filtré"]].map(x=>`<button type="button" data-v="${x[0]}" aria-pressed="${(o.notch?1:0)===x[0]}">${x[1]}</button>`).join("")}</div>
+  <button class="btn" type="button" data-stim="douleur">Stimuler</button>`;}
+
+/* ===== Schéma du montage ===== */
+const EPOS={Fp1:[-.3,-.9],Fp2:[.3,-.9],F7:[-.76,-.55],F3:[-.38,-.48],Fz:[0,-.46],F4:[.38,-.48],F8:[.76,-.55],T3:[-.95,0],C3:[-.47,0],Cz:[0,0],C4:[.47,0],T4:[.95,0],T5:[-.76,.55],P3:[-.38,.48],Pz:[0,.46],P4:[.38,.48],T6:[.76,.55],O1:[-.3,.9],O2:[.3,.9]};
+function headSvg(m){const ch=m===18?CH18:CH8,X=v=>110+v*86,Y=v=>116+v*86;
+  let s=`<svg viewBox="0 0 220 236" role="img" aria-label="Position des électrodes et montage ${m} voies"><circle cx="110" cy="116" r="96" fill="#0d171b" stroke="#3b5862" stroke-width="2"/><path d="M98 22 L110 6 L122 22" fill="none" stroke="#3b5862" stroke-width="2"/>`;
+  for(const c of ch){const a=EPOS[c.el[0]],b=EPOS[c.el[1]];s+=`<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}" stroke="${c.h==="L"?"#4fa3d9":c.h==="R"?"#e07a6c":"#c9d6da"}" stroke-width="3" stroke-linecap="round"/>`;}
+  const used=new Set(ch.flatMap(c=>c.el));
+  for(const [k,p] of Object.entries(EPOS)){const u=used.has(k);s+=`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${u?10:7}" fill="${u?"#e9f1f3":"#16242a"}" stroke="#93a8af"/><text x="${X(p[0])}" y="${Y(p[1])+3.5}" text-anchor="middle" font-size="${u?9:8}" font-weight="700" fill="${u?"#0b1215":"#93a8af"}" font-family="Barlow,sans-serif">${k}</text>`;}
+  return s+`<text x="110" y="232" text-anchor="middle" font-size="11" fill="#93a8af" font-family="Barlow,sans-serif">vu de dessus, nez en haut · gauche en bleu</text></svg>`;}
+
+/* ===== Cas cliniques ===== */
+const S=(k,over)=>Object.assign(structuredClone(PAT[k].st),over||{});
+const KC=[
+ {id:"eme",title:"Il ne se réveille pas",sub:"Après un état de mal convulsif",steps:[
+  {day:"H3",text:"Homme de 58 ans, 80 kg, épileptique, traitement arrêté depuis une semaine. État de mal tonico-clonique de 25 minutes : clonazépam deux fois, puis lévétiracétam 60 mg/kg. Intubé. Propofol arrêté depuis 2 heures : il ne se réveille pas. Clonies discrètes de la paupière droite.",
+   st:S("sz",{sz:{period:62,dur:52,off:6,onset:{side:"L",lat:"T",ap:.4},gen:true}}),vo:{sec:20},t0:0,
+   p:{clin:[["Glasgow","4 (M2)","a"],["Pupilles","réactives"],["Clonies","paupière droite, intermittentes","w"]],ttt:[["Clonazépam","2 × 1 mg"],["Lévétiracétam","60 mg/kg"],["Propofol","arrêté depuis 2 h"]]},
+   q:"Interprétation et conduite ?",
+   c:[["État de mal électrographique persistant : anesthésie générale titrée sur l'EEG","g-ok","Les crises occupent la majeure partie du tracé et s'accompagnent de clonies discrètes : l'état de mal continue, sous une forme non convulsive. Chez un patient intubé qui a déjà reçu une benzodiazépine et un antiépileptique de deuxième ligne, c'est un état de mal réfractaire : anesthésie générale (propofol ou midazolam) titrée sur l'EEG (RFE SRLF-SFMU 2018)."],
+      ["Confusion post-critique banale : attendre le réveil sans autre traitement","g-bad","Faites défiler les pages : ce ne sont pas des ondes lentes post-critiques mais des crises qui reviennent. Attendre laisse l'état de mal se prolonger."],
+      ["Curariser le patient pour faire cesser les clonies et poursuivre l'EEG","g-bad","La curarisation supprime les mouvements, pas les crises. Elle masque le seul signe clinique restant."],
+      ["Ajouter du valproate en deuxième ligne, puis refaire un EEG dans 1 heure","g-mid","Une seconde molécule de deuxième ligne se discute dans les états de mal de moins d'une heure chez un épileptique connu. Ici, plus de 3 heures après le début, le patient est déjà intubé : l'anesthésie est indiquée."]]},
+  {day:"H6",text:"Propofol titré à 4 mg/kg/h et midazolam 0,1 mg/kg/h. Aucune crise depuis 2 heures.",
+   st:S("bs",{arts:["ecg"]}),vo:{sec:20},
+   p:{clin:[["PAM","68 mmHg sous noradrénaline","w"]],ttt:[["Propofol","4 mg/kg/h"],["Midazolam","0,1 mg/kg/h"],["Lévétiracétam","entretien"]]},
+   q:"L'EEG montre une suppression-bouffées. Que faites-vous ?",
+   c:[["Maintenir sans crise environ 24 heures, puis décroître sous EEG continu","g-ok","La suppression-bouffées est souvent la cible de l'anesthésie dans un état de mal réfractaire. On la maintient en général 24 heures sans crise, avec un traitement de fond, puis on décroît progressivement sous EEG continu pour dépister une récidive."],
+      ["Arrêter le propofol tout de suite : les crises ont disparu depuis 2 heures","g-bad","Trop tôt : le risque de récidive est majeur à l'arrêt brutal. On décroît progressivement, sous EEG."],
+      ["Augmenter les doses jusqu'au tracé totalement plat pour plus de sécurité","g-bad","Pas de bénéfice démontré d'une suppression complète, et plus d'hypotension et d'effets indésirables (propofol : syndrome de perfusion)."],
+      ["Maintenir systématiquement 72 heures avant d'envisager une décroissance","g-mid","Rien ne justifie de prolonger par principe : chaque jour d'anesthésie ajoute des complications. On réévalue après environ 24 heures sans crise."]]},
+  {day:"J2",text:"Décroissance du propofol depuis 6 heures. Pas de clonie.",
+   st:S("lpd",{pd:{f:1,shape:"sharp",field:{side:"L",lat:"T",ap:.4},amp:95,jit:0.15},asym:{side:"L",f:0.75}}),
+   p:{clin:[["Glasgow","7 (M5)","w"]],ttt:[["Propofol","1 mg/kg/h, en baisse"],["Lévétiracétam","entretien"],["Valproate","ajouté à J1"]]},
+   q:"Le tracé montre ces décharges gauches. Conduite ?",
+   c:[["LPD sans évolution : poursuivre la décroissance sous EEG","g-ok","LPD à 1 Hz, sans évolution ni rythme rapide : aspect intercritique, fréquent après un état de mal, dans la région de départ des crises. On poursuit la décroissance avec le traitement de fond, en surveillant l'EEG."],
+      ["Reprendre l'anesthésie générale à pleine dose dès maintenant","g-bad","Les LPD ne sont pas des crises. Reprendre l'anesthésie prolonge le coma et ses complications sans bénéfice."],
+      ["Ajouter un troisième antiépileptique de façon systématique","g-mid","Pas nécessaire à ce stade : le traitement de fond est en place, il n'y a pas de crise."],
+      ["Arrêter l'EEG : le patient n'a plus de crise depuis 24 heures","g-bad","C'est pendant la décroissance que le risque de récidive est le plus élevé : la surveillance doit continuer."]]}
+ ]},
+ {id:"acr",title:"Coma après arrêt cardiaque",sub:"Que dit l'EEG, et quand ?",steps:[
+  {day:"H10",text:"Homme de 61 ans. Fibrillation ventriculaire, no-flow 3 minutes, low-flow 25 minutes. Contrôle de la température à 36 °C. Propofol 3 mg/kg/h et sufentanil.",
+   st:S("disc",{bg:{amp:30,w:[1,.6,.2,.4]},frontBeta:14,react:"none",bs:{Pm:3,supp:0.42,floor:0.12}}),
+   p:{clin:[["Température","36 °C"],["Glasgow","3 (sédaté)"]],ttt:[["Propofol","3 mg/kg/h"],["Sufentanil","0,3 µg/kg/h"]]},
+   q:"L'EEG est discontinu et peu ample. Qu'en concluez-vous ?",
+   c:[["Rien de pronostique à ce stade : refaire l'EEG après 24 heures, sédation minimale","g-ok","Sous sédation et avant 24 heures, la discontinuité n'a pas de valeur pronostique fiable. Les recommandations ERC-ESICM 2025 retiennent les aspects hautement malins après 24 heures, et concluent sur le pronostic à 72 heures ou plus."],
+      ["Aspect de mauvais pronostic : discuter une limitation des soins dès aujourd'hui","g-bad","Trop tôt et sous sédation : ce tracé peut devenir continu. Une décision prise sur ce seul EEG expose à une erreur grave."],
+      ["Approfondir la sédation jusqu'à la suppression-bouffées pour protéger le cerveau","g-bad","Aucun bénéfice démontré d'une neuroprotection par suppression-bouffées après un arrêt cardiaque, et l'EEG deviendrait ininterprétable."],
+      ["Arrêter la sédation immédiatement, pour pouvoir interpréter l'EEG ce soir","g-mid","L'allègement est souhaitable, mais l'interprétation pronostique attend de toute façon plus de 24 heures. Pas d'urgence à arrêter brutalement."]]},
+  {day:"H48",text:"Sédation arrêtée depuis 24 heures, 36,8 °C. Glasgow 3, réflexes du tronc présents. Le repère jaune marque une stimulation douloureuse.",
+   st:S("gpd",{}),stims:[{t:4,k:"douleur"}],
+   p:{clin:[["Glasgow","3"],["Réflexes photomoteurs","présents"],["Réflexes cornéens","présents"]],ttt:[["Sédation","arrêtée depuis 24 h"],["NSE à 48 h","en attente"]]},
+   q:"Comment intégrez-vous cet EEG ?",
+   c:[["Aspect hautement malin : un critère parmi d'autres, à 72 heures","g-ok","Fond supprimé avec décharges périodiques continues, aréactif : aspect hautement malin, prédictif d'un pronostic défavorable après 24 heures. Mais un seul critère ne suffit pas : il en faut au moins deux concordants à 72 heures ou plus, sans facteur confondant (ERC-ESICM 2025)."],
+      ["Pronostic acquis sur ce seul EEG : limitation des soins dès aujourd'hui","g-bad","Le pronostic est multimodal : au moins deux critères concordants, à 72 heures ou plus, sans facteur confondant."],
+      ["Charger en anesthésique pour supprimer ces décharges au plus vite","g-bad","Ces décharges traduisent l'anoxie ; l'anesthésie ne change pas le pronostic et fausse l'évaluation."],
+      ["Aucune valeur tant qu'une IRM cérébrale n'a pas été réalisée","g-mid","L'IRM est un des critères, mais l'EEG a sa propre valeur : il compte dans l'évaluation multimodale."]]},
+  {day:"H50",text:"Apparition de myoclonies multifocales du visage et des membres, synchrones des décharges sur l'EEG.",
+   st:S("gpd",{pd:{f:1.1,shape:"sharp",field:{side:"G"},amp:65,jit:0.05},arts:["ecg","muscle"]}),
+   p:{clin:[["Myoclonies","multifocales, continues","a"]],ttt:[["Sédation","aucune"]]},
+   q:"Quel traitement ?",
+   c:[["Lévétiracétam ou valproate, associé à une sédation","g-ok","Les recommandations ERC-ESICM 2025 proposent le lévétiracétam ou le valproate en première intention, avec des sédatifs, pour traiter les crises après un arrêt cardiaque. Pas de prophylaxie systématique."],
+      ["Phénytoïne en prophylaxie dès l'admission chez tout patient","g-bad","Pas de prophylaxie des crises après un arrêt cardiaque (ERC-ESICM 2025)."],
+      ["Curarisation continue pour faire disparaître les mouvements","g-bad","Masque les myoclonies sans traiter l'activité épileptique, et empêche l'évaluation neurologique."],
+      ["Aucun traitement : les myoclonies post-anoxiques ne se traitent pas","g-mid","Elles peuvent être traitées pour le confort et lorsqu'elles sont épileptiques. Leur caractère (état de mal myoclonique précoce) compte aussi dans le pronostic."]]},
+  {day:"H80",text:"Sans sédation depuis 56 heures. Réflexes pupillaires et cornéens abolis. NSE 95 µg/L à 72 heures. Potentiels évoqués somesthésiques : N20 absentes des deux côtés. EEG inchangé.",
+   st:S("supp",{}),vo:{gain:3},
+   p:{clin:[["Pupilles et cornéens","abolis","a"],["NSE à 72 h","95 µg/L","a"],["PES","N20 absentes","a"]],ttt:[["Sédation","aucune"]]},
+   q:"Quelle conclusion ?",
+   c:[["Critères concordants : pronostic très sombre, décision collégiale","g-ok","À 72 heures ou plus, sans facteur confondant, au moins deux critères concordants (ici cinq : réflexes abolis, N20 absentes, NSE au-dessus de 60 µg/L, EEG hautement malin, état de mal myoclonique) : pronostic défavorable très probable. Décision collégiale de limitation et information des proches."],
+      ["Attendre encore une semaine avant toute discussion avec la famille","g-bad","Tous les critères concordent, sans facteur confondant : prolonger sans projet ne sert pas le patient."],
+      ["Refaire un EEG standard de 20 minutes : seul l'EEG compte pour conclure","g-bad","Aucun examen ne suffit seul. C'est la concordance des critères qui fonde la décision."],
+      ["Demander une IRM avant toute décision, même si tout concorde","g-mid","Utile en cas de doute ou de discordance ; ici, les critères concordent déjà."]]}
+ ]},
+ {id:"tri",title:"Confuse, puis comateuse",sub:"Ondes triphasiques",steps:[
+  {day:"J4",text:"Femme de 71 ans, 60 kg, insuffisance rénale chronique (DFG 20 mL/min). Pneumonie traitée par céfépime 2 g × 3 par jour depuis 4 jours. Confusion depuis 48 heures, puis coma. Pas de mouvement anormal.",
+   st:S("tri",{}),
+   p:{clin:[["Glasgow","9","w"],["Température","37,4 °C"],["Myoclonies","discrètes, multifocales","w"]],ttt:[["Céfépime","2 g × 3 par jour","a"],["Créatinine","290 µmol/L","w"]]},
+   q:"Quelle est l'hypothèse principale, et que faites-vous ?",
+   c:[["Neurotoxicité du céfépime : arrêter l'antibiotique, épurer si besoin","g-ok","Ondes triphasiques chez une patiente insuffisante rénale sous céfépime à pleine dose : neurotoxicité probable. On arrête ou remplace le céfépime ; l'hémodialyse l'épure efficacement en cas de forme grave. Si le doute avec un état de mal persiste, test par antiépileptique non sédatif, jugé sur l'EEG et la clinique."],
+      ["État de mal non convulsif : anesthésie générale par propofol","g-bad","Aspect évocateur d'une encéphalopathie toxique. Une anesthésie générale exposerait à ses complications sans traiter la cause."],
+      ["Clonazépam : si les ondes disparaissent, c'est un état de mal","g-mid","Les benzodiazépines effacent aussi les ondes triphasiques métaboliques. Seule une amélioration à la fois de l'EEG et de la vigilance a une valeur diagnostique."],
+      ["Aucun lien avec l'antibiotique : poursuivre et contrôler dans 48 heures","g-bad","Le céfépime s'accumule en cas d'insuffisance rénale et donne exactement ce tableau."]]},
+  {day:"J6",text:"Céfépime remplacé, deux séances d'hémodialyse. La patiente répond aux ordres simples.",
+   st:S("slowdiff",{bg:{amp:45,w:[.6,1,.3,.2]}}),stims:[{t:5,k:"voix"}],
+   p:{clin:[["Glasgow","13"]],ttt:[["Antibiotique","pipéracilline-tazobactam"]]},
+   q:"Que montre l'EEG ?",
+   c:[["Ralentissement modéré et réactif : amélioration parallèle à la clinique","g-ok","Les décharges ont disparu, le fond est thêta, réactif à l'appel : l'amélioration de l'EEG suit celle de la vigilance, ce qui conforte le diagnostic d'encéphalopathie toxique."],
+      ["Décharges intercritiques persistantes : débuter un antiépileptique","g-bad","Il n'y a plus de décharge sur ce tracé."],
+      ["Tracé aréactif : l'atteinte cérébrale est probablement définitive","g-bad","Regardez après le repère : le fond se modifie à l'appel. Le tracé est réactif."],
+      ["Tracé normal : la patiente est complètement guérie, arrêt de la surveillance","g-mid","Le fond reste ralenti : l'encéphalopathie régresse, mais n'a pas encore disparu."]]}
+ ]},
+ {id:"hsv",title:"Fièvre, confusion, aphasie",sub:"Décharges latéralisées",steps:[
+  {day:"H0",text:"Homme de 49 ans. Fièvre à 39 °C depuis 3 jours, confusion, aphasie. IRM : hypersignal temporal interne gauche. Ponction lombaire : 80 éléments, lymphocytes.",
+   st:S("lpd",{pd:{f:1,shape:"sharp",field:{side:"L",lat:"T",ap:.4},amp:110,jit:0.15},asym:{side:"L",f:0.75}}),
+   p:{clin:[["Glasgow","12","w"],["Température","39 °C","w"]],ttt:[["Traitement","aucun"]]},
+   q:"Conduite ?",
+   c:[["Aciclovir IV sans attendre la PCR, et EEG prolongé","g-ok","LPD temporales gauches avec un tableau d'encéphalite : herpès jusqu'à preuve du contraire. Aciclovir immédiat. Les LPD exposent à un risque élevé de crises, souvent infracliniques : l'EEG doit se prolonger."],
+      ["Anesthésie générale : les décharges latéralisées sont un état de mal","g-bad","Les LPD ne sont pas des crises. Rien ne justifie une anesthésie générale ici."],
+      ["Attendre le résultat de la PCR herpès avant de traiter","g-bad","Chaque heure de retard à l'aciclovir aggrave le pronostic de l'encéphalite herpétique."],
+      ["Charge en valproate et arrêt de l'EEG, puisque la cause est trouvée","g-mid","Un antiépileptique se discute, mais arrêter l'EEG empêche de dépister les crises, fréquentes dans cette situation."]]},
+  {day:"H8",text:"Sous aciclovir. L'infirmière note des mâchonnements brefs.",
+   st:S("sz",{}),vo:{sec:20},t0:0,
+   p:{clin:[["Glasgow","10","w"],["Mâchonnements","brefs, répétés","w"]],ttt:[["Aciclovir","10 mg/kg × 3 par jour"]]},
+   q:"Faites défiler les pages. Que faites-vous ?",
+   c:[["Crise focale : charge en antiépileptique de deuxième ligne","g-ok","Activité rapide qui ralentit, s'amplifie et s'étend, avec une correspondance clinique : crise focale. Charge en antiépileptique (lévétiracétam par exemple), et benzodiazépine si les crises se rapprochent ou se prolongent."],
+      ["Pas de traitement : les crises n'influencent pas le pronostic de l'encéphalite","g-bad","Les crises répétées aggravent l'atteinte cérébrale : elles se traitent."],
+      ["Intubation et propofol d'emblée, avant tout antiépileptique","g-bad","Une crise focale isolée chez un patient qui protège ses voies aériennes relève d'abord d'un antiépileptique de deuxième ligne."],
+      ["Artefact de mastication : aucune conduite particulière","g-mid","Le muscle donne une activité très rapide irrégulière. Ici, il y a un rythme qui évolue, avec un champ cérébral : c'est une crise."]]},
+  {day:"H20",text:"Lévétiracétam chargé. Plus de crise, mais le patient reste peu vigilant.",
+   st:S("iic",{pd:{f:2,shape:"sharp",field:{side:"L",lat:"T",ap:.4},amp:100,jit:0.1,plus:true},asym:{side:"L",f:0.75}}),
+   p:{clin:[["Glasgow","9","w"]],ttt:[["Lévétiracétam","chargé, entretien"],["Aciclovir","en cours"]]},
+   q:"Interprétation et conduite ?",
+   c:[["Continuum : essai d'un second antiépileptique non sédatif","g-ok","LPD à 2 Hz avec activité rapide surajoutée : continuum critique-intercritique, qui peut entretenir le trouble de conscience. Essai d'un second antiépileptique non sédatif (valproate par exemple) ; une amélioration de l'EEG et de la vigilance plaide pour une composante épileptique."],
+      ["État de mal certain : anesthésie générale jusqu'à suppression-bouffées","g-bad","Les critères de crise ne sont pas remplis (moins de 2,5 Hz, pas d'évolution). L'anesthésie n'est pas justifiée sur un aspect de continuum."],
+      ["Aspect sans importance, lié à l'encéphalite : aucune action","g-mid","L'encéphalite en est la cause, mais cet aspect peut contribuer au coma : un essai thérapeutique non sédatif est raisonnable."],
+      ["Arrêter le lévétiracétam, qui semble inefficace ici","g-bad","Il a fait disparaître les crises ; on ajoute, on ne retire pas."]]}
+ ]},
+ {id:"art",title:"« Il fait des crises ! »",sub:"Vraies crises ou artefacts ?",steps:[
+  {day:"10 h",text:"Femme de 66 ans, J2 d'une chirurgie cardiaque, réveil retardé. EEG continu sous propofol 1 mg/kg/h. L'infirmière vous appelle : « elle fait des crises sur l'EEG ».",
+   st:S("a_care",{bg:{amp:40,w:[.8,.8,.3,.3]},frontBeta:18}),vo:{sec:20},t0:0,
+   p:{clin:[["Mouvements","aucun"]],ttt:[["Propofol","1 mg/kg/h"]]},
+   q:"Qu'en pensez-vous ?",
+   c:[["Artefact des percussions : aucun traitement nécessaire","g-ok","Décharges très régulières qui commencent et s'arrêtent d'un coup, exactement pendant la kinésithérapie annotée, sans changement de fréquence : artefact. Pas de traitement ; on demande d'annoter systématiquement les soins."],
+      ["Crise généralisée : clonazépam IV immédiat et appel du neurologue","g-bad","Une vraie crise évolue (fréquence, amplitude, extension) et ne se cale pas sur les soins."],
+      ["Augmenter le propofol jusqu'à obtenir une suppression-bouffées","g-bad","On ne traite pas un artefact. L'approfondissement retarderait encore le réveil."],
+      ["Charge en lévétiracétam par précaution, puis contrôle de l'EEG","g-mid","Le doute se lève en relisant les annotations : un traitement « au cas où » n'est pas utile."]]},
+  {day:"14 h",text:"Nouvel appel : « des pointes à droite ».",
+   st:S("a_el",{bg:{amp:40,w:[.8,.8,.3,.3]},frontBeta:18}),
+   p:{clin:[["Mouvements","aucun"]],ttt:[["Propofol","1 mg/kg/h"]]},
+   q:"Interprétation ?",
+   c:[["Électrode T4 défectueuse : la faire refixer","g-ok","Les déflexions n'apparaissent que dans Fp2-T4 et T4-O2, en sens opposé, sans champ dans les voies voisines : c'est l'électrode T4. On la fait refixer."],
+      ["LPD temporales droites : imagerie à la recherche d'un AVC","g-bad","Des LPD auraient un champ sur plusieurs électrodes voisines et une forme régulière."],
+      ["Crises temporales droites : charge en antiépileptique de deuxième ligne","g-bad","Pas de rythme qui évolue, pas de champ : ce n'est pas une crise."],
+      ["Pointes intercritiques : surveiller sans rien changer à la technique","g-mid","Ce ne sont pas des pointes cérébrales : sans correction de l'électrode, la voie reste ininterprétable."]]},
+  {day:"J3",text:"Sédation arrêtée. Elle ne se réveille toujours pas. L'interne de garde signale « des décharges périodiques à 1,3 Hz ». Gain augmenté à 3 µV/mm.",
+   st:S("a_ecg",{hr:78}),vo:{gain:3},
+   p:{clin:[["Glasgow","5","w"],["Fréquence cardiaque","78 /min"]],ttt:[["Sédation","arrêtée"]]},
+   q:"Comparez avec la voie ECG. Conclusion ?",
+   c:[["Artefact ECG : ces décharges sont calées sur les QRS","g-ok","78 battements par minute, c'est 1,3 Hz : les « décharges » tombent exactement sur les QRS. Le vrai message est le fond très peu ample, à réévaluer (sédation résiduelle, imagerie, cause de l'encéphalopathie)."],
+      ["Décharges périodiques généralisées : aspect hautement malin","g-bad","Elles sont synchrones des QRS : ce sont des artefacts cardiaques, pas des décharges cérébrales."],
+      ["État de mal non convulsif : traitement de deuxième ligne","g-bad","Aucune activité épileptique : seul l'ECG se projette sur l'EEG."],
+      ["Tracé normal, le gain élevé crée ces images sans importance","g-mid","Le gain révèle l'artefact, mais le fond n'est pas normal : il est très peu ample."]]}
+ ]}
+];
+
+/* ===== Quiz : lire le tracé ===== */
+const QZ=[
+ {k:"slowdiff",q:"Patient septique, non sédaté, confus. Quel aspect ?",c:["Ralentissement diffus","État de mal non convulsif","Suppression-bouffées","Tracé normal"],w:"Thêta-delta continu et symétrique : encéphalopathie. On traite la cause."},
+ {k:"supp",q:"Coma post-anoxique, 48 h, sans sédation (gain 3 µV/mm). Quel aspect ?",c:["Tracé supprimé","Décharges périodiques généralisées","Ralentissement diffus","Suppression-bouffées"],w:"Moins de 10 µV partout ; seul l'artefact ECG se voit. Après 24 h sans facteur confondant : aspect hautement malin."},
+ {k:"bsid",q:"Quel aspect ?",c:["Suppression-bouffées, bouffées identiques","Ondes triphasiques","Crises généralisées répétées","Tracé discontinu banal"],w:"Bouffées stéréotypées sur un fond supprimé : aspect hautement malin après un arrêt cardiaque."},
+ {k:"tri",q:"Cirrhotique, ammoniémie élevée, obnubilé. Quel aspect ?",c:["Ondes triphasiques","Décharges latéralisées","Crise focale","Artefact de soins"],w:"Décharges généralisées triphasiques à prédominance antérieure : encéphalopathie métabolique le plus souvent."},
+ {k:"lpd",q:"AVC hémisphérique droit récent. Quel aspect ?",c:["Décharges périodiques latéralisées","Électrode défectueuse","Ondes triphasiques","Ralentissement diffus"],w:"Décharges régulières limitées à un hémisphère, avec un champ : LPD, risque élevé de crises."},
+ {k:"lrda",q:"Quel aspect ?",c:["Delta rythmique latéralisé","Artefact du respirateur","Ralentissement diffus","Crise généralisée"],w:"Delta rythmique par bouffées sur un hémisphère. L'artefact du respirateur serait postérieur, calé sur la fréquence respiratoire."},
+ {k:"sz",q:"Faites défiler les pages. Quel aspect ?",c:["Crise focale avec évolution","Décharges latéralisées","Artefact musculaire","Delta rythmique latéralisé"],w:"Activité qui change de fréquence et d'amplitude et s'étend : c'est l'évolution qui signe la crise."},
+ {k:"ncse",q:"Intubé après un état de mal convulsif traité (benzodiazépine puis lévétiracétam). Conduite ?",c:["Anesthésie générale titrée sur l'EEG","Attendre le réveil sans traitement","Curariser pour supprimer les mouvements","Arrêter l'EEG, l'état de mal est traité"],w:"État de mal électrographique après deux lignes de traitement : état de mal réfractaire, anesthésie générale titrée sur l'EEG."},
+ {k:"a_muscle",q:"Quel aspect ?",c:["Artefact musculaire","Activité bêta du propofol","Crise focale rapide","Parasite secteur 50 Hz"],w:"Activité très rapide, irrégulière, par bouffées, frontale et temporale : muscle."},
+ {k:"a_el",q:"Quel aspect ?",c:["Électrode T4 défectueuse","Décharges temporales droites","Crises temporales droites","Artefact ECG"],w:"Déflexions dans les deux seules voies contenant T4, en sens opposé, sans champ : électrode."},
+ {k:"a_care",q:"Faites défiler les pages. Conduite ?",c:["Aucun traitement : artefact des soins","Clonazépam IV immédiat","Charge en lévétiracétam","Augmenter la sédation"],w:"Rythme régulier, sans évolution, strictement contemporain des percussions annotées : artefact."},
+ {k:"a_50",q:"Le filtre 50 Hz est coupé. Quel aspect ?",c:["Parasite secteur sur O2","Activité rapide de la kétamine","Artefact musculaire","Crise occipitale droite"],w:"Épaississement régulier limité aux voies d'O2, qui disparaît avec le filtre 50 Hz : parasite secteur, électrode à refixer."},
+ {k:"prop",q:"Patient sédaté. Quel aspect ?",c:["Activités rapides de la sédation","Artefact musculaire","Crises frontales","Ondes triphasiques"],w:"Bêta antérieur régulier, sans évolution : effet du propofol ou des benzodiazépines."},
+ {k:"grda",q:"Quel aspect ?",c:["Delta rythmique généralisé frontal","Ondes triphasiques","Artefact de clignements","Crise généralisée"],w:"Delta rythmique bilatéral et antérieur, par bouffées, sans pointe : encéphalopathie, faible risque de crise."},
+ {k:"iic",q:"Encéphalite, patient peu vigilant, sans crise depuis la charge en lévétiracétam. Conduite ?",c:["Essai d'un autre antiépileptique non sédatif","Anesthésie générale immédiate","Aucune action, aspect bénin","Arrêter le lévétiracétam"],w:"Continuum critique-intercritique : essai thérapeutique non sédatif, jugé sur l'EEG et la vigilance."},
+ {k:"a_vent",q:"Faites défiler les pages. Fréquence du respirateur : 18 par minute. Quel aspect ?",c:["Artefact du respirateur","Delta rythmique latéralisé","Décharges périodiques","Crise occipitale"],w:"Ondes lentes postérieures au rythme exact de la ventilation : artefact."},
+ {k:"slowfocal",q:"Quel aspect ?",c:["Ralentissement focal temporal gauche","Ralentissement diffus","Électrode défectueuse","Crise temporale gauche"],w:"Delta irrégulier et asymétrie limités à une région : lésion focale, imagerie."}
+];
+let K={order:[],c:0,s:0,ans:null,perm:{},score:0,done:0},VK=null;
+function kShuf(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+K.order=kShuf(KC.length);K.c=K.order[0];
+function kStart(ci){K.c=ci;K.s=0;K.ans=null;for(const k in K.perm)if(k.startsWith(KC[ci].id))delete K.perm[k];}
+function kPerm(key,n){if(!K.perm[key])K.perm[key]=kShuf(n);return K.perm[key];}
+const kv=a=>`<div class="kv">${a.map(x=>`<span>${x[0]}</span><span class="${x[2]||""}">${x[1]}</span>`).join("")}</div>`;
+function pager(V,id){return `<button class="btn" type="button" data-pg="-1" data-v2="${id}" ${V.t0<=0?"disabled":""}>◀ Page précédente</button><span class="mut small">${Math.round(V.t0)} à ${Math.round(V.t0+V.o.sec)} s</span><button class="btn" type="button" data-pg="1" data-v2="${id}">Page suivante ▶</button>`;}
+function kRender(){
+  const cs=KC[K.c],st=cs.steps[K.s];
+  $("kList").innerHTML=K.order.map(i=>`<button class="casebtn" type="button" data-kc="${i}" aria-pressed="${i===K.c}"><b>${KC[i].title}</b><span>${KC[i].sub}</span></button>`).join("");
+  $("kHead").innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0"><span class="day">${st.day}</span>${cs.title}</h2><span class="mut small">cas ${K.order.indexOf(K.c)+1} sur ${KC.length} · étape ${K.s+1} sur ${cs.steps.length}</span></div><p style="margin-top:8px">${st.text}</p>`;
+  $("kPanels").innerHTML=[["Clinique",st.p.clin],["Traitements et examens",st.p.ttt]].map(x=>`<div class="pan"><h3>${x[0]}</h3>${kv(x[1])}</div>`).join("");
+  if(!VK)VK=new EEGView($("kView"),{});
+  const key=K.c+"-"+K.s;if(VK._key!==key){VK._key=key;Object.assign(VK.o,{sec:10,gain:7,hf:70,notch:true},st.vo||{});VK.t0=st.t0||0;VK.set(st.st,11+K.c*7+K.s);VK.inst.stims=(st.stims||[]).slice();VK.draw();}
+  $("kPg").innerHTML=pager(VK,"k");
+  const perm=kPerm(cs.id+K.s,st.c.length),a=K.ans;
+  $("kBody").innerHTML=`<p><b>${st.q}</b></p><div class="choices">${perm.map((ci,j)=>{const c=st.c[ci],cl=a===null?"":c[1]==="g-ok"?" right":ci===a?" wrong":"";return `<button class="choice${cl}" type="button" data-kch="${ci}" ${a!==null?"disabled":""}><b>${"ABCD"[j]}</b><span>${c[0]}</span></button>`;}).join("")}</div>
+   ${a!==null?`<div class="fb"><p><span class="grade ${st.c[a][1]}">${st.c[a][1]==="g-ok"?"Conduite adaptée":st.c[a][1]==="g-mid"?"Discutable":"Délétère"}</span></p><p>${st.c[a][2]}</p>${st.c[a][1]!=="g-ok"?`<p class="mut">Conduite attendue : ${st.c.find(c=>c[1]==="g-ok")[0]}. ${st.c.find(c=>c[1]==="g-ok")[2]}</p>`:""}</div>
+   <p class="row" style="margin-top:10px">${K.s<cs.steps.length-1?`<button class="go" type="button" id="kNext">Étape suivante</button>`:K.order.indexOf(K.c)<KC.length-1?`<button class="go" type="button" id="kNextCase">Cas suivant</button>`:`<button class="go" type="button" id="kAgain">Nouvelle série, dans un autre ordre</button>`}</p>`:""}`;
+  $("kScore").textContent=K.done?`Score ${K.score}/${K.done}`:"";
+}
+let Q={order:kShuf(QZ.length),i:0,ans:null,perm:QZ.map(q=>kShuf(q.c.length)),score:0,done:0},VQ=null;
+function qRender(){
+  if(Q.i>=Q.order.length){$("qHead").innerHTML=`<h2>Série terminée</h2><p>${Q.score} bonne(s) réponse(s) sur ${Q.order.length}.</p><button class="go" type="button" id="qAgain">Nouvelle série</button>`;$("qBody").innerHTML="";$("qPg").innerHTML="";$("qView").hidden=true;$("qScore").textContent=`Score ${Q.score}/${Q.done}`;return;}
+  $("qView").hidden=false;
+  const it=QZ[Q.order[Q.i]],P=PAT[it.k];
+  $("qHead").innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0">Tracé ${Q.i+1} sur ${Q.order.length}</h2></div><p style="margin-top:6px"><b>${it.q}</b></p>`;
+  if(!VQ)VQ=new EEGView($("qView"),{});
+  const key="q"+Q.i+"-"+Q.order[Q.i];if(VQ._key!==key){VQ._key=key;Object.assign(VQ.o,{sec:10,gain:7,hf:70,notch:true},P.vo||{});VQ.t0=P.t0||0;VQ.set(P.st,100+Math.floor(Math.random()*9000));VQ.inst.stims=[];VQ.draw();}
+  $("qPg").innerHTML=pager(VQ,"q");
+  const a=Q.ans,perm=Q.perm[Q.order[Q.i]];
+  $("qBody").innerHTML=`<div class="choices">${perm.map((ci,j)=>`<button class="choice${a===null?"":ci===0?" right":ci===a?" wrong":""}" type="button" data-qch="${ci}" ${a!==null?"disabled":""}><b>${"ABCD"[j]}</b><span>${it.c[ci]}</span></button>`).join("")}</div>
+   ${a!==null?`<div class="fb"><p><span class="grade ${a===0?"g-ok":"g-bad"}">${a===0?"Bonne réponse":"Réponse attendue : "+it.c[0]}</span></p><p>${it.w}</p><p class="mut small">${P.name} : ${P.see}</p></div><p style="margin-top:10px"><button class="go" type="button" id="qNext">Tracé suivant</button></p>`:""}`;
+  $("qScore").textContent=Q.done?`Score ${Q.score}/${Q.done}`:"";
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-kc]");if(b){kStart(+b.dataset.kc);kRender();return;}
+  const ch=e.target.closest("[data-kch]");if(ch&&K.ans===null){K.ans=+ch.dataset.kch;K.done++;if(KC[K.c].steps[K.s].c[K.ans][1]==="g-ok")K.score++;kRender();return;}
+  if(e.target.closest("#kNext")){K.s++;K.ans=null;kRender();$("p-cas").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#kNextCase")){kStart(K.order[K.order.indexOf(K.c)+1]);kRender();$("p-cas").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#kAgain")){K.order=kShuf(KC.length);K.perm={};K.score=0;K.done=0;kStart(K.order[0]);kRender();return;}
+  const q=e.target.closest("[data-qch]");if(q&&Q.ans===null){Q.ans=+q.dataset.qch;Q.done++;if(Q.ans===0)Q.score++;qRender();return;}
+  if(e.target.closest("#qNext")){Q.i++;Q.ans=null;qRender();$("p-quiz").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
+  if(e.target.closest("#qAgain")){Q={order:kShuf(QZ.length),i:0,ans:null,perm:QZ.map(q=>kShuf(q.c.length)),score:0,done:0};qRender();return;}
+  const pg=e.target.closest("[data-pg]");if(pg){const V=pg.dataset.v2==="k"?VK:pg.dataset.v2==="q"?VQ:VA;V.page(+pg.dataset.pg);if(V===VK)$("kPg").innerHTML=pager(VK,"k");else if(V===VQ)$("qPg").innerHTML=pager(VQ,"q");else atCtl();return;}
+  const at=e.target.closest("[data-at]");if(at){AT.k=at.dataset.at;atRender();return;}
+  const sm=e.target.closest("[data-stim]");if(sm){const V=sm.closest("#p-bases")?VS:VA;V.stim(sm.dataset.stim);return;}
+  const ar=e.target.closest("[data-art]");if(ar){const k=ar.dataset.art;SB.arts.has(k)?SB.arts.delete(k):SB.arts.add(k);ar.setAttribute("aria-pressed",SB.arts.has(k));sbUpdate();return;}
+  if(e.target.closest("#sbPause")){if(VS.run){VS.stop();e.target.closest("#sbPause").textContent="Reprendre";}else{VS.start();e.target.closest("#sbPause").textContent="Pause";}return;}
+});
+
+/* ===== Onglets et démarrage ===== */
+const TABS=["bases","interp","cas","quiz"];
+function showTab(t){if(!TABS.includes(t))t="bases";
+  for(const x of TABS){$("p-"+x).hidden=x!==t;$("t-"+x).setAttribute("aria-selected",x===t?"true":"false");}
+  try{if(location.hash!=="#"+t)history.replaceState(null,"","#"+t);}catch(e){}
+  if(t==="interp")atRender();if(t==="cas")kRender();if(t==="quiz")qRender();
+  if(VS){if(t==="bases"&&!reduce)VS.start();else VS.stop();}
+}
+document.querySelector(".tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.dataset.t);});
+$("sbPat").addEventListener("change",e=>{SB.pat=e.target.value;sbUpdate();});
+$("sbSed").addEventListener("input",e=>{const k=e.target.dataset.mod;if(!k)return;MODS[k]=+e.target.value;$("o-"+k).textContent=fmtMod(k,MODS[k],{prop:"mg/kg/h",mdz:"mg/kg/h",ket:"mg/kg/h",temp:"°C"}[k]);sbUpdate();});
+bindViewCtl($("sbCtl"),()=>VS,()=>{$("head").innerHTML=headSvg(VS.o.montage);});
+bindViewCtl($("atCtl"),()=>VA,()=>atCtl());
+$("head").innerHTML=headSvg(8);
+sbInit();
+showTab((location.hash||"").slice(1)||"bases");
+
+}
+</script>
+</body>
+</html>
