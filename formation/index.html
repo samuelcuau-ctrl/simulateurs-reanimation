@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Formation SIM-ICU — parcours pour les internes de réanimation</title>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="../apple-touch-icon.png"><meta name="theme-color" content="#0b1215">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#0b1215;--panel:#111b1f;--panel2:#16242a;--line:#243840;--ink:#e9f1f3;--mut:#93a8af;--amb:#ffc53d;--cy:#4fd8ea;--ok:#5fe0a6}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1240px;margin:0 auto;padding:clamp(18px,3vw,40px) max(3vw,16px) 60px}
+.brand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 16px;margin:0 0 8px}.brand img{height:clamp(46px,6vw,72px);width:auto}
+h1{font:600 clamp(32px,4.2vw,50px)/1.05 "Barlow Condensed",sans-serif;margin:0}
+h2{font:600 24px/1.15 "Barlow Condensed",sans-serif;margin:30px 0 12px}
+.lede{color:var(--mut);font-size:17px;max-width:70ch;margin:6px 0 0}
+.phase{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px}
+.chip{min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:500 15px Barlow,sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:#0b1215;border-color:var(--ink)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(180px,1.1fr) repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.grid>div{padding:12px 14px;border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.grid>.h{border-top:0;background:var(--panel2);font:600 18px "Barlow Condensed",sans-serif}.grid>.h small{display:block;font:400 13px Barlow,sans-serif;color:var(--mut)}
+.grid>.m{border-left:0}.grid .m b{font:600 20px "Barlow Condensed",sans-serif;display:block}.grid .m small{color:var(--mut);font-size:13.5px}.grid .m a{color:var(--cy)}
+.grid .hl{background:rgba(79,216,234,.06)}
+.cell{display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--mut)}
+.cell .stt{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.cell.on .stt{color:var(--ok)}.cell.plan .stt{color:var(--mut)}
+.cell a.go{align-self:flex-start;margin-top:4px;display:inline-flex;align-items:center;min-height:40px;padding:6px 14px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600;text-decoration:none}
+.bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}.bar span{display:block;height:100%;background:var(--ok)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}.step b{display:block;font:600 19px "Barlow Condensed",sans-serif}.step span{color:var(--mut);font-size:15px}
+.save{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.btn{font:500 15px Barlow,sans-serif;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 16px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center}
+footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:var(--mut);font-size:14px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}footer a{color:inherit}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.grid>.h:not(:first-child){display:none}.grid>.h:first-child{display:none}.grid>div{border-left:0}.grid>.m{background:var(--panel2)}.cell::before{content:attr(data-l);font:600 15px "Barlow Condensed",sans-serif;color:var(--ink)}.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.steps{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+<div class="wrap">
+  <header>
+    <div class="brand"><img src="../logo-sim-icu.svg" alt="SIM-ICU" width="715" height="180"><h1>Formation</h1></div>
+    <p class="lede">Un parcours pour les internes de DES de médecine intensive-réanimation : des modules par thème, chacun en trois niveaux qui suivent les phases du DES. Chaque chapitre associe un cours court, un patient à régler sur simulateur et un quiz ; un examen valide le module.</p>
+    <div class="phase" role="group" aria-label="Votre phase du DES"><span class="mut">Je suis en</span>
+      <button class="chip" data-p="socle" aria-pressed="false">Phase socle (1ʳᵉ année)</button>
+      <button class="chip" data-p="appro" aria-pressed="false">Approfondissement (2ᵉ à 4ᵉ année)</button>
+      <button class="chip" data-p="conso" aria-pressed="false">Consolidation (docteur junior)</button></div>
+  </header>
+
+  <h2>Modules</h2>
+  <div class="grid" id="grid"></div>
+
+  <h2>Comment se déroule un module</h2>
+  <div class="steps">
+    <div class="step"><b>Cours</b><span>Dix minutes par chapitre : les mécanismes et les repères chiffrés, avec les références.</span></div>
+    <div class="step"><b>Au simulateur</b><span>Un patient à régler. Le simulateur vérifie lui-même si l'objectif est atteint.</span></div>
+    <div class="step"><b>Quiz du chapitre</b><span>7 questions tirées au hasard, 70 % pour ouvrir le chapitre suivant. Explication après chaque réponse.</span></div>
+    <div class="step"><b>Examen et attestation</b><span>20 questions et 2 épreuves sur simulateur, 80 % pour valider. 2 tentatives, puis 24 heures d'attente.</span></div>
+  </div>
+
+  <h2>Votre progression</h2>
+  <p class="mut" style="max-width:70ch;margin:0">Rien n'est envoyé sur un serveur : la progression reste dans ce navigateur. Pour changer d'appareil, sauvegardez-la dans un fichier puis importez-la sur l'autre appareil.</p>
+  <div class="save"><button class="btn" id="bExp">Sauvegarder ma progression</button><label class="btn">Importer une progression<input type="file" id="bImp" accept="application/json" hidden></label><span id="msg" class="mut"></span></div>
+
+  <footer><p><strong>Outil pédagogique.</strong> Ne pas utiliser pour une décision clinique. Contenus en cours de relecture par des réanimateurs : signalez toute erreur.</p><p><a href="../mentions-legales/">Mentions légales</a></p></footer>
+</div>
+<script>
+{
+const KEY='simicu-formation';let store={};try{store=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}store.modules=store.modules||{};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}};
+const LV=[['socle','Socle','Phase socle'],['appro','Approfondissement','2ᵉ à 4ᵉ année'],['conso','Consolidation','Docteur junior']];
+const MODS=[
+ {n:'Ventilation et voies aériennes',sims:[['Ventilation','ventilation/'],['Fibroscopie','fibroscopie/']],
+  lv:{socle:{id:'ventilation-socle',url:'ventilation-socle/',d:"Mécanique respiratoire, premiers réglages, oxygénation et CO₂, alarmes, SDRA."},appro:{d:"Patient obstructif et auto-PEP, modes assistés, asynchronies, sevrage."},conso:{d:"SDRA sévère, décubitus ventral, ECMO veino-veineuse, situations piégeuses."}}},
+ {n:'Hémodynamique et circulation',sims:[['Choc cardiogénique','choc-cardiogenique/'],['ECMO','ecmo/']],
+  lv:{socle:{d:"Reconnaître un état de choc, remplissage, noradrénaline, lactate."},appro:{d:"Choc cardiogénique, échographie, dobutamine, assistances."},conso:{d:"ECMO VA, décharge du VG, sevrage d'assistance."}}},
+ {n:'Rein et métabolisme',sims:[['Épuration extrarénale','epuration-extrarenale/']],
+  lv:{socle:{d:"Indications urgentes, techniques, premiers réglages."},appro:{d:"Citrate, dose, dépannage des alarmes."},conso:{d:"Décisions de démarrage et de sevrage, situations complexes."}}},
+ {n:'Neurologie',sims:[['EEG continu','eeg/']],
+  lv:{socle:{d:"Lire un EEG au lit, reconnaître une crise et les artefacts."},appro:{d:"État de mal, continuum ictal-interictal."},conso:{d:"Pronostic après arrêt cardiaque, décision multimodale."}}},
+ {n:'Sécurité des soins',sims:[['Chambre à erreurs','erreurs/']],
+  lv:{socle:{d:"Vérifier une chambre, le matériel et les prescriptions."},appro:{d:"Scénarios à risque : BMR, drain, sédation."},conso:{d:"Encadrer, analyser un événement indésirable."}}}
+];
+let phase=store.phase||'socle';
+function prog(id){const m=store.modules[id];if(!m)return null;let n=0,t=0;Object.values(m.ch||{}).forEach(c=>{n+=(c.read?1:0)+(c.sim?1:0)+(c.quiz>=0.7?1:0);});return {pct:Math.round(100*(n+(m.exam&&m.exam.passed?3:0))/18),ok:!!(m.exam&&m.exam.passed)};}
+function render(){
+  document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===phase));
+  let h='<div class="h">Module</div>'+LV.map(l=>`<div class="h${l[0]===phase?' hl':''}">${l[1]}<small>${l[2]}</small></div>`).join('');
+  for(const m of MODS){
+    h+=`<div class="m"><b>${m.n}</b><small>Simulateurs : ${m.sims.map(s=>`<a href="../${s[1]}">${s[0]}</a>`).join(', ')}</small></div>`;
+    for(const l of LV){const c=m.lv[l[0]],on=!!c.url,p=on&&prog(c.id);
+      h+=`<div class="cell ${on?'on':'plan'}${l[0]===phase?' hl':''}" data-l="${l[1]}"><span class="stt">${on?(p&&p.ok?'Validé':'Ouvert'):'En préparation'}</span><span>${c.d}</span>${on?`${p?`<div class="bar" title="Progression ${p.pct} %"><span style="width:${p.pct}%"></span></div>`:''}<a class="go" href="${c.url}">${p&&p.pct?'Reprendre':'Commencer'}</a>`:''}</div>`;}
+  }
+  document.getElementById('grid').innerHTML=h;
+}
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{phase=b.dataset.p;store.phase=phase;save();render();});
+document.getElementById('bExp').onclick=()=>{const b=new Blob([JSON.stringify(store,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sim-icu-progression.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+document.getElementById('bImp').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.modules)throw 0;store=o;save();render();document.getElementById('msg').textContent='Progression importée.';}catch(x){document.getElementById('msg').textContent='Ce fichier ne contient pas de progression SIM-ICU.';}});};
+render();
+}
+</script>
+</body>
+</html>

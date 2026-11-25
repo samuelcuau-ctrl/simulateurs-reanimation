@@ -75,6 +75,7 @@ footer strong{color:var(--ink);font-weight:600}
 @media(max-width:1100px){.soon{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:820px){.top{grid-template-columns:minmax(0,1fr)}.live{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:520px){.soon{grid-template-columns:minmax(0,1fr)}.counts b{font-size:32px}.vals div{font-size:26px}}
+.formation{display:grid;gap:4px;margin:0 0 22px;padding:16px 18px;border:1px solid rgba(79,216,234,.45);border-radius:14px;background:linear-gradient(90deg,rgba(79,216,234,.10),rgba(79,216,234,.02));color:var(--ink);text-decoration:none}.formation:hover{border-color:var(--cy)}.formation .fk{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--cy)}.formation b{font:600 24px/1.15 "Barlow Condensed",sans-serif}.formation span{color:var(--mut)}.formation .fgo{margin-top:6px;justify-self:start;padding:8px 16px;border-radius:10px;background:var(--ink);color:#0b1215;font-weight:600}
 </style>
 </head>
 <body>
@@ -90,6 +91,8 @@ footer strong{color:var(--ink);font-weight:600}
       <div><b id="nPlan">0</b><span>prévus</span></div>
     </div>
   </header>
+
+  <a class="formation" href="formation/"><span class="fk">Nouveau · Formation SIM-ICU</span><b>Un parcours pour les internes de DES de MIR</b><span>Modules par thème et par phase du DES : cours, patients à régler sur simulateur, quiz et examen de validation. Premier module ouvert : ventilation mécanique, niveau Socle.</span><span class="fgo">Ouvrir la formation</span></a>
 
   <nav class="filters" id="filters" aria-label="Filtrer par thème"></nav>
 
