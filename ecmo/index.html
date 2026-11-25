@@ -88,6 +88,8 @@ td.badv{color:var(--red)}
 .kv span:nth-child(even){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
 .kv .a{color:var(--red)}.kv .w{color:var(--amb)}
 .caselist{display:grid;gap:8px}
+.kfig{grid-column:1/-1;background:var(--panel2);border-radius:12px;padding:10px 12px}.kfig svg{display:block;width:100%;max-width:420px;margin:0 auto 8px;border-radius:8px}
+.btn{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:500}
 .casebtn{text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);min-height:56px}
 .casebtn[aria-pressed=true]{border-color:var(--ink);background:#1d2f36}
 .casebtn b{display:block}.casebtn span{font-size:14px;color:var(--mut)}
@@ -839,6 +841,58 @@ const KC=[
       ["Passer en ECMO VV avant tout retrait, par précaution respiratoire","g-bad","La fonction respiratoire est correcte (SaO₂ 96 %) : rien ne justifie une assistance respiratoire."],
       ["Arrêter le débit et observer 24 h en laissant les canules en place","g-mid","Un circuit à l'arrêt thrombose vite. Le test se fait à bas débit, puis on décide du retrait."]]}
  ]},
+ {id:"va2",mode:"VA",title:"Il respire trop vite",sub:"Homme 54 ans, 78 kg, ECMO VA J5",steps:[
+  {day:"J5, 8 h",text:"Myocardite fulminante, ECMO VA fémoro-fémorale (canule artérielle fémorale gauche). Le cœur récupère en partie. Intubé, en aide inspiratoire, sédation arrêtée hier. Depuis la nuit, il respire de plus en plus vite. Hier soir, le balayage a été baissé de 3 à 1 L/min « pour corriger l'alcalose ».",
+   p:{pat:[["FR / Vt","38 /min / 750 mL","a"],["Radiale droite : pH","7,53","w"],["Radiale droite : PaCO₂","25 mmHg","w"],["PaO₂ / lactate","105 mmHg / 1,4"]],
+      mem:[["Gaz post-membrane","non prélevés","w"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Balayage / FdO₂","1 L/min / 60 %","w"]],
+      vent:[["Aide / PEP / FiO₂","10 / 6 / 30 %"],["Pression pulsée","18 mmHg"],["PAM / FC","74 mmHg / 112 /min"],["Clinique","tirage, sueurs","w"]]},
+   q:"Quelle démarche ?",
+   c:[["Chercher la cause : OAP, infection, douleur, angoisse, circuit","g-ok","Une polypnée sous ECMO VA a de nombreuses causes possibles : OAP par distension du VG, infection, douleur, angoisse ou sevrage, acidose, et le réglage du circuit lui-même. On examine, on fait les examens simples, et on n'oublie pas les gaz du circuit."],
+      ["Sédation profonde et curarisation pour l'adapter au respirateur","g-bad","Supprimer la commande ventilatoire sans en connaître la cause masque le problème, et compromet le sevrage du respirateur et la surveillance neurologique."],
+      ["Baisser encore le balayage à 0,5 L/min pour corriger l'alcalose","g-bad","On corrigerait un chiffre sans comprendre pourquoi le patient hyperventile. Vous verrez que c'est précisément ce qui entretient le problème."],
+      ["Monter l'aide inspiratoire à 18 cmH₂O pour diminuer l'effort","g-mid","Les volumes sont déjà de 750 mL : plus d'aide augmenterait encore la ventilation (et le risque de lésions) sans traiter la cause."]]},
+  {day:"J5, 10 h",text:"Résultats des premiers examens. Patient calme quand on lui parle, il répond aux ordres, ne se plaint d'aucune douleur.",fig:"cxr",figcap:"Radiographie de thorax au lit : poumons clairs, pas d'opacité alvéolaire ni d'épanchement, silhouette cardiaque peu élargie. Sonde d'intubation, voie centrale jugulaire droite, extrémité de la canule de drainage dans l'oreillette droite.",
+   p:{pat:[["Température","37,1 °C"],["Leucocytes / CRP","9 G/L / 35 mg/L, stable"],["PCT","0,2 µg/L"],["Hémocultures J3","négatives"]],
+      mem:[["Gaz post-membrane","non prélevés","w"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Balayage / FdO₂","1 L/min / 60 %"]],
+      vent:[["Échographie cardiaque","VG non dilaté, valve aortique ouverte à chaque battement"],["Échographie pulmonaire","lignes A partout, pas d'épanchement"],["Douleur (BPS) / RASS","3 / 0"],["Natrémie / glycémie","139 / 7,2"]]},
+   q:"Que retenez-vous de ce bilan ?",
+   c:[["Ni OAP, ni infection, ni douleur : polypnée inexpliquée","g-ok","Radio et échographie pulmonaire normales, VG qui éjecte sans se distendre : pas d'OAP. Ni fièvre ni syndrome inflammatoire évolutif : pas d'argument pour une infection. Patient calme, BPS 3, RASS 0 : ni douleur ni agitation. Il faut chercher ailleurs."],
+      ["OAP débutant : furosémide et augmentation du débit d'ECMO","g-bad","Lignes A partout, radio claire, VG non dilaté avec une valve aortique qui s'ouvre : aucun argument pour un OAP. Et plus de débit d'ECMO augmenterait la postcharge du VG."],
+      ["Pneumopathie probable : antibiothérapie probabiliste à large spectre","g-bad","Pas de fièvre, pas d'opacité, PCT basse, hémocultures négatives : rien ne justifie un antibiotique."],
+      ["Angoisse : anxiolytique et réévaluation dans quelques heures","g-mid","Le patient est calme et répond normalement : l'angoisse est un diagnostic d'élimination, pas le premier à retenir."]]},
+  {day:"J5, 10 h 30",text:"Vous prélevez des gaz sur la ligne post-membrane et sur l'artère fémorale droite, et vous situez la zone de mélange à l'échographie.",fig:"mix",figcap:"La zone de mélange se trouve dans la crosse de l'aorte, entre le tronc brachiocéphalique et la carotide gauche. Le tronc brachiocéphalique (bras droit, carotide et vertébrale droites) reçoit le sang du VG ; la carotide et la sous-clavière gauches (donc la vertébrale gauche) reçoivent surtout le sang de l'ECMO.",sim:{mode:"VA",qe:4,co:1.2,lung:0.9,fdo2:0.6,split:0.3,close:false},
+   p:{pat:[["Radiale droite : PaCO₂","25 mmHg","w"],["Fémorale droite : pH","7,30","a"],["Fémorale droite : PCO₂","56 mmHg","a"]],
+      mem:[["Post : PO₂","310 mmHg"],["Post : PCO₂","58 mmHg","a"],["Pré : PCO₂","62 mmHg","w"],["ΔP membrane","14 mmHg"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Balayage / FdO₂","1 L/min / 60 %","w"]],
+      vent:[["FR / Vt","38 /min / 750 mL","a"],["Pression pulsée","18 mmHg"]]},
+   q:"Comment expliquez-vous la polypnée ?",
+   c:[["Le sang hypercapnique de l'ECMO irrigue le tronc cérébral","g-ok","Avec 1 L/min de balayage, le sang sort de la membrane à 58 mmHg de PCO₂. La zone de mélange étant au niveau des troncs supra-aortiques, ce sang irrigue une partie du cerveau et du tronc cérébral (carotide et vertébrale gauches). Les chémorécepteurs centraux réagissent par une hyperventilation, qui décarboxyle à l'excès le seul sang qui passe par les poumons : celui que mesure la radiale droite."],
+      ["Membrane défaillante : son changement doit être programmé","g-bad","PO₂ post-membrane à 310 mmHg sous FdO₂ 60 %, ΔP normal : la membrane fonctionne. Sa PCO₂ de sortie est haute parce que le balayage est bas, pas parce qu'elle est défaillante."],
+      ["Erreur de prélèvement : seule la radiale droite est fiable","g-bad","Les deux autres prélèvements concordent entre eux et avec le réglage du balayage. En ECMO VA, chaque site artériel reflète le sang qu'il reçoit."],
+      ["Lésion du tronc cérébral : hyperventilation neurogène, IRM en urgence","g-mid","À évoquer devant une polypnée inexpliquée, mais il existe ici une explication simple et réversible : l'hypercapnie du sang de l'ECMO qui perfuse le cerveau."]]},
+  {day:"J5, 11 h",text:"Le mécanisme est identifié.",
+   p:{pat:[["Radiale droite : PaCO₂","25 mmHg","w"],["Fémorale droite : PCO₂","56 mmHg","a"]],
+      mem:[["Post : PCO₂","58 mmHg","a"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Balayage / FdO₂","1 L/min / 60 %","w"]],
+      vent:[["FR / Vt","38 /min / 750 mL","a"]]},
+   q:"Que faites-vous ?",
+   c:[["Augmenter le balayage par paliers, guidé par la PCO₂ post-membrane et la FR","g-ok","Le balayage règle la PCO₂ du sang de l'ECMO, donc celle d'une partie du cerveau. On l'augmente par paliers (par exemple jusqu'à 3 L/min), en contrôlant la PCO₂ post-membrane et la fréquence respiratoire, sans chute brutale de la PCO₂."],
+      ["Sédation profonde pour supprimer la commande ventilatoire du patient","g-bad","On traiterait la conséquence, pas la cause : le sang de l'ECMO resterait hypercapnique, et la sédation empêcherait le sevrage du respirateur."],
+      ["Augmenter le débit d'ECMO à 5,5 L/min pour mieux perfuser le cerveau","g-bad","Plus de débit fait remonter la zone de mélange : encore plus de sang hypercapnique de l'ECMO irrigue le cerveau, et la postcharge du VG augmente."],
+      ["Baisser la FdO₂ de la membrane pour réduire le travail de l'oxygénateur","g-mid","La FdO₂ règle l'oxygénation, pas le CO₂ : elle ne changera pas la polypnée."]]},
+  {day:"J5, 14 h",text:"Balayage monté par paliers jusqu'à 3 L/min. Le patient est calme, la fréquence respiratoire a baissé.",
+   p:{pat:[["FR / Vt","18 /min / 480 mL"],["Radiale droite : pH / PaCO₂","7,42 / 38 mmHg"],["Fémorale droite : PCO₂","39 mmHg"]],
+      mem:[["Post : PO₂ / PCO₂","330 / 36 mmHg"]],
+      ecmo:[["Débit sang","4,0 L/min"],["Balayage / FdO₂","3 L/min / 60 %"]],
+      vent:[["Aide / PEP / FiO₂","10 / 6 / 30 %"],["Pression pulsée","20 mmHg"]]},
+   q:"Comment surveiller la suite ?",
+   c:[["Gaz radial droit et post-membrane, balayage réajusté","g-ok","Tant que la zone de mélange reste proche des troncs supra-aortiques, le cerveau reçoit deux sangs : on surveille les deux (radiale droite et post-membrane, ou fémoral). Quand le cœur récupère et que le débit d'ECMO baisse, la zone de mélange recule : la radiale droite redevient représentative, et la ventilation du patient reprend la main sur sa PaCO₂."],
+      ["Radiale droite seule : elle reflète le sang reçu par tout le cerveau","g-bad","C'est le piège de ce cas : la radiale droite ne reflète que le sang du tronc brachiocéphalique."],
+      ["Fixer le balayage à 3 L/min jusqu'au retrait de l'assistance","g-bad","Le besoin change avec la récupération cardiaque, le débit d'ECMO et le métabolisme : le balayage se réajuste."],
+      ["Gaz fémoral seul, bien plus simple à prélever que la radiale","g-mid","Il renseigne sur le sang de l'ECMO, mais plus sur celui du VG, qui perfuse les coronaires et le cerveau droit."]]}
+ ]},
  {id:"mb1",mode:"VV",title:"Incidents de membrane et de pompe",sub:"Femme 52 ans, J10 d'ECMO VV",steps:[
   {day:"J10",text:"Depuis ce matin, la PaCO₂ monte sans modification des réglages. L'infirmière signale des gouttes d'eau à la sortie des gaz de l'oxygénateur.",
    p:{pat:[["pH","7,29","w"],["PaCO₂","65 mmHg (48 hier)","w"],["SaO₂","92 %"]],
@@ -866,12 +920,36 @@ function kShuf(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Ma
 let K={order:kShuf(KC.length),c:0,s:0,ans:null,perm:{},score:0,done:0};K.c=K.order[0];
 function kStart(ci){K.c=ci;K.s=0;K.ans=null;for(const k in K.perm)if(k.startsWith(KC[ci].id))delete K.perm[k];}
 function kPerm(key,n){if(!K.perm[key])K.perm[key]=kShuf(n);return K.perm[key];}
+
+/* Figures des cas */
+const FIGS={
+ cxr:()=>{let g=`<svg viewBox="0 0 360 300" role="img" aria-label="Radiographie de thorax normale, schématique"><defs><radialGradient id="lg" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#2a2d30"/><stop offset="1" stop-color="#101214"/></radialGradient></defs><rect width="360" height="300" fill="#050607"/>`;
+  g+=`<path d="M40 290 Q30 120 90 60 Q130 30 180 30 Q230 30 270 60 Q330 120 320 290 Z" fill="#9a9a96" opacity=".55"/>`;
+  g+=`<path d="M70 250 Q60 130 110 80 Q140 62 168 70 L168 240 Q120 262 70 250 Z" fill="url(#lg)"/><path d="M290 250 Q300 130 250 80 Q220 62 192 70 L192 240 Q240 262 290 250 Z" fill="url(#lg)"/>`;
+  for(let i=0;i<7;i++){const y=78+i*24;g+=`<path d="M168 ${y} Q120 ${y-6} ${78-i*1} ${y+26}" fill="none" stroke="#c8c8c2" stroke-opacity=".45" stroke-width="5"/><path d="M192 ${y} Q240 ${y-6} ${282+i*1} ${y+26}" fill="none" stroke="#c8c8c2" stroke-opacity=".45" stroke-width="5"/>`;}
+  g+=`<rect x="170" y="20" width="20" height="250" fill="#d8d8d2" opacity=".7" rx="6"/>`;
+  g+=`<path d="M160 150 Q140 175 150 225 Q180 250 235 235 Q252 200 232 165 Q212 140 190 145 Z" fill="#e2e2dc" opacity=".85"/>`;
+  g+=`<path d="M70 250 Q180 232 290 250" fill="none" stroke="#e2e2dc" stroke-width="5" opacity=".8"/>`;
+  g+=`<path d="M180 30 L180 118" stroke="#f4f4f0" stroke-width="3"/><path d="M150 40 Q160 90 172 150" stroke="#f4f4f0" stroke-width="2" fill="none"/><path d="M182 300 L182 190 Q180 175 176 168" stroke="#ffffff" stroke-width="4" fill="none"/>`;
+  g+=`<text x="12" y="22" fill="#c8c8c2" font-size="14" font-family="Barlow,sans-serif">D</text></svg>`;return g;},
+ mix:()=>{const hc="rgb(79,216,234)",ec="rgb(255,170,60)";
+  let g=`<svg viewBox="0 0 420 300" role="img" aria-label="Zone de mélange au niveau des troncs supra-aortiques"><rect width="420" height="300" fill="#04090b"/>`;
+  g+=`<path d="M120 290 L120 170 Q120 90 200 90 Q280 90 290 170 L290 290" fill="none" stroke="#0a1016" stroke-width="40"/>`;
+  g+=`<path d="M120 290 L120 170 Q120 100 175 92" fill="none" stroke="${hc}" stroke-width="30"/><path d="M175 92 Q280 88 290 170 L290 290" fill="none" stroke="${ec}" stroke-width="30"/>`;
+  g+=`<path d="M150 104 L118 40" stroke="${hc}" stroke-width="16" stroke-linecap="round"/><path d="M205 92 L208 40" stroke="${ec}" stroke-width="12" stroke-linecap="round"/><path d="M250 100 L282 40" stroke="${ec}" stroke-width="12" stroke-linecap="round"/>`;
+  g+=`<circle class="ws" cx="178" cy="92" r="24" fill="none" stroke="#ffe066" stroke-width="3"/>`;
+  const t=(x,y,s,c="#e9f1f3",a="middle",z=13)=>`<text x="${x}" y="${y}" fill="${c}" font-size="${z}" text-anchor="${a}" font-family="Barlow,sans-serif" style="paint-order:stroke;stroke:#04090b;stroke-width:3px">${s}</text>`;
+  g+=t(112,14,"tronc brachio-")+t(112,28,"céphalique")+t(210,14,"carotide")+t(210,28,"gauche")+t(292,14,"sous-clavière")+t(292,28,"gauche")+t(178,135,"zone de mélange","#ffe066");
+  g+=t(60,240,"sang du VG",hc,"middle",14)+t(60,258,"PCO₂ 25 mmHg",hc,"middle",13)+t(360,240,"sang de l'ECMO",ec,"middle",14)+t(360,258,"PCO₂ 58 mmHg",ec,"middle",13);
+  g+=t(120,296,"↑ depuis le VG","#93a8af","middle",12)+t(290,296,"↑ depuis la canule fémorale","#93a8af","middle",12);
+  return g+`</svg>`;}
+};
 const kv=a=>`<div class="kv">${a.map(x=>`<span>${x[0]}</span><span class="${x[2]||""}">${x[1]}</span>`).join("")}</div>`;
 function kRender(){
   const cs=KC[K.c],st=cs.steps[K.s];
   $("kList").innerHTML=K.order.map(i=>[KC[i],i]).map(([c,i])=>`<button class="casebtn" type="button" data-kc="${i}" aria-pressed="${i===K.c}"><b><span class="badge">${c.mode}</span> ${c.title}</b><span>${c.sub}</span></button>`).join("");
   $("kHead").innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:0"><span class="day">${st.day}</span>${cs.title}</h2><span class="mut small">cas ${K.order.indexOf(K.c)+1} sur ${KC.length} · étape ${K.s+1} sur ${cs.steps.length}</span></div><p style="margin-top:8px">${st.text}</p>`;
-  $("kPanels").innerHTML=[["Patient",st.p.pat],["Membrane (gaz pré / post)",st.p.mem],["Circuit d'ECMO",st.p.ecmo],[cs.mode==="VA"?"Respirateur et hémodynamique":"Respirateur",st.p.vent]].map(x=>`<div class="pan"><h3>${x[0]}</h3>${kv(x[1])}</div>`).join("");
+  $("kPanels").innerHTML=(st.fig?`<div class="kfig">${FIGS[st.fig]()}<p class="small mut">${st.figcap}</p>${st.sim?`<button class="btn" type="button" id="kSimFlux">Voir cette situation dans l'onglet Flux</button>`:""}</div>`:"")+[["Patient",st.p.pat],["Membrane (gaz pré / post)",st.p.mem],["Circuit d'ECMO",st.p.ecmo],[cs.mode==="VA"?"Respirateur et hémodynamique":"Respirateur",st.p.vent]].map(x=>`<div class="pan"><h3>${x[0]}</h3>${kv(x[1])}</div>`).join("");
   const key=cs.id+K.s,perm=kPerm(key,st.c.length),a=K.ans;
   $("kBody").innerHTML=`<p><b>${st.q}</b></p><div class="choices">${perm.map((ci,j)=>{const c=st.c[ci],cl=a===null?"":c[1]==="g-ok"?" right":ci===a?" wrong":"";return `<button class="choice${cl}" type="button" data-kch="${ci}" ${a!==null?"disabled":""}><b>${"ABCD"[j]}</b><span>${c[0]}</span></button>`;}).join("")}</div>
    ${a!==null?`<div class="fb"><p><span class="grade ${st.c[a][1]}">${st.c[a][1]==="g-ok"?"Conduite adaptée":st.c[a][1]==="g-mid"?"Discutable":"Délétère"}</span></p><p>${st.c[a][2]}</p>${st.c[a][1]!=="g-ok"?`<p class="mut">Conduite attendue : ${st.c.find(c=>c[1]==="g-ok")[0]}. ${st.c.find(c=>c[1]==="g-ok")[2]}</p>`:""}</div>
@@ -880,6 +958,7 @@ function kRender(){
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-kc]");if(b){kStart(+b.dataset.kc);kRender();return;}
+  if(e.target.closest("#kSimFlux")){const st=KC[K.c].steps[K.s];S={...S,...st.sim};full();showTab("flux");scrollTo({top:0,behavior:reduce?"auto":"smooth"});return;}
   const ch=e.target.closest("[data-kch]");if(ch&&K.ans===null){K.ans=+ch.dataset.kch;K.done++;if(KC[K.c].steps[K.s].c[K.ans][1]==="g-ok")K.score++;kRender();return;}
   if(e.target.closest("#kNext")){K.s++;K.ans=null;kRender();$("p-cas").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
   if(e.target.closest("#kNextCase")){kStart(K.order[K.order.indexOf(K.c)+1]);kRender();$("p-cas").scrollIntoView({behavior:reduce?"auto":"smooth"});return;}
