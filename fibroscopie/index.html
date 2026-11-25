@@ -57,11 +57,36 @@ ul.keys{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
 .hidden{display:none!important}
 .ok-t{color:var(--good)}.ko-t{color:var(--bad)}
 #err{position:absolute;inset:20%;display:flex;align-items:center;text-align:center;color:var(--bad)}
+.tabs{flex-wrap:wrap}.tabs button{flex:1 1 30%}
+#gauges{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;font-size:13px;color:var(--muted);width:min(84vh,100%)}
+#gauges .g{display:flex;align-items:center;gap:8px;flex:1 1 220px;max-width:320px}
+#gauges .gbar{position:relative;flex:1;height:8px;border-radius:4px;background:#232933}
+#gauges .gbar i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--acc);transform:translateX(-50%)}
+#gauges .gbar b{position:absolute;top:-2px;width:1px;height:12px;background:#59626e}
+#gauges .gbar.lim i{background:var(--bad)}
+#gauges output{min-width:5.5em;text-align:right;color:var(--ink)}
+.choices button.mid{border-color:#e8c25c;background:rgba(232,194,92,.12)}
+.mid-t{color:#e8c25c}
+#ventMon{width:min(100%,900px);background:#070a0d;border:1px solid var(--line);border-radius:14px;padding:12px}
+#ventMon .vhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.vmode{font-weight:600}
+.valarm span{display:inline-block;margin-left:6px;padding:2px 10px;border-radius:6px;background:#5a1a1c;color:#ffb3ab;font-weight:600;font-size:13px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.valarm span{animation:none}}
+#vCv{display:block;width:100%;height:260px}
+.vvals{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin-top:8px}
+.vvals div{background:#0f1216;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.vvals small{display:block;color:var(--muted);font-size:12px}
+.vvals b{font-size:22px;font-variant-numeric:tabular-nums}
+.vvals .bad b{color:var(--bad)}
+.vnote{margin-top:8px;color:#cdd3d9;font-size:14px}
+.qbox .qfb{margin-top:8px;font-size:14px;color:#cdd3d9}.qbox .qfb p{margin:6px 0}
 @media(max-width:900px){#app{grid-template-columns:1fr}#side{border-left:0;border-top:1px solid var(--line);max-height:none}#viewWrap{width:min(100%,70vh)}}
 </style>
 </head>
 <body>
 <nav style="position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#070c0e;border-bottom:1px solid #243840;font:500 15px/1.2 system-ui,sans-serif"><a href="../" style="color:#e9f1f3;text-decoration:none;min-height:32px;display:inline-flex;align-items:center">← Simulateurs de réanimation</a></nav>
+
 <div id="app">
   <div id="stage">
     <div id="viewWrap">
@@ -77,8 +102,11 @@ ul.keys{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
       <button data-k="KeyA" title="Rotation antihoraire">↺ Rotation</button>
       <button data-k="KeyD" title="Rotation horaire">↻ Rotation</button>
       <button data-k="KeyE" title="Aspirer (E)">Aspirer</button>
-      <button id="btnCenter" title="Recentrer dans l'axe (C)">Recentrer</button>
+      <button id="btnCenter" title="Remettre le levier au neutre (C)">Levier au neutre</button>
     </div>
+    <div id="gauges"><div class="g"><span>Béquillage</span><div class="gbar" id="gBb"><b style="left:41.9%"></b><i id="gB" style="left:41.9%"></i></div><output id="gBo">0°</output></div>
+      <div class="g"><span>Rotation</span><div class="gbar" id="gRb"><b style="left:50%"></b><i id="gR" style="left:50%"></i></div><output id="gRo">0°</output></div></div>
+    <div id="ventMon" class="hidden"><div class="vhead"><span class="vmode" id="vMode"></span><span class="valarm" id="vAl"></span></div><canvas id="vCv"></canvas><div class="vvals" id="vVals"></div><div class="vnote" id="vNote"></div></div>
   </div>
 
   <aside id="side">
@@ -88,6 +116,8 @@ ul.keys{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
       <button data-mode="quiz">Quiz</button>
       <button data-mode="run">Parcours</button>
       <button data-mode="sec">Sécrétions</button>
+      <button data-mode="les">Lésions</button>
+      <button data-mode="scen">Scénarios</button>
     </div>
 
     <section id="pExplore">
@@ -141,6 +171,33 @@ ul.keys{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
       <div class="muted">Trouvez les bouchons muqueux, approchez-vous à moins d'1 cm en les gardant au centre de l'image, puis maintenez <kbd>E</kbd> ou le bouton Aspirer. Après chaque aspiration, identifiez le segment.</div>
     </section>
 
+    <section id="pLes" class="hidden">
+      <div class="card">
+        <div class="muted">Mission</div>
+        <div class="big">Trouvez l'anomalie</div>
+        <div class="muted">Patient intubé : fibroscopie pour une anomalie radiologique ou une hypoxémie inexpliquée. Explorez, trouvez la lésion, puis répondez.</div>
+        <div class="row" style="margin-top:8px"><span>Temps <b id="lTime">0,0 s</b></span><span>Contacts <b id="lCont">0</b></span><span id="lSeen" class="muted"></span></div>
+        <div id="lQ" class="qbox"></div>
+        <div class="row"><button id="lFound">J'ai trouvé : répondre</button><button id="lNew">Nouvelle lésion</button></div>
+      </div>
+      <div class="row"><label for="lType">Lésion</label><select id="lType"><option value="rand">Aléatoire</option><option value="bourgeon">Bourgeon</option><option value="saignement">Saignement</option><option value="caillot">Caillot</option><option value="stenose">Sténose</option><option value="ce">Corps étranger</option></select></div>
+      <div class="row"><label><input type="checkbox" id="lMap"> Afficher le schéma</label><label><input type="checkbox" id="lLbl"> Étiquettes</label></div>
+      <div class="muted">Maintenez <kbd>E</kbd> ou le bouton Aspirer pour aspirer le sang, un caillot ou des sécrétions. Trois questions : nature de la lésion, localisation, conduite.</div>
+    </section>
+
+    <section id="pScen" class="hidden">
+      <div class="row"><label for="cSel">Scénario</label><select id="cSel"></select></div>
+      <div class="card">
+        <div class="muted" id="cStep"></div>
+        <div class="big" id="cTitle"></div>
+        <div id="cText" class="expl"></div>
+        <div id="cQ" class="qbox"></div>
+        <div class="row" id="cAct"></div>
+      </div>
+      <div class="row"><label><input type="checkbox" id="cMap"> Afficher le schéma</label><label><input type="checkbox" id="cLbl"> Étiquettes</label></div>
+      <div class="muted">Le scénario commence sur l'écran du respirateur. Vous passez ensuite au fibroscope pour trouver la cause, puis vous revenez au respirateur.</div>
+    </section>
+
     <section id="mapSec">
       <h2>Schéma (vue de face, convention radiologique)</h2>
       <canvas id="map" width="340" height="300"></canvas>
@@ -158,15 +215,15 @@ ul.keys{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
     <h2>Commandes</h2>
     <ul class="keys">
       <li><kbd>↑</kbd> <kbd>↓</kbd> ou molette : avancer / reculer (<kbd>Maj</kbd> = plus vite)</li>
-      <li><kbd>Z</kbd> <kbd>S</kbd> (W/S en QWERTY) : béquillage haut / bas</li>
-      <li><kbd>Q</kbd> <kbd>D</kbd> (A/D en QWERTY) : rotation de l'endoscope</li>
+      <li><kbd>Z</kbd> <kbd>S</kbd> (W/S en QWERTY) : béquillage haut / bas (en mode réaliste : 180° vers le haut, 130° vers le bas au maximum ; le levier reste où vous le laissez)</li>
+      <li><kbd>Q</kbd> <kbd>D</kbd> (A/D en QWERTY) : rotation de l'endoscope (en mode réaliste : 150° de chaque côté au maximum)</li>
       <li><kbd>←</kbd> <kbd>→</kbd> : rotation (réaliste) ou lacet (libre)</li>
       <li>Glisser la souris : béquillage vertical, rotation horizontale</li>
       <li><kbd>E</kbd> (maintenu) : aspirer</li>
-      <li><kbd>C</kbd> recentrer · <kbd>R</kbd> retour trachée · <kbd>L</kbd> étiquettes</li>
+      <li><kbd>C</kbd> levier au neutre (recentrer en mode libre) · <kbd>R</kbd> retour trachée · <kbd>L</kbd> étiquettes</li>
     </ul>
     <h2>À savoir</h2>
-    <p class="muted">Arbre bronchique schématique (nomenclature de Boyden, directions et calibres approximatifs), sans variantes anatomiques et non issu d'un scanner. Le triangle en haut de l'image est le repère d'orientation de l'endoscope. BSD/BSG : bronches souches ; LSD, LM, LID, LSG, LIG : bronches lobaires ; TI : tronc intermédiaire.</p>
+    <p class="muted">Arbre bronchique schématique (nomenclature de Boyden, directions et calibres approximatifs), sans variantes anatomiques et non issu d'un scanner. Le triangle en haut de l'image est le repère d'orientation de l'endoscope. En mode réaliste, la gaine suit le trajet parcouru : on ne peut pas se retourner dans la trachée, et pour changer de bronche il faut reculer, tourner puis béquiller. BSD/BSG : bronches souches ; LSD, LM, LID, LSG, LIG : bronches lobaires ; TI : tronc intermédiaire.</p>
   </aside>
 </div>
 
@@ -318,7 +375,11 @@ function capD(p,c){
   return l-r;
 }
 function mapJS(p){let d=1e3;for(const c of caps)d=smin(d,capD(p,c),KS);
-  for(const b of activeBlobs())d=Math.max(d,-(len(sub(p,b.c))-b.r));return d;}
+  for(const b of activeBlobs())d=Math.max(d,-blobDJS(p,b));return d;}
+function blobDJS(p,b){const q=sub(p,b.c);
+  if(b.type===3||b.type===2){const al=dot(q,b.d),pe=len(sub(q,mul(b.d,al)));return (Math.hypot(al/(b.r*(b.type===2?2.2:1.6)),pe/b.r)-1)*b.r*0.88;}
+  if(b.type===4){const al=dot(q,b.d),rho=len(sub(q,mul(b.d,al)));return Math.hypot(rho-b.r,al*0.32)-b.m;}
+  return len(q)-b.r;}
 function gradJS(p){const e=0.01;return norm([mapJS(add(p,[e,0,0]))-mapJS(sub(p,[e,0,0])),mapJS(add(p,[0,e,0]))-mapJS(sub(p,[0,e,0])),mapJS(add(p,[0,0,e]))-mapJS(sub(p,[0,0,e]))]);}
 function locate(p){let best=list[0],bs=1e9,bt=0;
   for(const n of list){const pa=sub(p,n.start),t=dot(pa,n.dir),tc=clamp(t,0,n.len);
@@ -333,9 +394,12 @@ function lineOfSight(a,b){const v=sub(b,a),D=len(v),d=mul(v,1/D);let t=0;
 const canvas=document.getElementById('gl');
 const gl=canvas.getContext('webgl',{antialias:false});
 const K=24,FOV=2.1;
+const NB=4;
 const FS=`precision highp float;
-uniform vec2 uRes;uniform vec3 uPos;uniform vec3 uFwd;uniform vec3 uUp;uniform vec3 uRight;uniform float uFov;
-uniform vec4 uA[${K}];uniform vec4 uB[${K}];uniform float uF[${K}];uniform int uN;uniform vec4 uS[3];uniform int uSn;
+uniform vec2 uRes;uniform vec3 uPos;uniform vec3 uFwd;uniform vec3 uUp;uniform vec3 uRight;uniform float uFov;uniform float uTime;
+uniform vec4 uA[${K}];uniform vec4 uB[${K}];uniform float uF[${K}];uniform int uN;
+uniform vec4 uS[${NB}];uniform vec4 uD[${NB}];uniform float uT[${NB}];uniform int uSn;
+uniform vec4 uBl[6];uniform int uBn;uniform float uBI;uniform float uFog;
 float smin(float a,float b,float k){float h=max(k-abs(a-b),0.0)/k;return min(a,b)-h*h*k*0.25;}
 float capD(vec3 p,vec4 A,vec4 B,float f){
  vec3 pa=p-A.xyz;vec3 ba=B.xyz-A.xyz;float bb=dot(ba,ba);float s0=dot(pa,ba)/bb;float h=clamp(s0,0.0,1.0);
@@ -345,15 +409,28 @@ float capD(vec3 p,vec4 A,vec4 B,float f){
   r-=r*0.06*ring*(1.0-smoothstep(-0.1,0.35,post));}
  return l-r;}
 float mapL(vec3 p){float d=1e3;for(int i=0;i<${K};i++){if(i>=uN)break;d=smin(d,capD(p,uA[i],uB[i],uF[i]),${KS.toFixed(3)});}return d;}
-float mapS(vec3 p){float d=1e3;for(int i=0;i<3;i++){if(i>=uSn)break;vec4 S=uS[i];
- d=min(d,length(p-S.xyz)-S.w*(1.0+0.13*sin(p.x*23.0)*sin(p.y*19.0+1.0)*sin(p.z*21.0+2.0)));}return d;}
+float blobD(vec3 p,vec4 S,vec4 D,float ty){vec3 q=p-S.xyz;
+ if(ty<0.5)return length(q)-S.w*(1.0+0.13*sin(p.x*23.0)*sin(p.y*19.0+1.0)*sin(p.z*21.0+2.0));
+ if(ty<1.5)return length(q)-S.w*(1.0+0.17*sin(p.x*15.0+1.0)*sin(p.y*13.0)*sin(p.z*17.0+3.0)+0.07*sin(p.x*43.0)*sin(p.z*39.0+1.0)*sin(p.y*41.0));
+ if(ty<2.5){float al=dot(q,D.xyz);vec3 pe=q-D.xyz*al;float k=length(vec2(al/(S.w*2.2),length(pe)/S.w));return (k-1.0)*S.w*0.85+0.03*S.w*sin(p.x*21.0)*sin(p.y*17.0+1.0)*sin(p.z*19.0);}
+ if(ty<3.5){float al=dot(q,D.xyz);vec3 pe=q-D.xyz*al;float k=length(vec2(al/(S.w*1.6),length(pe)/S.w));return (k-1.0)*S.w*0.9+0.004*sin(p.x*47.0)*sin(p.y*41.0);}
+ if(ty<4.5){float al=dot(q,D.xyz);float rho=length(q-D.xyz*al);return length(vec2(rho-S.w,al*0.32))-D.w;}
+ return length(q)-S.w*(1.0+0.05*sin(uTime*2.5+p.y*18.0));}
+float mapS(vec3 p){float d=1e3;for(int i=0;i<${NB};i++){if(i>=uSn)break;d=min(d,blobD(p,uS[i],uD[i],uT[i]));}return d;}
 float map(vec3 p){return max(mapL(p),-mapS(p));}
+float typeAt(vec3 p){float d=1e3;float ty=-1.0;for(int i=0;i<${NB};i++){if(i>=uSn)break;float e=blobD(p,uS[i],uD[i],uT[i]);if(e<d){d=e;ty=uT[i];}}return ty;}
 vec3 grad(vec3 p){vec2 e=vec2(0.004,-0.004);
  return normalize(e.xyy*map(p+e.xyy)+e.yyx*map(p+e.yyx)+e.yxy*map(p+e.yxy)+e.xxx*map(p+e.xxx));}
 float hash(vec3 p){p=fract(p*0.3183099+0.1);p*=17.0;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
 float noise(vec3 x){vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.0-2.0*f);
  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float bloodAt(vec3 p,vec3 n){float b=0.0;
+ for(int j=0;j<5;j++){if(j>=uBn-1)break;vec3 a=uBl[j].xyz;vec3 c=uBl[j+1].xyz;vec3 pa=p-a;vec3 ba=c-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.0,1.0);float d=length(pa-ba*h);
+  float rad=uBl[j].w;float cov=1.0-smoothstep(rad*1.05,rad*1.9,d);
+  if(j>0)cov*=smoothstep(0.0,0.45,n.z);
+  b=max(b,cov*(1.0-0.13*float(j)));}
+ return b*uBI;}
 void main(){
  vec2 uv=(gl_FragCoord.xy/uRes)*2.0-1.0;float rr=length(uv);
  if(rr>1.0){gl_FragColor=vec4(0.0,0.0,0.0,1.0);return;}
@@ -367,8 +444,18 @@ void main(){
   vec3 base=vec3(0.84,0.38,0.34)*(0.8+0.4*n1);
   float ves=1.0-smoothstep(0.0,0.018,abs(n2-0.5));base=mix(base,vec3(0.6,0.1,0.12),ves*0.35);
   float att=1.0/(1.0+0.45*t*t);float sp=0.5;
-  if(uSn>0&&-mapS(p)>=mapL(p)-0.002){base=vec3(0.74,0.68,0.34)*(0.8+0.35*n1);spec=pow(diff,70.0);sp=0.7;}
+  bool onBlob=uSn>0&&-mapS(p)>=mapL(p)-0.002;
+  if(onBlob){float ty=typeAt(p);float n3=noise(p*14.0);
+   if(ty<0.5){base=vec3(0.74,0.68,0.34)*(0.8+0.35*n1);spec=pow(diff,70.0);sp=0.7;}
+   else if(ty<1.5){base=mix(vec3(0.86,0.60,0.58),vec3(0.95,0.84,0.80),n3);base=mix(base,vec3(0.62,0.08,0.12),ves*0.9);base=mix(base,vec3(0.82,0.74,0.48),smoothstep(0.72,0.85,n2)*0.6);spec=pow(diff,30.0);sp=0.35;}
+   else if(ty<2.5){base=vec3(0.30,0.03,0.04)*(0.7+0.6*n3);spec=pow(diff,90.0);sp=1.0;}
+   else if(ty<3.5){base=vec3(0.74,0.56,0.36)*(0.75+0.35*n3);base=mix(base,vec3(0.45,0.32,0.18),smoothstep(0.7,0.8,n2)*0.7);spec=pow(diff,60.0);sp=0.5;}
+   else if(ty<4.5){base=vec3(0.66,0.40,0.38)*(0.85+0.25*n1);base=mix(base,vec3(0.80,0.66,0.64),smoothstep(0.6,0.8,noise(p*vec3(40.0,6.0,40.0)))*0.35);spec=pow(diff,40.0);sp=0.25;}
+   else{base=vec3(0.55,0.02,0.03)*(0.8+0.3*sin(uTime*3.0+p.y*25.0));spec=pow(diff,120.0);sp=1.3;}}
+  else if(uBn>1){float bl=bloodAt(p,n)*(0.82+0.18*sin(dot(p,vec3(3.0,26.0,7.0))-uTime*4.0));
+   base=mix(base,vec3(0.40,0.015,0.025)*(0.7+0.45*n1),clamp(bl*1.4,0.0,1.0));spec=mix(spec,pow(diff,110.0),bl);sp=mix(sp,1.2,bl);}
   col=base*(0.05+1.0*diff)*att*1.35+vec3(1.0,0.95,0.92)*spec*sp*att;}
+ col=mix(col,vec3(0.26,0.01,0.02),uFog);
  col*=1.0-0.45*pow(rr,3.0);
  gl_FragColor=vec4(pow(col,vec3(0.4545)),1.0);}`;
 const VS='attribute vec2 aP;void main(){gl_Position=vec4(aP,0.0,1.0);}';
@@ -382,12 +469,12 @@ function initGL(){
     gl.useProgram(pr);
     const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
     const loc=gl.getAttribLocation(pr,'aP');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-    for(const n of ['uRes','uPos','uFwd','uUp','uRight','uFov','uA','uB','uF','uN','uS','uSn'])U[n]=gl.getUniformLocation(pr,n);
+    for(const n of ['uRes','uPos','uFwd','uUp','uRight','uFov','uTime','uA','uB','uF','uN','uS','uD','uT','uSn','uBl','uBn','uBI','uFog'])U[n]=gl.getUniformLocation(pr,n);
     glOK=true;
   }catch(e){fail('Erreur graphique : '+e.message);}
 }
 function fail(msg){const d=document.createElement('div');d.id='err';d.textContent=msg;document.getElementById('viewWrap').appendChild(d);}
-const UA=new Float32Array(K*4),UB=new Float32Array(K*4),UF=new Float32Array(K),US=new Float32Array(12);
+const UA=new Float32Array(K*4),UB=new Float32Array(K*4),UF=new Float32Array(K),US=new Float32Array(NB*4),UD=new Float32Array(NB*4),UT=new Float32Array(NB),UBL=new Float32Array(24);
 function segDist(p,c){const pa=sub(p,c.a),ba=sub(c.b,c.a),h=clamp(dot(pa,ba)/dot(ba,ba),0,1);return len(sub(pa,mul(ba,h)))-Math.max(c.ra,c.rb);}
 function render(){
   if(!glOK)return;
@@ -398,7 +485,13 @@ function render(){
   const r=right();
   gl.uniform2f(U.uRes,res,res);gl.uniform3fv(U.uPos,cam.pos);gl.uniform3fv(U.uFwd,cam.f);gl.uniform3fv(U.uUp,cam.up);gl.uniform3fv(U.uRight,r);
   gl.uniform1f(U.uFov,FOV);gl.uniform4fv(U.uA,UA);gl.uniform4fv(U.uB,UB);gl.uniform1fv(U.uF,UF);gl.uniform1i(U.uN,n);
-  const bl=activeBlobs();bl.forEach((b,i)=>US.set([b.c[0],b.c[1],b.c[2],b.r],i*4));gl.uniform4fv(U.uS,US);gl.uniform1i(U.uSn,bl.length);
+  const bl=activeBlobs().map(b=>[len(sub(b.c,cam.pos)),b]).sort((x,y)=>x[0]-y[0]).slice(0,NB).map(x=>x[1]);
+  US.fill(0);UD.fill(0);UT.fill(0);
+  bl.forEach((b,i)=>{US.set([b.c[0],b.c[1],b.c[2],b.r],i*4);const d=b.d||[0,1,0];UD.set([d[0],d[1],d[2],b.m||0],i*4);UT[i]=b.type||0;});
+  gl.uniform4fv(U.uS,US);gl.uniform4fv(U.uD,UD);gl.uniform1fv(U.uT,UT);gl.uniform1i(U.uSn,bl.length);
+  const B=activeBleed();UBL.fill(0);if(B){B.pts.slice(0,6).forEach((q,i)=>UBL.set([q[0],q[1],q[2],q[3]],i*4));}
+  gl.uniform4fv(U.uBl,UBL);gl.uniform1i(U.uBn,B?Math.min(6,B.pts.length):0);gl.uniform1f(U.uBI,B?B.I:0);
+  gl.uniform1f(U.uFog,B?clamp(B.I*(1-len(sub(cam.pos,B.src))/0.9),0,0.85):0);gl.uniform1f(U.uTime,performance.now()/1000);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 }
 
@@ -409,8 +502,22 @@ const cam={pos:[0,0,0],f:[0,-1,0],up:[0,0,1]};
 const right=()=>norm(cross(cam.f,cam.up));
 const convUp=u=>settings.conv==='head'?u.slice():mul(u,-1);
 let mode='explore',loc={node:nodes.T,t:0},contacts=0,inContact=false;
-function resetCam(){const T=nodes.T;cam.pos=add(T.start,mul(T.dir,5));cam.f=T.dir.slice();cam.up=convUp(T.up);loc=locate(cam.pos);}
-function placeAt(n,back){cam.f=n.dir.slice();cam.up=convUp(n.up);cam.pos=sub(n.end,mul(n.dir,back));loc=locate(cam.pos);collide(true);}
+function resetCam(){const T=nodes.T;cam.pos=add(T.start,mul(T.dir,5));cam.f=T.dir.slice();cam.up=convUp(T.up);loc=locate(cam.pos);scopeReset(cam.pos,T.dir,cam.up);}
+function placeAt(n,back){cam.f=n.dir.slice();cam.up=convUp(n.up);cam.pos=sub(n.end,mul(n.dir,back));loc=locate(cam.pos);collide(true);scopeReset(cam.pos,n.dir,convUp(n.up));}
+/* fibroscope réaliste : gaine qui suit le trajet, béquillage et rotation limités */
+const DEG=Math.PI/180,BMAX=180*DEG,BMIN=-130*DEG,RMAX=150*DEG;
+const scope={bend:0,rot:0,f:[0,-1,0],up0:[0,0,1],path:[]};let limMsg='';
+function scopeReset(pos,dir,up){scope.bend=0;scope.rot=0;scope.f=norm(dir);scope.up0=orthoUp(up,scope.f);scope.path=[sub(pos,mul(scope.f,3)),sub(pos,mul(scope.f,1.5)),pos.slice()];if(settings.drive==='real')applyScope();}
+function applyScope(){const up=rot(scope.up0,scope.f,scope.rot),r=norm(cross(scope.f,up));cam.f=norm(rot(scope.f,r,scope.bend));cam.up=orthoUp(rot(up,r,scope.bend),cam.f);}
+function shaftUpdate(){
+  const P=scope.path,p=cam.pos;
+  while(P.length>2&&dot(sub(P[P.length-1],p),scope.f)>-0.02)P.pop();
+  if(len(sub(p,P[P.length-1]))>0.08)P.push(p.slice());
+  if(P.length>300)P.splice(0,P.length-300);
+  let acc=0,q=P[P.length-1],prev=p;for(let i=P.length-1;i>=0;i--){acc+=len(sub(prev,P[i]));prev=P[i];q=P[i];if(acc>=1.2)break;}
+  if(len(sub(p,q))<0.3)return;
+  const tf=norm(add(mul(scope.f,0.8),mul(norm(sub(p,q)),0.2)));
+  scope.up0=orthoUp(rotMin(scope.up0,scope.f,tf),tf);scope.f=tf;}
 function recenter(){const n=loc.node,nf=n.dir;cam.up=orthoUp(rotMin(cam.up,cam.f,nf),nf);cam.f=nf.slice();
   const tc=clamp(dot(sub(cam.pos,n.start),n.dir),0,n.len),ax=add(n.start,mul(n.dir,tc));cam.pos=add(cam.pos,mul(sub(ax,cam.pos),0.7));}
 
@@ -421,7 +528,7 @@ addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   keys.add(e.code);
   if(e.repeat)return;
-  if(e.code==='KeyC')recenter();
+  if(e.code==='KeyC')centerKey();
   if(e.code==='KeyR')resetCam();
   if(e.code==='KeyL'){settings.labels=!settings.labels;$('sLabels').checked=settings.labels;}
 });
@@ -436,7 +543,8 @@ for(const b of document.querySelectorAll('#pad button[data-k]')){
   const k=b.dataset.k,on=e=>{e.preventDefault();keys.add(k);},off=()=>keys.delete(k);
   b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);
 }
-$('btnCenter').onclick=recenter;
+$('btnCenter').onclick=()=>centerKey();
+function centerKey(){if(settings.drive==='real'){scope.bend=0;applyScope();}else recenter();}
 
 function updateControls(dt){
   const k=c=>keys.has(c)?1:0,fast=(k('ShiftLeft')||k('ShiftRight'))?2.5:1;
@@ -444,7 +552,15 @@ function updateControls(dt){
   const flex=(k('KeyW')-k('KeyS'))*1.1*dt+dragY;
   const lr=k('ArrowRight')-k('ArrowLeft');
   let roll=(k('KeyD')-k('KeyA'))*1.6*dt,yaw=0;
-  if(settings.drive==='real')roll+=lr*1.6*dt+dragX;else yaw+=lr*1.1*dt+dragX;
+  if(settings.drive==='real'){
+    roll+=lr*1.6*dt+dragX;dragX=dragY=0;limMsg='';
+    const nb=clamp(scope.bend+flex,BMIN,BMAX),nr=clamp(scope.rot+roll,-RMAX,RMAX);
+    if(flex>0&&nb>=BMAX)limMsg='Butée du béquillage vers le haut (180°)';if(flex<0&&nb<=BMIN)limMsg='Butée du béquillage vers le bas (130°)';
+    if(roll&&Math.abs(nr)>=RMAX)limMsg='Rotation maximale : reculez, ou remettez le fibroscope dans l\u2019axe';
+    scope.bend=nb;scope.rot=nr;applyScope();
+    if(adv)cam.pos=add(cam.pos,mul(cam.f,adv));
+    return;}
+  yaw+=lr*1.1*dt+dragX;
   dragX=dragY=0;
   if(flex){const r=right();cam.f=rot(cam.f,r,flex);cam.up=rot(cam.up,r,flex);}
   if(roll)cam.up=rot(cam.up,cam.f,roll);
@@ -466,8 +582,8 @@ function project(P){const v=sub(P,cam.pos),r0=right(),z=dot(v,cam.f),x=dot(v,r0)
   const rho=Math.hypot(x,y),r=Math.atan2(rho,z)/(FOV/2);if(r>0.92)return null;
   return {x:rho>1e-6?x/rho*r:0,y:rho>1e-6?y/rho*r:0};}
 const lblBox=$('labels');let visible=[],lastVis=0;const pool=[];
-function labelsOn(){return settings.labels&&(mode==='explore'||(mode==='quiz'&&quiz.answered)||(mode==='run'&&(run.done||$('rLbl').checked))||(mode==='sec'&&(sec.done||$('sLbl').checked)));}
-function mapOn(){return mode==='explore'||(mode==='quiz'&&quiz.answered)||(mode==='run'&&(run.done||$('rMap').checked))||(mode==='sec'&&(sec.done||$('sMap').checked));}
+function labelsOn(){return settings.labels&&(mode==='explore'||(mode==='quiz'&&quiz.answered)||(mode==='run'&&(run.done||$('rLbl').checked))||(mode==='sec'&&(sec.done||$('sLbl').checked))||(mode==='les'&&(les.reveal||$('lLbl').checked))||(mode==='scen'&&(scen.reveal||$('cLbl').checked)));}
+function mapOn(){return mode==='explore'||(mode==='quiz'&&quiz.answered)||(mode==='run'&&(run.done||$('rMap').checked))||(mode==='sec'&&(sec.done||$('sMap').checked))||(mode==='les'&&(les.reveal||$('lMap').checked))||(mode==='scen'&&scen.phase==='fibro'&&(scen.reveal||$('cMap').checked));}
 function computeVisible(){const out=[];
   for(const n of list){if(n.id==='T'||n===loc.node)continue;if(mode==='quiz'&&quiz.cur&&quiz.cur.type==='ori'&&n===quiz.cur.node)continue;if(n.sub&&!settings.sub)continue;
     if(len(sub(n.lp,cam.pos))>5)continue;if(!project(n.lp))continue;if(!lineOfSight(cam.pos,n.lp))continue;out.push(n);}
@@ -503,6 +619,8 @@ function drawMap(){
     const tg=mode==='run'&&run.target&&(n===run.target||n.parent===run.target.id);
     mctx.strokeStyle=n===loc.node?'#5fd4c4':tg?'#ffe066':(n.sub?'#39414b':'#5a6470');mctx.lineWidth=Math.max(1.2,n.r*s*1.1);
     mctx.beginPath();mctx.moveTo(a[0],a[1]);mctx.lineTo(b[0],b[1]);mctx.stroke();}
+  const LT=mode==='les'?les:mode==='scen'?scen.les:null;
+  if(LT&&LT.target&&(mode==='les'?les.reveal:scen.reveal)){const q=P(LT.target);mctx.strokeStyle='#f2777a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(q[0],q[1],7,0,7);mctx.stroke();}
   if(mode==='sec')for(const b of sec.items)if(b.removed||sec.done){const q=P(b.c);mctx.fillStyle=b.removed?'#6fdc8c':'#e8d36a';mctx.beginPath();mctx.arc(q[0],q[1],5,0,7);mctx.fill();}
   const c=P(cam.pos);mctx.strokeStyle='#ffe066';mctx.lineWidth=2;mctx.beginPath();mctx.moveTo(c[0],c[1]);mctx.lineTo(c[0]+cam.f[0]*14,c[1]-cam.f[1]*14);mctx.stroke();
   mctx.fillStyle='#f2777a';mctx.beginPath();mctx.arc(c[0],c[1],4,0,7);mctx.fill();
@@ -592,7 +710,10 @@ const SCEN={
   rand:{t:'Encombrement diffus',d:"Bouchons répartis au hasard : faites une exploration systématique, lobe par lobe, des deux côtés.",ids:null}
 };
 const sec={items:[],t0:0,time:0,done:false,queue:[],cur:null,ident:0,hint:false};
-function activeBlobs(){return mode==='sec'?sec.items.filter(b=>!b.removed):[];}
+const les={items:[],bleed:null,type:null,node:null,target:null,seen:false,reveal:false,t0:0,time:0,asking:false,done:false},
+      scen={i:0,phase:'vent1',items:[],bleed:null,reveal:false,les:null};
+function activeBlobs(){if(mode==='sec')return sec.items.filter(b=>!b.removed);if(mode==='les')return les.items.filter(b=>!b.removed);if(mode==='scen'&&scen.phase==='fibro')return scen.items.filter(b=>!b.removed);return [];}
+function activeBleed(){if(mode==='les')return les.bleed;if(mode==='scen'&&scen.phase==='fibro')return scen.bleed;return null;}
 function makeBlob(n){
   const t=n.len*(0.4+Math.random()*0.25),ax=add(n.start,mul(n.dir,t)),rr=lerp(n.r,n.rb,t/n.len);
   const pd=rot(n.up,n.dir,Math.random()*6.283);
@@ -643,11 +764,222 @@ function answerSec(c,btn){
     $('sFeed').innerHTML+=`<p class="ok-t">Mission terminée en ${sec.time.toFixed(1).replace('.',',')} s, ${contacts} contact${contacts>1?'s':''}, ${sec.ident}/${sec.items.length} segment${sec.items.length>1?'s':''} identifié${sec.ident>1?'s':''}${sec.hint?' (avec indice)':''}.</p>`;}
 }
 
+// ---------- questions (moteur commun) ----------
+function runQs(box,qs,onDone){let i=0;const res=[];
+  const show=()=>{const q=qs[i],perm=shuffle(q.c.map((_,k)=>k));
+    box.innerHTML=`<p class="big" style="margin:10px 0 4px">${q.q}</p><div class="choices"></div><div class="qfb"></div>`;
+    const ch=box.querySelector('.choices');let done=false;
+    perm.forEach(k=>{const b=document.createElement('button');b.textContent=q.c[k][0];b.onclick=()=>{if(done)return;done=true;
+      const g=q.c[k][1];res.push(g);
+      [...ch.children].forEach((x,j)=>{if(q.c[perm[j]][1]==='ok')x.classList.add('ok');});if(g!=='ok')b.classList.add(g==='mid'?'mid':'ko');
+      const best=q.c.find(c=>c[1]==='ok');
+      box.querySelector('.qfb').innerHTML=`<p>${g==='ok'?'<span class="ok-t">Exact.</span>':g==='mid'?'<span class="mid-t">Discutable.</span>':'<span class="ko-t">Non.</span>'} ${q.c[k][2]}</p>${g!=='ok'?`<p class="muted">Réponse attendue : ${best[0]}. ${best[2]}</p>`:''}<button class="nextq">${i<qs.length-1?'Question suivante':'Continuer'}</button>`;
+      if(q.after)q.after(g);
+      box.querySelector('.nextq').onclick=()=>{i++;if(i<qs.length)show();else onDone(res);};};ch.appendChild(b);});};
+  show();}
+const locName=n=>n.name;
+function locQ(n,q){return {q:q||'Où se situe la lésion ?',c:[[locName(n),'ok',noteOf(n)?firstSentence(noteOf(n)):'']].concat(distractors(n).map(x=>[locName(x),'bad',`Non : la lésion est dans ${n.code}. ${noteOf(n)?firstSentence(noteOf(n)):''}`]))};}
+
+// ---------- lésions ----------
+const LES={
+ bourgeon:{label:'Bourgeon tumoral',name:'Bourgeon tumoral endobronchique',
+  see:"Masse blanchâtre ou rosée, irrégulière, bourgeonnante, parcourue de vaisseaux, qui obstrue la lumière et ne s'aspire pas.",
+  ctx:"Contexte typique : fumeur, atélectasie lobaire ou pneumopathie qui ne guérit pas, hémoptysie.",
+  sites:['LSD','LM','LID','LSG','LIG','B6D','B6G','LING','CUL','BSG','TI','PBD','PBG'],
+  act:{q:'Quelle conduite ?',c:[
+   ["Biopsies et brossage, puis scanner et discussion en RCP d'oncologie",'ok',"On prélève pour l'histologie (biopsies multiples, brossage, aspiration), on complète par un scanner thoracique et on discute en réunion de concertation pluridisciplinaire. Une désobstruction se discute avec une équipe d'endoscopie interventionnelle si l'obstruction est mal tolérée."],
+   ["Arracher le bourgeon à la pince pour libérer la bronche en un temps",'bad',"Risque hémorragique majeur : la désobstruction relève d'une équipe d'endoscopie interventionnelle, le plus souvent en bronchoscopie rigide."],
+   ["Aspirer longuement : c'est un bouchon de sécrétions épaisses",'bad',"Un bouchon est jaunâtre, mobile et s'aspire. Ce bourgeon est vascularisé, fixé à la paroi, et ne s'aspire pas."],
+   ["Antibiothérapie, puis nouvelle fibroscopie dans trois mois",'mid',"Une surinfection en aval est possible, mais ne pas prélever retarde le diagnostic de plusieurs mois."]]}},
+ saignement:{label:'Saignement actif',name:'Saignement actif',
+  see:"Sang rouge qui sort d'un orifice et coule vers les zones déclives ; il revient après chaque aspiration. L'image se voile de rouge si l'on s'approche trop.",
+  ctx:"Contexte typique : hémoptysie ou sang dans la sonde d'intubation, désaturation.",
+  sites:null,
+  act:{q:'Le saignement est localisé. Quelle conduite ?',c:[
+   ["Isoler le côté qui saigne : instillations, puis bloqueur ou sonde sélective",'ok',"Le fibroscope reste dans la bronche qui saigne : aspiration, sérum froid et adrénaline diluée en instillation. On protège le poumon sain (bloqueur bronchique, ou intubation sélective du côté sain), on corrige l'hémostase, puis on discute l'artério-embolisation bronchique après angioscanner."],
+   ["Retirer le fibroscope et attendre que le saignement cesse de lui-même",'bad',"On perdrait la localisation, qui guide toute la suite, et le sang inonderait le poumon sain."],
+   ["Coucher le patient côté sain en bas pour drainer le sang vers l'extérieur",'bad',"C'est l'inverse : le côté qui saigne en bas, pour protéger le poumon sain."],
+   ["Acide tranexamique intraveineux seul, sans aucun geste local",'mid',"Il peut être associé, mais ne remplace ni la localisation ni la protection du poumon sain."]]}},
+ caillot:{label:'Caillot',name:'Caillot obstructif',
+  see:"Masse rouge sombre, luisante, molle, qui moule la bronche ; elle s'aspire mal et se fragmente.",
+  ctx:"Contexte typique : hémoptysie récente, puis atélectasie et désaturation.",
+  sites:['LSD','LM','LID','LSG','LIG','TI','BSG','PBD','PBG','LING'],
+  act:{q:'Quelle conduite ?',c:[
+   ["Aspirer, laver, extraire (pince, cryosonde), chercher la source",'ok',"Un caillot obstructif s'aspire mal : on le fragmente et on l'extrait (lavages, pince, cryosonde si disponible), prêt à faire face à une reprise du saignement, puis on cherche la source et on corrige l'hémostase."],
+   ["Le repousser en distalité pour déboucher la bronche principale",'bad',"On ne pousse pas un caillot : on aggraverait l'obstruction en aval."],
+   ["Fibrinolyse intraveineuse pour dissoudre le caillot rapidement",'bad',"Une fibrinolyse systémique expose à la reprise du saignement."],
+   ["Kinésithérapie respiratoire seule, puis contrôle radiologique",'mid',"Peut suffire pour un petit caillot distal, pas pour une obstruction lobaire mal tolérée."]]}},
+ stenose:{label:'Sténose',name:'Sténose bronchique',
+  see:"Rétrécissement circulaire de la lumière, muqueuse blanchâtre et cicatricielle ; la paroi est lisse, sans masse ni sang.",
+  ctx:"Contexte typique : intubation ou trachéotomie prolongée, tuberculose ancienne, radiothérapie, compression extrinsèque.",
+  sites:['BSD','BSG','TI','LID','LIG','LSG','LSD'],
+  act:{q:'Quelle conduite ?',c:[
+   ["Ne pas forcer : mesurer, scanner, avis d'endoscopie interventionnelle",'ok',"On décrit la sténose (diamètre, longueur, aspect cicatriciel, tumoral ou compression extrinsèque) sans forcer le passage. Scanner thoracique et avis d'une équipe d'endoscopie interventionnelle (dilatation, prothèse, chirurgie)."],
+   ["Forcer le passage avec le fibroscope pour explorer l'aval",'bad',"Risque de traumatisme, de saignement et d'œdème qui aggrave l'obstruction."],
+   ["Dilater au ballon tout de suite, sans aucun autre bilan",'bad',"Une dilatation se prépare : nature de la sténose, longueur, équipe et matériel adaptés."],
+   ["Aucune suite : une sténose sans symptôme se surveille seulement",'mid',"Elle peut expliquer une atélectasie ou des infections répétées : elle se documente et se discute."]]}},
+ ce:{label:'Corps étranger',name:'Corps étranger inhalé',
+  see:"Objet de couleur et de texture inhabituelles (beige, brun, lisse ou granuleux), mobile, enclavé dans la lumière ; la muqueuse autour peut être inflammatoire.",
+  ctx:"Contexte typique : fausse route au cours d'un repas, toux puis signes unilatéraux, le plus souvent à droite.",
+  sites:['BSD','TI','LID','PBD','B6D','TI','BSD','LIG','BSG'],
+  act:{q:'Quelle conduite ?',c:[
+   ["Extraction par une équipe entraînée, souvent au tube rigide",'ok',"Chez l'adulte, le corps étranger siège surtout à droite. L'extraction se fait par une équipe entraînée, en bronchoscopie rigide ou souple (pince, panier, cryosonde), suivie d'une bronchoscopie de contrôle."],
+   ["Le pousser plus loin pour dégager la bronche souche droite",'bad',"On risque de l'enclaver plus distalement et de le rendre inaccessible."],
+   ["Lavages abondants pour le faire remonter par la toux",'bad',"Les lavages peuvent l'enclaver davantage et inonder l'arbre bronchique."],
+   ["Antibiothérapie et nouvelle endoscopie dans une semaine",'mid',"Une surinfection en aval est fréquente, mais le retard favorise granulome et enclavement."]]}}
+};
+const NATURE_OPTS=[['bourgeon','Bourgeon tumoral'],['saignement','Saignement actif'],['caillot','Caillot'],['stenose','Sténose'],['ce','Corps étranger'],['bouchon','Bouchon muqueux']];
+function natureQ(type){return {q:'Quelle est la nature de la lésion ?',c:shuffle(NATURE_OPTS.filter(o=>o[0]!==type)).slice(0,3).concat([NATURE_OPTS.find(o=>o[0]===type)]).map(o=>[o[1],o[0]===type?'ok':'bad',o[0]===type?LES[type].see:`Non. ${LES[type].see}`])};}
+const axP=(n,f)=>add(n.start,mul(n.dir,n.len*f)),rrP=(n,f)=>lerp(n.r,n.rb,f);
+function bleedChain(n,I){const pts=[[...axP(n,0.7),n.r*1.0],[...n.start,n.r*1.05]];let p=n.parent&&nodes[n.parent];
+  while(p&&pts.length<6){if(p.id==='T'){const q=axP(p,0.65);pts.push([q[0],q[1],q[2],p.r]);break;}pts.push([...p.start,p.r]);p=p.parent&&nodes[p.parent];}
+  return {pts,I,I0:I,src:axP(n,0.2)};}
+function buildLesion(type,n){
+  const L={type,node:n,items:[],bleed:null,target:null};
+  if(type==='bourgeon'){const full=Math.random()<0.6,f=0.35,rr=rrP(n,f);
+    const c=full?axP(n,f):add(axP(n,f),mul(rot(n.up,n.dir,Math.random()*6.283),rr*0.55));
+    L.items.push({type:1,c,r:full?rr*1.05:rr*0.72,node:n});L.target=c;}
+  else if(type==='caillot'){const c=axP(n,0.4);L.items.push({type:2,c,r:rrP(n,0.4)*0.97,r0:rrP(n,0.4)*0.97,d:n.dir.slice(),node:n});L.bleed=bleedChain(n,0.3);L.bleed.src=c;L.target=c;}
+  else if(type==='saignement'){const c=axP(n,0.25),pc=add(c,[0,0,-n.r*0.8]);L.items.push({type:5,c:pc,r:n.r*0.62,node:n});L.bleed=bleedChain(n,1);L.target=c;}
+  else if(type==='stenose'){const c=axP(n,0.5),R=rrP(n,0.5);L.items.push({type:4,c,r:R,m:R*0.55,d:n.dir.slice(),node:n});L.target=c;}
+  else if(type==='ce'){const c=axP(n,0.5),rr=rrP(n,0.5);L.items.push({type:3,c,r:rr*0.52,d:norm(rot(n.dir,rot(n.up,n.dir,1.1),0.45)),node:n});L.target=c;}
+  else if(type==='bouchon'){const b=makeBlob(n);b.type=0;L.items.push(b);L.target=b.c;}
+  return L;}
+function pickSite(type){const segs=named.filter(x=>x.seg);return nodes[rand(LES[type].sites||segs.map(x=>x.id))];}
+function seenCheck(T){if(!T||!T.target)return false;const v=sub(T.target,cam.pos),d=len(v);if(d>4)return false;if(dot(norm(v),cam.f)<0.55)return false;
+  const q=add(T.target,mul(norm(sub(cam.pos,T.target)),Math.min(d*0.8,0.6)));return lineOfSight(cam.pos,q);}
+/* aspiration commune aux modes Lésions et Scénarios */
+let aspMsg2='';
+function aspirate(T,dt){aspMsg2='';
+  if(T.bleed){const B=T.bleed;B.I=Math.min(B.I0,B.I+0.22*dt);}
+  if(!keys.has('KeyE'))return;
+  let best=null,bd=1e9;for(const b of T.items){if(b.removed)continue;const v=sub(b.c,cam.pos),d=len(v)-b.r,co=dot(norm(v),cam.f);if(d<1.0&&co>0.7&&d<bd){bd=d;best=b;}}
+  if(T.bleed&&len(sub(T.bleed.src,cam.pos))<1.6){T.bleed.I=Math.max(T.bleed.I0*0.2,T.bleed.I-1.5*dt);aspMsg2='Aspiration : le sang revient dès que vous arrêtez';}
+  if(best){
+    if(best.type===0){best.r-=(best.r0||best.r)*0.6*dt;if(!best.r0)best.r0=best.r;aspMsg2='Aspiration…';if(best.r<best.r0*0.15)best.removed=true;}
+    else if(best.type===2){best.r-=best.r0*0.12*dt;aspMsg2='Le caillot s’aspire mal : il se fragmente lentement';if(best.r<best.r0*0.35)best.removed=true;}
+    else if(best.type!==5)aspMsg2=best.type===4?'La sténose ne s’aspire pas':'Cela ne s’aspire pas';}
+  else if(!aspMsg2)aspMsg2='Rien à aspirer ici';}
+
+/* ----- mode Lésions ----- */
+function newLesion(){
+  let type=$('lType').value;if(type==='rand')type=rand(Object.keys(LES));
+  const L=buildLesion(type,pickSite(type));Object.assign(les,L,{seen:false,reveal:false,t0:performance.now(),time:0,asking:false,done:false});
+  contacts=0;resetCam();$('lQ').innerHTML='';$('lFound').disabled=false;$('lSeen').textContent='';}
+$('lNew').onclick=newLesion;$('lType').onchange=newLesion;
+$('lFound').onclick=()=>{if(les.asking||les.done)return;les.asking=true;$('lFound').disabled=true;
+  const qs=[natureQ(les.type),Object.assign(locQ(les.node),{after:()=>{les.reveal=true;}}),LES[les.type].act];
+  runQs($('lQ'),qs,res=>{les.done=true;les.reveal=true;const ok=res.filter(g=>g==='ok').length;
+    $('lQ').innerHTML=`<p class="big" style="margin-top:10px">${LES[les.type].name} — ${les.node.code}</p><p>${ok} bonne${ok>1?'s':''} réponse${ok>1?'s':''} sur 3, en ${les.time.toFixed(0)} s, ${contacts} contact${contacts>1?'s':''}${les.seen?'':' (lésion non vue avant de répondre)'}.</p><div class="expl"><p>${LES[les.type].see}</p><p>${LES[les.type].ctx}</p></div>`;});};
+function updateLes(now,dt){if(!les.done&&!les.asking)les.time=(now-les.t0)/1000;if(!les.seen&&seenCheck(les)){les.seen=true;$('lSeen').textContent='lésion repérée';}aspirate(les,dt);}
+
+/* ----- mode Scénarios : du respirateur au fibroscope ----- */
+const V=(o)=>Object.assign({vt:0.42,fr:22,peep:8,ti:1.0,pause:0.3,R:12,C:0.03,fio2:50,spo2:95,al:[],note:''},o);
+const SCN=[
+ {t:'Désaturation après le retournement',
+  v1:V({C:0.019,fio2:60,spo2:86,al:['Pression haute','SpO₂ basse'],note:"Homme de 70 ans, SDRA en voie d'amélioration, ventilé en volume contrôlé. Désaturation depuis le retour en décubitus dorsal. Murmure vésiculaire aboli à la base droite. Radiographie : opacité rétractile de la base droite."}),
+  q1:{q:'Ppic et Pplat montent ensemble. Hypothèse et première conduite ?',c:[
+   ["Compliance en baisse : écho pleurale, position de sonde, puis fibroscopie",'ok',"Ppic et Pplat montent ensemble : la compliance baisse (atélectasie, pneumothorax, intubation sélective, épanchement). L'échographie pleurale et le repère de la sonde éliminent pneumothorax et intubation sélective ; l'opacité rétractile évoque une atélectasie sur bouchon : fibroscopie."],
+   ["Résistance en hausse : bronchodilatateurs et aspiration de la sonde d'intubation",'bad',"Si la résistance augmentait, la Ppic monterait seule. Ici la Pplat monte aussi."],
+   ["Augmenter le volume courant pour recruter le poumon droit effondré",'bad',"Risque de surdistension du poumon aéré : la Pplat dépasse déjà 28 cmH₂O."],
+   ["Drainage pleural droit en urgence, avant toute imagerie",'mid',"Le pneumothorax est à éliminer, mais l'échographie le fait en une minute : pas de drainage à l'aveugle."]]},
+  fib:()=>{const items=[makeBlob(nodes.PBD),makeBlob(nodes.B10D),makeBlob(nodes.B9D)];items.forEach(b=>{b.type=0;b.r0=b.r;});items[0].r*=1.15;items[0].r0=items[0].r;return {items,bleed:null,node:nodes.LID,target:items[0].c,goal:'aspi'};},
+  tf:"Trouvez et aspirez tous les bouchons (maintenez E), puis répondez.",
+  q2:()=>[{q:'Où siégeaient les bouchons ?',c:[["Lobe inférieur droit (pyramide basale)",'ok',"Tronc des basales, B9 et B10 droits : les segments les plus déclives en décubitus dorsal, là où s'accumulent les sécrétions."],["Lobe moyen (segments B4 et B5)",'bad',"Le lobe moyen est antérieur, peu déclive en décubitus dorsal."],["Lobe inférieur gauche (pyramide basale)",'bad',"L'atélectasie et les signes étaient à droite."],["Lobe supérieur droit (B1, B2 et B3)",'bad',"L'opacité était basale, pas apicale."]]}],
+  v2:V({C:0.033,fio2:45,spo2:95,note:"Après aspiration des bouchons : la Pplat redescend, la SpO₂ remonte. Kinésithérapie, humidification et positionnement pour prévenir la récidive."}),
+  t2:"La compliance remonte dès que le lobe se réaère : la baisse de compliance était due à l'atélectasie."},
+ {t:'La pression de crête monte',
+  v1:V({R:45,C:0.042,fio2:50,spo2:90,al:['Pression haute'],note:"Femme de 64 ans, pneumopathie, ventilée depuis 6 jours. Sécrétions épaisses. La pression de crête monte depuis une heure ; la sonde d'aspiration passe difficilement."}),
+  q1:{q:'La Ppic est à 45 cmH₂O, la Pplat à 18. Que se passe-t-il ?',c:[
+   ["Résistance accrue : sonde coudée, mordue ou obstruée",'ok',"Ppic qui monte avec une Pplat stable : c'est la composante résistive (débit × résistance). On vérifie la sonde (coudure, morsure), on aspire ; si la sonde d'aspiration bute ou si rien ne change, fibroscopie."],
+   ["Pneumothorax sous tension : exsufflation immédiate",'bad',"Un pneumothorax ferait monter la Pplat et chuter la pression artérielle."],
+   ["Compliance effondrée : augmenter la PEP de 4 cmH₂O",'bad',"La Pplat est à 18 : la compliance n'a pas changé."],
+   ["Bronchospasme : salbutamol, puis réévaluation",'mid',"Possible, mais l'obstruction de la sonde, plus fréquente, se vérifie d'abord, en une minute."]]},
+  fib:()=>{const T=nodes.T,c=axP(T,0.86);const b={type:0,c,r:T.r*0.72,r0:T.r*0.72,node:T};return {items:[b],bleed:null,node:T,target:c,goal:'aspi'};},
+  tf:"Le fibroscope passe par la sonde. Trouvez l'obstacle, aspirez-le (maintenez E), puis répondez.",
+  q2:()=>[{q:"Où était l'obstacle ?",c:[["Trachée distale, au bout de la sonde",'ok',"Bouchon de sécrétions épaisses à l'extrémité de la sonde : il augmente la résistance sans changer la compliance."],["Bronche souche droite, à l'origine",'bad',"L'obstacle était au-dessus de la carène."],["Bronche souche gauche, à l'origine",'bad',"L'obstacle était au-dessus de la carène."],["Lobe inférieur droit, en distalité",'bad',"Un bouchon lobaire baisserait plutôt la compliance (atélectasie)."]]}],
+  v2:V({R:11,C:0.042,fio2:40,spo2:96,note:"Après aspiration : Ppic 23, Pplat 18. Humidification active ou filtre adapté, aspirations régulières."}),
+  t2:"La Ppic redescend, la Pplat ne bouge pas : c'était bien un problème de résistance."},
+ {t:'Hémoptysie sous ventilation',
+  v1:V({R:22,C:0.024,fio2:80,spo2:84,al:['SpO₂ basse','Pression haute'],note:"Homme de 58 ans, pneumopathie nécrosante, anticoagulé. Sang rouge dans la sonde, désaturation brutale."}),
+  q1:{q:'Sang rouge dans la sonde, SpO₂ 84 % sous FiO₂ 80 %. Premières mesures ?',c:[
+   ["FiO₂ 100 %, aspirer, fibroscopie immédiate pour localiser",'ok',"Il faut oxygéner, dégager et localiser vite : la localisation (côté, lobe, segment) guide l'isolement du poumon qui saigne et l'artério-embolisation. On arrête l'anticoagulation et on corrige l'hémostase."],
+   ["Extuber pour changer la sonde, qui est remplie de sang",'bad',"Extuber un patient qui saigne et désature est très risqué : on aspire, on localise, on isole."],
+   ["Baisser la PEP à zéro pour limiter le saignement",'bad',"La PEP aide plutôt à maintenir l'oxygénation et peut tamponner un peu."],
+   ["Angioscanner thoracique d'abord, fibroscopie ensuite",'mid',"Utile chez un patient stable ; ici, il désature : on localise d'abord au fibroscope."]]},
+  fib:()=>{const n=nodes[rand(['B1D','B2D','B6D','B10D','B9D','B12G','B6G','B10G','B4D'])];const L=buildLesion('saignement',n);return {items:L.items,bleed:L.bleed,node:n,target:L.target,goal:'find'};},
+  tf:"Localisez la source du saignement. L'aspiration (E) dégage la vue quelques secondes.",
+  q2:n=>[locQ(n,"D'où vient le saignement ?"),LES.saignement.act],
+  v2:n=>V({R:18,C:0.022,fio2:70,spo2:93,note:`Bloqueur bronchique gonflé dans la bronche ${n.side==='D'?'souche droite':'souche gauche'} : le poumon ${n.side==='D'?'gauche':'droit'} est protégé, la SpO₂ remonte. Angioscanner puis artério-embolisation bronchique.`}),
+  t2:"Localiser d'abord, puis isoler le poumon qui saigne : c'est ce qui sauve l'oxygénation."},
+ {t:'Poumon blanc',
+  v1:V({R:13,C:0.021,fio2:70,spo2:85,al:['SpO₂ basse'],note:"Homme de 67 ans, fumeur, amaigri, intubé pour détresse respiratoire. Radiographie : opacité complète de l'hémithorax gauche, médiastin attiré vers la gauche, sonde bien placée."}),
+  q1:{q:"Opacité complète à gauche, médiastin attiré du même côté. Hypothèse ?",c:[
+   ["Atélectasie gauche : chercher un obstacle bronchique",'ok',"Une opacité qui attire le médiastin du même côté est une atélectasie ; un épanchement le repousserait. On cherche la cause obstructive en fibroscopie."],
+   ["Épanchement pleural massif : drainage en urgence",'bad',"Un épanchement massif repousse le médiastin du côté opposé."],
+   ["Pneumopathie gauche : antibiothérapie et kinésithérapie seules",'bad',"Une pneumopathie n'attire pas le médiastin."],
+   ["Intubation sélective droite : retirer la sonde de 3 cm",'mid',"Elle donnerait cet aspect, mais la radiographie montre une sonde bien placée."]]},
+  fib:()=>{const n=nodes[rand(['BSG','LIG','BSG'])];const L=buildLesion('bourgeon',n);L.items[0].c=axP(n,0.3);L.items[0].r=rrP(n,0.3)*1.05;L.target=L.items[0].c;return {items:L.items,bleed:null,node:n,target:L.target,goal:'find'};},
+  tf:"Trouvez la cause de l'atélectasie, puis répondez.",
+  q2:()=>[natureQ('bourgeon'),LES.bourgeon.act],
+  v2:V({R:13,C:0.021,fio2:70,spo2:86,note:"Pas d'amélioration attendue tant que la bronche reste obstruée : PEP adaptée, positionnement, biopsies, et avis d'endoscopie interventionnelle pour une désobstruction."}),
+  t2:"L'atélectasie complète d'un poumon chez un fumeur est tumorale jusqu'à preuve du contraire."},
+ {t:'Fausse route au repas',
+  v1:V({R:30,C:0.03,fio2:50,spo2:88,al:['Pression haute'],note:"Homme de 79 ans, fausse route au cours du repas, intubé. Sibilants et diminution du murmure à droite."}),
+  q1:{q:'Ppic 35, Pplat 22, signes droits. Hypothèse ?',c:[
+   ["Corps étranger bronchique droit probable : fibroscopie",'ok',"Inhalation au cours d'un repas, signes unilatéraux droits, résistances augmentées : corps étranger jusqu'à preuve du contraire, plus souvent à droite (bronche souche plus verticale)."],
+   ["Bronchospasme diffus : corticoïdes et nébulisations seuls",'bad',"Des signes unilatéraux orientent vers une obstruction localisée."],
+   ["Pneumothorax droit compressif : drainage thoracique en urgence",'bad',"La Pplat est peu augmentée et les sibilants orientent vers une obstruction."],
+   ["Pneumopathie d'inhalation : antibiotiques et surveillance",'mid',"Elle peut suivre, mais un corps étranger se cherche et s'extrait d'abord."]]},
+  fib:()=>{const n=nodes[rand(['BSD','TI','BSD','LID'])];const L=buildLesion('ce',n);return {items:L.items,bleed:null,node:n,target:L.target,goal:'find'};},
+  tf:"Trouvez l'obstacle, puis répondez.",
+  q2:()=>[natureQ('ce'),LES.ce.act],
+  v2:V({R:12,C:0.034,fio2:40,spo2:95,note:"Après extraction en bronchoscopie rigide : résistances normalisées. Antibiothérapie si pneumopathie d'inhalation, bronchoscopie de contrôle."}),
+  t2:"Un corps étranger se recherche systématiquement après une fausse route avec signes unilatéraux."}
+];
+$('cSel').innerHTML=SCN.map((x,i)=>`<option value="${i}">${i+1}. ${x.t}</option>`).join('');
+$('cSel').onchange=e=>startScen(+e.target.value);
+function showVent(P){$('viewWrap').classList.add('hidden');$('pad').classList.add('hidden');$('gauges').classList.add('hidden');$('conv').classList.add('hidden');$('ventMon').classList.remove('hidden');drawVent(P);}
+function showView(){$('ventMon').classList.add('hidden');$('viewWrap').classList.remove('hidden');$('pad').classList.remove('hidden');$('conv').classList.remove('hidden');$('gauges').classList.toggle('hidden',settings.drive!=='real');}
+let curVent=null;
+function drawVent(P){curVent=P;const cv=$('vCv'),W=cv.clientWidth||600,H=cv.clientHeight||260,d=devicePixelRatio||1;cv.width=W*d;cv.height=H*d;const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,W,H);
+  const Q=P.vt/P.ti,Tc=60/P.fr,T=3*Tc,ppic=P.peep+P.R*Q+P.vt/P.C,pplat=P.peep+P.vt/P.C,tau=P.R*P.C;
+  const f=t=>{const tc=t%Tc;if(tc<P.ti){const V=Q*tc;return [P.peep+P.R*Q+V/P.C,Q*60];}if(tc<P.ti+P.pause)return [pplat,0];const te=tc-P.ti-P.pause,V=P.vt*Math.exp(-te/tau);return [P.peep,-V/tau*60];};
+  const ml=46,pw=W-ml-8,h1=(H-30)/2;
+  const plot=(y0,hh,lo,hi,idx,col,lab,ref)=>{x.strokeStyle='#262b33';x.lineWidth=1;x.strokeRect(ml,y0,pw,hh);
+    const Y=v=>y0+hh*(1-(v-lo)/(hi-lo));x.fillStyle='#9aa4af';x.font='12px IBM Plex Sans, sans-serif';x.fillText(lab,4,y0+12);
+    for(const r of ref){x.strokeStyle='rgba(154,164,175,.25)';x.setLineDash([3,4]);x.beginPath();x.moveTo(ml,Y(r));x.lineTo(ml+pw,Y(r));x.stroke();x.setLineDash([]);x.fillText(String(r),ml-30,Y(r)+4);}
+    x.strokeStyle=col;x.lineWidth=2;x.beginPath();for(let i=0;i<=pw;i++){const t=i/pw*T,v=f(t)[idx];const yy=Y(clamp(v,lo,hi));i?x.lineTo(ml+i,yy):x.moveTo(ml+i,yy);}x.stroke();};
+  plot(6,h1,0,50,0,'#ffc53d','Paw',[0,20,40]);plot(18+h1,h1,-60,45,1,'#5fd4c4','Débit',[0]);
+  $('vMode').textContent='Volume contrôlé · Vt '+Math.round(P.vt*1000)+' mL · FR '+P.fr+' · PEP '+P.peep+' · FiO₂ '+P.fio2+' %';
+  $('vAl').innerHTML=P.al.map(a=>`<span>${a}</span>`).join('');
+  const box=(l,v,u,b)=>`<div class="${b?'bad':''}"><small>${l}</small><b>${v}</b> <span class="muted">${u}</span></div>`;
+  $('vVals').innerHTML=box('Ppic',Math.round(ppic),'cmH₂O',ppic>35)+box('Pplat',Math.round(pplat),'cmH₂O',pplat>28)+box('PEP',P.peep,'cmH₂O')+box('Vt',Math.round(P.vt*1000),'mL')+box('FR',P.fr,'/min')+box('FiO₂',P.fio2,'%')+box('SpO₂',P.spo2,'%',P.spo2<90);
+  $('vNote').textContent=P.note;}
+addEventListener('resize',()=>{if(curVent&&!$('ventMon').classList.contains('hidden'))drawVent(curVent);});
+function startScen(i){scen.i=i;scen.phase='vent1';scen.items=[];scen.bleed=null;scen.reveal=false;scen.les=null;$('cSel').value=i;const S=SCN[i];
+  showVent(S.v1);$('cStep').textContent='1. Au respirateur';$('cTitle').textContent=S.t;$('cText').innerHTML='';$('cAct').innerHTML='';
+  runQs($('cQ'),[S.q1],()=>{$('cQ').innerHTML='';$('cAct').innerHTML='<button id="cGo">Passer à la fibroscopie</button>';$('cGo').onclick=goFibro;});}
+function goFibro(){const S=SCN[scen.i];const L=S.fib();scen.les=L;scen.items=L.items;scen.bleed=L.bleed;scen.phase='fibro';scen.reveal=false;
+  showView();contacts=0;resetCam();$('cStep').textContent='2. Au fibroscope';$('cText').innerHTML=`<p>${S.tf}</p>`;$('cQ').innerHTML='';
+  $('cAct').innerHTML='<button id="cFound">J’ai trouvé la cause : répondre</button>';$('cFound').onclick=()=>{
+    if(L.goal==='aspi'&&L.items.some(b=>!b.removed)){$('cText').innerHTML=`<p>${S.tf}</p><p class="ko-t">Il reste du matériel à aspirer.</p>`;return;}
+    $('cAct').innerHTML='';const qs=S.q2(L.node);qs[0].after=()=>{scen.reveal=true;};
+    runQs($('cQ'),qs,()=>{scen.reveal=true;$('cQ').innerHTML='';$('cAct').innerHTML='<button id="cBack">Retour au respirateur</button>';$('cBack').onclick=goVent2;});};}
+function goVent2(){const S=SCN[scen.i];scen.phase='vent2';const P=typeof S.v2==='function'?S.v2(scen.les.node):S.v2;showVent(P);
+  $('cStep').textContent='3. Retour au respirateur';$('cText').innerHTML=`<p>${S.t2}</p>`;$('cQ').innerHTML='';
+  $('cAct').innerHTML=`<button id="cAgain">Recommencer</button>${scen.i<SCN.length-1?'<button id="cNext">Scénario suivant</button>':''}`;
+  $('cAgain').onclick=()=>startScen(scen.i);if($('cNext'))$('cNext').onclick=()=>startScen(scen.i+1);}
+
 // ---------- interface ----------
 function setMode(m){
   mode=m;
   for(const b of document.querySelectorAll('.tabs button'))b.classList.toggle('on',b.dataset.mode===m);
   $('pExplore').classList.toggle('hidden',m!=='explore');$('pQuiz').classList.toggle('hidden',m!=='quiz');$('pRun').classList.toggle('hidden',m!=='run');$('pSec').classList.toggle('hidden',m!=='sec');
+  $('pLes').classList.toggle('hidden',m!=='les');$('pScen').classList.toggle('hidden',m!=='scen');
+  if(m!=='scen')showView();
+  if(m==='les')newLesion();
+  if(m==='scen')startScen(scen.i);
   if(m==='quiz')newQuestion();
   if(m==='run')startRun(true);
   if(m==='sec')newMission();
@@ -656,8 +988,15 @@ for(const b of document.querySelectorAll('.tabs button'))b.onclick=()=>setMode(b
 function convText(){$('conv').textContent=settings.conv==='head'
   ?"Opérateur à la tête du patient : paroi postérieure (membraneuse) en bas de l'image, droite du patient à droite de l'écran."
   :"Opérateur face au patient : paroi postérieure (membraneuse) en haut de l'image, droite du patient à gauche de l'écran.";}
-$('sConv').onchange=e=>{if(e.target.value!==settings.conv){settings.conv=e.target.value;cam.up=mul(cam.up,-1);convText();}};
-$('sDrive').onchange=e=>settings.drive=e.target.value;
+$('sConv').onchange=e=>{if(e.target.value!==settings.conv){settings.conv=e.target.value;cam.up=mul(cam.up,-1);scope.up0=mul(scope.up0,-1);convText();}};
+$('sDrive').onchange=e=>{settings.drive=e.target.value;if(settings.drive==='real'){scopeReset(cam.pos,cam.f,cam.up);}
+  $('btnCenter').textContent=settings.drive==='real'?'Levier au neutre':'Recentrer';$('gauges').classList.toggle('hidden',settings.drive!=='real');};
+function gauges(){if(settings.drive!=='real')return;
+  const bp=(scope.bend-BMIN)/(BMAX-BMIN)*100,rp=(scope.rot+RMAX)/(2*RMAX)*100;
+  $('gB').style.left=bp+'%';$('gR').style.left=rp+'%';
+  const b=Math.round(scope.bend/DEG),r=Math.round(scope.rot/DEG);
+  $('gBo').textContent=b===0?'neutre':Math.abs(b)+'° '+(b>0?'haut':'bas');$('gRo').textContent=r===0?'neutre':Math.abs(r)+'° '+(r>0?'horaire':'antihor.');
+  $('gBb').classList.toggle('lim',scope.bend>=BMAX-1e-3||scope.bend<=BMIN+1e-3);$('gRb').classList.toggle('lim',Math.abs(scope.rot)>=RMAX-1e-3);}
 $('sQual').onchange=e=>settings.qual=e.target.value;
 $('sLabels').onchange=e=>settings.labels=e.target.checked;
 $('sSub').onchange=e=>{settings.sub=e.target.checked;lastVis=0;};
@@ -667,13 +1006,17 @@ function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;
   updateControls(dt);
   loc=locate(cam.pos);collide(false);loc=locate(cam.pos);
-  render();drawLabels(now);
+  if(settings.drive==='real'){shaftUpdate();applyScope();}
+  gauges();
+  if(!(mode==='scen'&&scen.phase!=='fibro')){render();drawLabels(now);}
   if(mode==='run'){checkRun(now);$('rTime').textContent=run.time.toFixed(1).replace('.',',')+' s';$('rCont').textContent=contacts;}
   if(mode==='sec'){updateSec(now,dt);$('sTime').textContent=sec.time.toFixed(1).replace('.',',')+' s';$('sCont').textContent=contacts;$('sCount').textContent=sec.items.filter(b=>b.removed).length+'/'+sec.items.length;}
   if(mode==='explore'){$('whereCode').textContent=loc.node.code;$('whereName').textContent=loc.node.name;}
+  if(mode==='les'){updateLes(now,dt);$('lTime').textContent=les.time.toFixed(1).replace('.',',')+' s';$('lCont').textContent=contacts;}
+  if(mode==='scen'&&scen.phase==='fibro'){aspirate(scen,dt);if(scen.les&&!scen.les.seen&&seenCheck(scen.les))scen.les.seen=true;}
   const mo=mapOn();$('mapSec').classList.toggle('hidden',!mo);
   if(mo&&now-lastMap>100){drawMap();lastMap=now;}
-  $('hud').textContent=mode==='explore'?`${loc.node.code} · contacts ${contacts}`:mode==='run'?`→ ${run.target.code}`:mode==='sec'?(aspMsg||`Bouchons ${sec.items.filter(b=>b.removed).length}/${sec.items.length}`):'';
+  $('hud').textContent=limMsg||(mode==='explore'?`${loc.node.code} · contacts ${contacts}`:mode==='run'?`→ ${run.target.code}`:mode==='sec'?(aspMsg||`Bouchons ${sec.items.filter(b=>b.removed).length}/${sec.items.length}`):(mode==='les'||mode==='scen')?aspMsg2:'');
   requestAnimationFrame(frame);
 }
 initGL();resetCam();convText();requestAnimationFrame(frame);
