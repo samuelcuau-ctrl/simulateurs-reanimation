@@ -66,22 +66,23 @@ table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0}th,td{bord
 .excard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:12px}
 .excard p{margin:8px 0}.task{color:var(--ink)}
 .tag{font-size:12.5px;color:var(--q);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-.vent{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px}
+.vent{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:12px}
 .vscreen,.vset{background:#060b0d;border:1px solid var(--line);border-radius:12px;padding:10px}
 .vcv{width:100%;height:auto;display:block}
 .alarms{display:flex;gap:6px;min-height:26px}.alarms span{background:var(--red);color:#fff;font-weight:600;font-size:13px;padding:2px 10px;border-radius:6px;animation:bl 1s steps(2) infinite}
 @keyframes bl{50%{opacity:.55}}
-.vvals{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:6px}
+.vvals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:6px}
 .vvals div{background:var(--panel);border-radius:8px;padding:6px 8px;font:600 26px/1 "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
 .vvals small{display:block;font:500 12.5px Barlow,sans-serif;color:var(--mut);margin-bottom:3px}.vvals em{font:400 11.5px Barlow,sans-serif;color:var(--mut);margin-left:3px;font-style:normal}
-.vvals .p{color:var(--p)}.vvals .q{color:var(--q)}.vvals .s{color:var(--ok)}
+.vvals .p{color:var(--p)}.vvals .v{color:var(--v)}.vvals .q{color:var(--q)}.vvals .s{color:var(--ok)}
 .vbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.vbtns button{font-size:14px;padding:6px 12px}
 .gas{margin-top:8px;font-size:15px;color:#d6e2e5}.gas:empty{display:none}
 .sethead{font-weight:600;margin-bottom:8px}
 .stp{display:grid;grid-template-columns:52px 44px minmax(0,1fr) 44px;gap:6px;align-items:center;margin-bottom:6px}
 .stp .sl{font:600 18px "Barlow Condensed",sans-serif;color:var(--p)}.stp output{text-align:center;font:600 21px "Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
 .stp button{padding:0;font-size:20px;min-height:40px}
-.derived{font-size:13.5px;margin-top:8px}
+.derived{font-size:13.5px;margin-top:8px}.pend{font-size:13.5px;color:var(--q);min-height:1em;margin-top:6px}
+.shape{display:grid;grid-template-columns:52px 1fr 1fr;gap:6px;align-items:center;margin-top:4px}.shape .sl{font:600 18px "Barlow Condensed",sans-serif;color:var(--p)}.shape button{padding:4px 6px;min-height:40px;font-size:14px}.shape button.on{background:var(--ink);color:#0b1215;border-color:var(--ink);font-weight:600}
 .inp{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}.inp input,#nm{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:110px;margin-left:6px}#nm{width:260px}
 .diag{margin-top:12px}.dqt{font-weight:600;margin:12px 0 4px}
 .exfoot{margin-top:14px}.crit{list-style:none;padding:0;margin:10px 0}.crit li{padding:3px 0}.crit .ok{color:var(--ok)}.crit .ko{color:#ff9d95}
@@ -160,7 +161,7 @@ const CH=[
 <h4>5. FiO₂</h4>
 <p>Souvent 100 % juste après l'intubation, puis <b>réduite rapidement</b> pour viser une SpO₂ d'environ 92 à 96 %. L'hyperoxie n'apporte pas de bénéfice et a ses propres effets délétères.</p>
 <h4>6. Temps inspiratoire</h4>
-<p>Le débit inspiratoire et le temps inspiratoire (Ti) fixent le rapport I:E, habituellement autour de 1:2. Raccourcir le Ti augmente le débit, donc la Ppic, mais allonge l'expiration.</p>
+<h4 style="margin-top:10px">6 bis. Débit inspiratoire et forme du débit</h4><p>En VC, on règle souvent le <b>débit inspiratoire de pointe</b>, habituellement <b>40 à 60 L/min</b>. Avec le Vt, il fixe le temps inspiratoire (Ti = Vt / débit en débit carré) et donc le rapport I:E, habituellement autour de 1:2.</p><ul><li><b>Augmenter le débit</b> raccourcit le Ti et allonge l'expiration (utile chez l'obstructif), mais fait monter la Ppic (part résistive).</li><li><b>Un débit trop bas</b> allonge le Ti, raccourcit l'expiration et peut créer une « faim de débit » chez un patient qui respire.</li><li><b>Débit carré</b> : constant pendant l'insufflation ; c'est lui qui permet de calculer la résistance. <b>Débit décélérant</b> : maximal au début puis décroissant ; à débit de pointe égal, il allonge le Ti et abaisse la Ppic. La Pplat ne dépend pas de la forme du débit.</li></ul>
 <h4>7. Contrôler</h4>
 <ul><li>Pause télé-inspiratoire : Pplat ≤ 30 cmH₂O, pression motrice ≤ 15 cmH₂O.</li><li>Pause télé-expiratoire : pas d'auto-PEP significative.</li><li>Gaz du sang 20 à 30 minutes après les réglages.</li><li>Limites d'alarme adaptées (pression haute, volume expiré, ventilation minute, FR).</li></ul>`},
 {id:'c3',t:'Oxygénation et CO₂',
@@ -193,7 +194,7 @@ const CH=[
 <h4>Capnographie</h4>
 <p>La disparition brutale de l'EtCO₂ évoque une extubation, une obstruction complète ou un arrêt circulatoire. C'est l'alarme la plus précoce d'un déplacement de sonde.</p>
 <h4>Auto-PEP</h4>
-<p>Débit expiratoire qui ne revient pas à zéro, PEP totale supérieure à la PEP réglée. On allonge le temps expiratoire : baisser la FR, raccourcir le Ti, traiter l'obstruction.</p>
+<p>Débit expiratoire qui ne revient pas à zéro, PEP totale supérieure à la PEP réglée. On allonge le temps expiratoire : baisser la FR, augmenter le débit inspiratoire (le Ti raccourcit), traiter l'obstruction.</p>
 <h4>Patient qui « lutte »</h4>
 <p>Avant d'approfondir la sédation, chercher une cause : douleur, hypoxémie, réglage inadapté (débit insuffisant, trigger), sonde, globe vésical.</p>`},
 {id:'c5',t:'SDRA : ventiler sans nuire',
@@ -244,13 +245,14 @@ const QB=[
 {c:'c2',q:"Quel rapport I:E est habituel en ventilation contrôlée ?",o:[["Environ 1:2",1],["Environ 2:1",0],["Environ 1:1",0],["Environ 1:6",0]],e:"Inverser le rapport (2:1) raccourcit l'expiration et expose à l'auto-PEP ; 1:4 ou plus se discute chez l'obstructif."},
 {c:'c2',q:"Vt 450 mL et FR 18 /min. Quelle est la ventilation minute ?",o:[["8,1 L/min",1],["4,5 L/min",0],["18 L/min",0],["6,3 L/min",0]],e:"Ventilation minute = Vt × FR = 0,45 × 18 = 8,1 L/min."},
 {c:'c2',q:"Quand contrôler le premier gaz du sang après les réglages ?",o:[["Environ 20 à 30 minutes après",1],["Dans les deux minutes qui suivent",0],["Seulement le lendemain matin",0],["Uniquement si la SpO₂ chute",0]],e:"Le temps que la PaCO₂ s'équilibre ; avant, on se fie à la SpO₂ et à l'EtCO₂."},
-{c:'c2',q:"Raccourcir le temps inspiratoire à Vt constant :",o:[["Augmente le débit, donc la Ppic, et allonge le temps d'expiration",1],["Diminue la Pplat, parce que le volume reste en place moins longtemps",0],["Augmente la PEP intrinsèque, parce que l'expiration est plus courte",0],["Ne modifie aucune pression, puisque le volume courant est identique",0]],e:"Le même volume passe plus vite : la part résistive monte ; la Pplat ne change pas ; le temps expiratoire s'allonge."},
+{c:'c2',q:"En VC, on augmente le débit inspiratoire à Vt constant. Que se passe-t-il ?",o:[["La Ppic monte, le Ti raccourcit et l'expiration s'allonge",1],["La Pplat monte, parce que le volume entre plus vite",0],["La PEP intrinsèque augmente, car l'expiration raccourcit",0],["Aucune pression ne change, puisque le Vt est identique",0]],e:"Le même volume passe plus vite : la part résistive (R × débit) monte, donc la Ppic ; la Pplat ne change pas ; le temps expiratoire s'allonge, ce qui réduit l'auto-PEP."},
+{c:'c2',q:"À débit de pointe égal, passer d'un débit carré à un débit décélérant :",o:[["Allonge le Ti et abaisse la Ppic, sans changer la Pplat",1],["Raccourcit le Ti et augmente la Ppic comme la Pplat",0],["Abaisse la Pplat, donc améliore la protection du poumon",0],["Rend impossible la mesure de la pression de plateau",0]],e:"Le débit diminue en fin d'insufflation : la part résistive est faible au moment où le volume est maximal. La Pplat, mesurée débit nul, ne dépend que du Vt et de la compliance."},
 // ---- c3
 {c:'c3',q:"La PaCO₂ dépend surtout :",o:[["De la ventilation alvéolaire",1],["De la FiO₂ réglée au départ",0],["Du niveau de PEP réglé",0],["Du débit inspiratoire réglé",0]],e:"PaCO₂ ≈ production de CO₂ / ventilation alvéolaire, et ventilation alvéolaire = FR × (Vt − espace mort)."},
 {c:'c3',q:"SDRA, Vt 6 mL/kg, Pplat 28 cmH₂O, pH 7,24, PaCO₂ 60 mmHg. Quel réglage modifier ?",o:[["Augmenter la fréquence respiratoire seule",1],["Augmenter le Vt à 10 mL/kg de poids prédit",0],["Baisser la PEP pour faire baisser la Pplat",0],["Augmenter la FiO₂ pour améliorer l'acidose",0]],e:"Le Vt est déjà au maximum protecteur ; on augmente la FR en surveillant l'auto-PEP."},
 {c:'c3',q:"À Vt et espace mort constants, doubler la fréquence respiratoire :",o:[["Divise environ la PaCO₂ par deux",1],["Divise environ la PaO₂ par deux",0],["Ne modifie pas du tout la PaCO₂",0],["Double environ la PaCO₂ mesurée",0]],e:"La ventilation alvéolaire double, la PaCO₂ est divisée par deux environ (à production de CO₂ constante)."},
 {c:'c3',q:"Pourquoi augmenter la FR avec prudence chez un patient BPCO ?",o:[["Le temps expiratoire raccourcit et l'auto-PEP augmente",1],["La FiO₂ délivrée baisse quand la fréquence augmente",0],["L'espace mort diminue trop et la PaCO₂ chute brutalement",0],["Le débit inspiratoire baisse et la Pplat devient fausse",0]],e:"L'obstructif a besoin d'un long temps expiratoire ; le raccourcir piège du gaz, augmente les pressions et peut faire chuter la pression artérielle."},
-{c:'c3',q:"Quels réglages agissent surtout sur l'oxygénation ?",o:[["La FiO₂ et la PEP",1],["La FR et le Vt",0],["Le débit et le Ti",0],["Le trigger et la pente",0]],e:"La FiO₂ augmente la PO₂ alvéolaire ; la PEP rouvre des alvéoles et diminue le shunt."},
+{c:'c3',q:"Quels réglages agissent surtout sur l'oxygénation ?",o:[["La FiO₂ et la PEP",1],["La FR et le Vt",0],["Le débit et sa forme",0],["Le trigger et la pente",0]],e:"La FiO₂ augmente la PO₂ alvéolaire ; la PEP rouvre des alvéoles et diminue le shunt."},
 {c:'c3',q:"Comment la PEP améliore-t-elle l'oxygénation ?",o:[["Elle maintient ouvertes des alvéoles et diminue le shunt",1],["Elle augmente la FiO₂ réellement délivrée au patient",0],["Elle augmente le débit cardiaque et le transport d'O₂",0],["Elle accélère la diffusion de l'O₂ à travers la membrane",0]],e:"La PEP tend plutôt à réduire le débit cardiaque, ce qui peut limiter son bénéfice sur le transport d'O₂."},
 {c:'c3',q:"Quel est le risque principal d'une PEP trop élevée ?",o:[["Une hypotension et une surdistension des zones déjà ouvertes",1],["Une hypercapnie par baisse de la production de CO₂",0],["Une alcalose métabolique par perte rénale de bicarbonates",0],["Un dérecrutement des bases pulmonaires en position couchée",0]],e:"La PEP diminue le retour veineux et, si le poumon n'est pas recrutable, augmente surtout la Pplat."},
 {c:'c3',q:"Pourquoi éviter une hyperoxie prolongée ?",o:[["Elle est toxique et favorise les atélectasies, sans bénéfice démontré",1],["Elle provoque une hypercapnie sévère chez tous les patients ventilés",0],["Elle rend la SpO₂ inexacte et empêche toute surveillance fiable",0],["Elle augmente la PEP intrinsèque et la pression de plateau",0]],e:"L'azote retiré des alvéoles mal ventilées favorise leur collapsus (atélectasies de dénitrogénation)."},
@@ -293,10 +295,10 @@ const EX={
 c1:()=>{const P={sex:'H',h:175,w:78,C:0.042,R:12,Vd:0.15,K:200,hco3:24,pf:380,gain:0,popt:5};
  return {title:'Mesurer la mécanique respiratoire',
   ctx:"Homme de 62 ans, 175 cm, intubé pour une chirurgie digestive, sédaté et sans effort respiratoire. Les réglages sont imposés.",
-  task:"Faites une pause télé-inspiratoire et une pause télé-expiratoire, puis calculez la compliance et la résistance.",
-  P,S:{Vt:500,FR:16,PEP:5,FiO2:0.4,Ti:1.0},lock:true,
+  task:"Faites une pause télé-inspiratoire et une pause télé-expiratoire (elles s'appliquent au cycle suivant), puis calculez la compliance et la résistance. Le débit est carré, à 30 L/min.",
+  P,S:{Vt:500,FR:16,PEP:5,FiO2:0.4,Q:30,shape:'sq'},lock:true,
   inputs:[['C','Compliance (mL/cmH₂O)'],['R','Résistance (cmH₂O/L/s)']],
-  check(S,M,st,inp){const Ct=S.Vt/(M.pplat-M.peptot),Rt=(M.ppic-M.pplat)/(S.Vt/1000/S.Ti);
+  check(S,M,st,inp){const Ct=S.Vt/(M.pplat-M.peptot),Rt=(M.ppic-M.pplat)/(S.Q/60);
    const c=+String(inp.C).replace(',','.'),r=+String(inp.R).replace(',','.');
    return [crit('Pause télé-inspiratoire faite',st.pi),crit('Pause télé-expiratoire faite',st.pe),
     crit(`Compliance juste (Vt / (Pplat − PEP totale) = ${Math.round(Ct)} mL/cmH₂O)`,st.pi&&st.pe&&Math.abs(c-Ct)<=Ct*0.12,'reveal'),
@@ -307,7 +309,7 @@ c2:(v)=>{const sex=v?pick(['H','F']):'H',h=v?Math.round(rnd(158,190)):180,w=v?Ma
  return {title:'Premiers réglages après intubation',
   ctx:`${sex==='H'?'Homme':'Femme'} de 58 ans, ${h} cm, ${w} kg, intubé pour un coma toxique. Radiographie de thorax normale. Le respirateur a été réglé en hâte sur le poids réel.`,
   task:"Corrigez les réglages : Vt adapté au poids prédit, pH normal, PEP suffisante, FiO₂ sans hyperoxie. Validez quand tout est en place.",
-  P,S:{Vt:r5(w*7),FR:12,PEP:2,FiO2:1.0,Ti:1.0},
+  P,S:{Vt:r5(w*7),FR:12,PEP:2,FiO2:1.0,Q:50,shape:'sq'},
   check(S,M){const v=S.Vt/p;return [crit(`Vt entre 6 et 8 mL/kg de poids prédit (poids prédit ${Math.round(p)} kg ; actuellement ${v.toFixed(1).replace('.',',')} mL/kg)`,v>=5.95&&v<=8.05),
    crit('PEP au moins 5 cmH₂O',S.PEP>=5),crit(`pH entre 7,35 et 7,45 (actuellement ${M.ph.toFixed(2).replace('.',',')})`,M.ph>=7.35&&M.ph<=7.45),
    crit(`SpO₂ entre 92 et 96 % (actuellement ${Math.round(M.spo2)} %)`,M.spo2>=91.5&&M.spo2<=96.5),crit('Pas d\'auto-PEP significative (< 2 cmH₂O)',M.pepi<2)];},
@@ -317,7 +319,7 @@ c3:(v)=>{const sex=v?pick(['H','F']):'F',h=v?Math.round(rnd(155,185)):165,p=pbw(
  return {title:'Hypoxémie et acidose respiratoire',
   ctx:`${sex==='H'?'Homme':'Femme'} de 49 ans, ${h} cm, pneumonie à pneumocoque bilatérale, intubé(e) depuis 2 heures. Hémodynamique stable sans amine.`,
   task:"Faites remonter la SpO₂ à au moins 92 % avec une FiO₂ ≤ 60 %, et le pH à au moins 7,30, sans quitter la ventilation protectrice.",
-  P,S:{Vt:r5(p*6.5),FR:14,PEP:5,FiO2:0.6,Ti:0.9},
+  P,S:{Vt:r5(p*6.5),FR:14,PEP:5,FiO2:0.6,Q:40,shape:'sq'},
   check(S,M){const v=S.Vt/p;return [crit(`SpO₂ ≥ 92 % (actuellement ${Math.round(M.spo2)} %)`,M.spo2>=91.5),crit(`FiO₂ ≤ 60 % (actuellement ${Math.round(S.FiO2*100)} %)`,S.FiO2<=0.605),
    crit(`pH ≥ 7,30 (actuellement ${M.ph.toFixed(2).replace('.',',')})`,M.ph>=7.295),crit(`Vt ≤ 8 mL/kg de poids prédit (actuellement ${v.toFixed(1).replace('.',',')})`,v<=8.05),
    crit(`Pplat ≤ 30 cmH₂O (actuellement ${Math.round(M.pplat)})`,M.pplat<=30.4),crit('Auto-PEP < 2 cmH₂O',M.pepi<2)];},
@@ -332,7 +334,7 @@ c4:(v)=>{const kind=v?pick(['res','res','comp']):'res';const P={sex:'H',h:172,w:
  return {title:'Alarme de pression haute',
   ctx:"Homme de 66 ans, intubé depuis 3 jours pour une pneumopathie, sédaté. L'infirmière vous appelle : l'alarme de pression haute sonne en continu.",
   task:"Faites la mesure qui permet de trancher, puis choisissez le mécanisme et la conduite.",
-  P,S:{Vt:450,FR:18,PEP:6,FiO2:0.4,Ti:0.9},lock:true,diag:D,
+  P,S:{Vt:450,FR:18,PEP:6,FiO2:0.4,Q:30,shape:'sq'},lock:true,diag:D,
   check(S,M,st){return [crit('Pause télé-inspiratoire faite avant de conclure',!!st.piAtDx),crit('Mécanisme identifié',st.dxOk),crit('Conduite adaptée',st.actOk)];},
   debrief:kind==='res'?"Ppic haute et Pplat normale : le problème est dans les voies aériennes (résistance), pas dans le poumon. La pause télé-inspiratoire tranche en quelques secondes.":"Ppic et Pplat montent ensemble : la compliance a baissé. Toujours vérifier le repère de la sonde à l'arcade, ausculter et chercher un pneumothorax."};},
 c5:(v)=>{const sex=v?pick(['H','F']):'H',h=v?Math.round(rnd(160,188)):170,p=pbw(sex,h),C=v?+(rnd(0.026,0.031)).toFixed(3):0.028;
@@ -340,7 +342,7 @@ c5:(v)=>{const sex=v?pick(['H','F']):'H',h=v?Math.round(rnd(160,188)):170,p=pbw(
  return {title:'SDRA : ventilation protectrice',
   ctx:`${sex==='H'?'Homme':'Femme'} de 54 ans, ${h} cm, SDRA sur pneumonie grippale, intubé(e) cette nuit. Opacités bilatérales. L'équipe de nuit a réglé un Vt de 8 mL/kg de poids réel.`,
   task:"Mettez en place une ventilation protectrice : Vt autour de 6 mL/kg de poids prédit, Pplat ≤ 30, pression motrice ≤ 15, pH ≥ 7,25, SpO₂ entre 88 et 95 %.",
-  P,S:{Vt:r5((p+15)*8),FR:16,PEP:10,FiO2:0.7,Ti:0.9},
+  P,S:{Vt:r5((p+15)*8),FR:16,PEP:10,FiO2:0.7,Q:45,shape:'sq'},
   check(S,M,st){const v=S.Vt/p,dp=M.pplat-M.peptot;return [crit(`Vt entre 4 et 6,5 mL/kg de poids prédit (poids prédit ${Math.round(p)} kg ; actuellement ${v.toFixed(1).replace('.',',')})`,v>=3.95&&v<=6.55),
    crit(`Pplat ≤ 30 cmH₂O, vérifiée par une pause (${st.pi?Math.round(M.pplat):'pause à faire'})`,st.pi&&M.pplat<=30.4),
    crit(`Pression motrice ≤ 15 cmH₂O (${st.pi&&st.pe?Math.round(dp):'pauses à faire'})`,st.pi&&st.pe&&dp<=15.4),
@@ -349,81 +351,136 @@ c5:(v)=>{const sex=v?pick(['H','F']):'H',h=v?Math.round(rnd(160,188)):170,p=pbw(
 };
 const EXAM_EX=['c2','c3','c4','c5'];
 
-// ===== Respirateur intégré : modèle et interface =====
+// ===== Respirateur intégré : modèle et interface en temps réel =====
+// Réglages S : Vt (mL), FR (/min), Q (débit inspiratoire de pointe, L/min), shape ('sq' carré | 'dec' décélérant), PEP, FiO2
+function tiOf(S){const Qs=S.Q/60,Vt=S.Vt/1000;return S.shape==='dec'?2*Vt/Qs:Vt/Qs;}
+function flowAt(S,t,Ti){const Qs=S.Q/60;return S.shape==='dec'?Qs*(1-t/Ti):Qs;}
+function volAt(S,t,Ti){const Qs=S.Q/60;return S.shape==='dec'?Qs*(t-t*t/(2*Ti)):Qs*t;}
 function model(P,S){
-  const Vt=S.Vt/1000,Ttot=60/S.FR,Ti=Math.min(S.Ti,Ttot*0.8),Te=Ttot-Ti,Q=Vt/Ti,tau=P.R*P.C;
+  const Vt=S.Vt/1000,Ttot=60/S.FR,Ti=Math.min(tiOf(S),Ttot-0.15),Te=Ttot-Ti,tau=P.R*P.C;
   const e=Math.exp(-Te/tau),Vtrap=Vt*e/(1-e),pepi=Vtrap/P.C,peptot=S.PEP+pepi;
-  const pplat=peptot+Vt/P.C,ppic=pplat+P.R*Q;
+  const pplat=peptot+Vt/P.C;let ppic=0;for(let i=0;i<=40;i++){const t=Ti*i/40;ppic=Math.max(ppic,peptot+P.R*flowAt(S,t,Ti)+volAt(S,t,Ti)/P.C);}
   const ve=Vt*S.FR,va=Math.max(0.3,S.FR*(Vt-P.Vd)),paco2=Math.min(140,P.K/va),ph=6.1+Math.log10(P.hco3/(0.03*paco2));
   const d=S.PEP-5;let pf=P.pf+P.gain*Math.max(-3,Math.min(d,P.popt-5));if(S.PEP>P.popt)pf-=(P.over||4)*(S.PEP-P.popt);
   if(pplat>32)pf-=2*(pplat-32);
   pf=Math.max(45,pf);const pao2=Math.min(600,pf*S.FiO2);
   const spo2=100/(23400/(pao2**3+150*pao2)+1);
-  return {Vt,Ti,Te,Q,tau,Vtrap,pepi,peptot,pplat,ppic,ve,paco2,ph,pao2,pf,spo2};
+  const etco2=Math.max(8,paco2-4-25*Math.max(0,P.Vd/Vt-0.3));
+  return {Vt,Ti,Te,tau,Vtrap,pepi,peptot,pplat,ppic,ve,paco2,ph,pao2,pf,spo2,etco2,ie:Te/Ti};
 }
 const fmt=(x,d=0)=>x.toFixed(d).replace('.',',');
 
 function mountVent(root,ex,opt){
-  // opt: {exam:bool, onDone(ok,res)}
-  const P=Object.assign({},ex.P),S=Object.assign({},ex.S),st={pi:false,pe:false,gas:false,dxOk:false,actOk:false,dxTried:0,actTried:0,validated:false};
+  const P=Object.assign({},ex.P),S=Object.assign({shape:'sq'},ex.S),st={pi:false,pe:false,gas:false,dxOk:false,actOk:false,dxTried:0,actTried:0,validated:false};
   if(!P.pbw)P.pbw=pbw(P.sex,P.h);
   const lock=!!ex.lock,exam=!!opt.exam,ALARM=35;
-  const ctl=[['Vt','Vt','mL',10,200,900,0],['FR','FR','/min',1,6,40,0],['PEP','PEP','cmH₂O',1,0,20,0],['FiO2','FiO₂','%',0.05,0.21,1,0],['Ti','Ti','s',0.1,0.5,2,1]];
+  const ctl=[['Vt','Vt','mL',10,200,900],['FR','FR','/min',1,6,40],['Q','Débit','L/min',5,20,120],['PEP','PEP','cmH₂O',1,0,20],['FiO2','FiO₂','%',0.05,0.21,1]];
   root.innerHTML=`<div class="excard"><div class="exhead"><span class="tag">Au respirateur</span><h3>${ex.title}</h3></div>
   <p>${ex.ctx}</p><p class="task"><b>Objectif.</b> ${ex.task}</p></div>
   <div class="vent"><div class="vscreen">
     <div class="alarms"></div>
-    <canvas class="vcv" width="640" height="260"></canvas>
+    <canvas class="vcv" width="760" height="330"></canvas>
     <div class="vvals"></div>
-    <div class="vbtns"><button data-a="pi">Pause télé-inspiratoire</button><button data-a="pe">Pause télé-expiratoire</button><button data-a="gas">Gaz du sang</button></div>
+    <div class="vbtns"><button data-a="pi">Pause télé-inspiratoire</button><button data-a="pe">Pause télé-expiratoire</button><button data-a="gas">Gaz du sang</button><button data-a="frz" class="frz">Figer les courbes</button></div>
     <div class="gas"></div>
   </div>
   <div class="vset"><div class="sethead">Réglages · volume contrôlé${lock?' <span class="mut">(imposés)</span>':''}</div>
     ${ctl.map(c=>`<div class="stp" data-k="${c[0]}"><span class="sl">${c[1]}</span><button data-d="-1" ${lock?'disabled':''} aria-label="Diminuer ${c[1]}">−</button><output></output><button data-d="1" ${lock?'disabled':''} aria-label="Augmenter ${c[1]}">+</button></div>`).join('')}
+    <div class="shape"><span class="sl">Forme</span><button data-s="sq" ${lock?'disabled':''}>Carré</button><button data-s="dec" ${lock?'disabled':''}>Décélérant</button></div>
+    <div class="pend mut"></div>
     <div class="derived mut"></div>
   </div></div>
   ${ex.inputs?`<div class="inp">${ex.inputs.map(i=>`<label>${i[1]} <input inputmode="decimal" data-i="${i[0]}" autocomplete="off"></label>`).join('')}</div>`:''}
   ${ex.diag?`<div class="diag"></div>`:''}
   <div class="exfoot"><button class="primary val">${exam?'Valider cette épreuve (une seule fois)':'Vérifier'}</button><div class="res"></div></div>`;
   const $=s=>root.querySelector(s);
-  const cv=$('.vcv'),ctx=cv.getContext('2d');
-  function draw(M){
-    const W=cv.width,H=cv.height,h1=H*0.55,h2=H-h1;ctx.clearRect(0,0,W,H);
-    const Ttot=M.Ti+M.Te,pi=st.pi?0.5:0,pe=st.pe?0.5:0,cyc=Ttot+pi+pe,T=cyc*2,sx=W/T;
-    const pmax=Math.max(40,Math.ceil((M.ppic+5)/10)*10),qin=M.Q*60,qex=(M.Vt+M.Vtrap)/M.tau*60,qmax=Math.max(qin,qex,40)*1.1;
-    ctx.strokeStyle='rgba(147,168,175,.15)';ctx.lineWidth=1;ctx.fillStyle='#93a8af';ctx.font='12px Barlow,sans-serif';
-    for(let p=0;p<=pmax;p+=10){const y=h1-6-(p/pmax)*(h1-24);ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W,y);ctx.stroke();if(p%20===0)ctx.fillText(p,4,y+4);}
-    ctx.fillStyle='#ffc53d';ctx.fillText('Paw (cmH₂O)',36,14);ctx.fillStyle='#4fd8ea';ctx.fillText('Débit (L/min)',36,h1+14);
-    const ym=h1+h2/2;ctx.strokeStyle='rgba(147,168,175,.3)';ctx.beginPath();ctx.moveTo(30,ym);ctx.lineTo(W,ym);ctx.stroke();
-    const yP=p=>h1-6-(p/pmax)*(h1-24),yQ=q=>ym-(q/qmax)*(h2/2-10);
-    const paw=[],flo=[];
-    for(let t=0;t<=T;t+=T/600){let c=t%cyc,p,q;
-      if(c<M.Ti){q=M.Q;p=M.peptot+P.R*M.Q+M.Q*c/P.C;}
-      else if(c<M.Ti+pi){q=0;p=M.pplat;}
-      else if(c<M.Ti+pi+M.Te){const te=c-M.Ti-pi;q=-(M.Vt+M.Vtrap)/M.tau*Math.exp(-te/M.tau);p=S.PEP+(M.pplat-S.PEP)*Math.exp(-te/0.04);}
-      else{q=0;p=M.peptot;}
-      paw.push([30+t*sx*(W-30)/W,yP(p)]);flo.push([30+t*sx*(W-30)/W,yQ(q*60)]);}
-    const line=(a,c)=>{ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();a.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();};
-    line(paw,'#ffc53d');line(flo,'#4fd8ea');
+  // ---- moteur temps réel ----
+  const narrow=root.clientWidth<600,cv=$('.vcv');if(narrow){cv.width=420;cv.height=320;}
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,X0=30,WIN=narrow?8:12;
+  let A=Object.assign({},S),M=model(P,A);
+  let breath=null,tSim=0,last=performance.now(),frozen=false;const want={pi:false,pe:false};
+  const meas={ppic:null,pplat:null,peptot:null,vte:null};
+  const disp={spo2:M.spo2,etco2:M.etco2};
+  const buf=new Array(W-X0).fill(null);let xPrev=-1,lastVals=0;
+  function newBreath(){
+    if(JSON.stringify(A)!==JSON.stringify(S)){A=Object.assign({},S);meas.pplat=meas.peptot=null;settingsUI();}
+    M=model(P,A);
+    const hi=want.pi?0.6:0,he=want.pe?0.6:0;want.pi=want.pe=false;
+    breath={t0:tSim,Ti:M.Ti,hi,Te:M.Te,he,dur:M.Ti+hi+M.Te+he,pk:0};
   }
-  function val(k){const v=S[k];return k==='FiO2'?Math.round(v*100):k==='Ti'?fmt(v,1):Math.round(v);}
-  function render(){
-    const M=model(P,S);
-    root.querySelectorAll('.stp').forEach(d=>d.querySelector('output').textContent=val(d.dataset.k)+' '+ctl.find(c=>c[0]===d.dataset.k)[2]);
-    const Ttot=60/S.FR,ie=(Ttot-M.Ti)/M.Ti;
-    $('.derived').innerHTML=`Débit inspiratoire ${Math.round(M.Q*60)} L/min · I:E 1:${fmt(ie,1)} · ${P.sex==='H'?'homme':'femme'} ${P.h} cm, ${P.w} kg`;
-    const cell=(l,v,u,c)=>`<div${c?` class="${c}"`:''}><small>${l}</small>${v}<em>${u}</em></div>`;
-    $('.vvals').innerHTML=cell('Ppic',fmt(M.ppic),'cmH₂O','p')+cell('Pplat',st.pi?fmt(M.pplat):'—','cmH₂O','p')+cell('PEP totale',st.pe?fmt(M.peptot):'—','cmH₂O','p')
-      +cell('P motrice',st.pi&&st.pe?fmt(M.pplat-M.peptot):'—','cmH₂O','p')+cell('VE',fmt(M.ve,1),'L/min','q')+cell('SpO₂',fmt(M.spo2),'%','s');
-    const al=[];if(M.ppic>ALARM)al.push('Pression haute');if(M.spo2<90)al.push('SpO₂ basse');if(M.ph<7.2&&st.gas)al.push('Acidose');
+  function sample(t){
+    const b=breath,Vt=M.Vt,Vtr=M.Vtrap,tau=M.tau;
+    if(t<b.Ti){const q=flowAt(A,t,b.Ti),v=volAt(A,t,b.Ti);return [M.peptot+P.R*q+v/P.C,q,v];}
+    if(t<b.Ti+b.hi)return [M.pplat,0,Vt];
+    if(t<b.Ti+b.hi+b.Te){const te=t-b.Ti-b.hi,ex=Math.exp(-te/tau);return [A.PEP+(M.pplat-A.PEP)*Math.exp(-te/0.04),-(Vt+Vtr)/tau*ex,(Vt+Vtr)*ex-Vtr];}
+    return [M.peptot,0,-Vtr*0];
+  }
+  function endBreath(){
+    const b=breath;meas.ppic=b.pk;meas.vte=M.Vt*1000;
+    if(b.hi){meas.pplat=M.pplat;st.pi=true;}
+    if(b.he){meas.peptot=M.peptot;st.pe=true;}
+    values();
+  }
+  const pmaxOf=()=>Math.max(40,Math.ceil((Math.max(M.ppic,ALARM)+6)/10)*10);
+  function tick(now){
+    if(!root.isConnected)return;
+    const dt=Math.min(0.1,(now-last)/1000);last=now;
+    if(!frozen){
+      const steps=Math.max(1,Math.round(dt/0.01)),h=dt/steps;
+      for(let i=0;i<steps;i++){
+        if(!breath||tSim-breath.t0>=breath.dur){if(breath)endBreath();newBreath();}
+        const s=sample(tSim-breath.t0);breath.pk=Math.max(breath.pk,s[0]);
+        const x=Math.floor(((tSim%WIN)/WIN)*buf.length);
+        if(x!==xPrev){buf[x]=s;for(let k=1;k<=14;k++)buf[(x+k)%buf.length]=null;xPrev=x;}
+        tSim+=h;
+      }
+      disp.spo2+=(M.spo2-disp.spo2)*(1-Math.exp(-dt/3));disp.etco2+=(M.etco2-disp.etco2)*(1-Math.exp(-dt/5));
+    }
+    draw();if(now-lastVals>300){lastVals=now;values();}
+    requestAnimationFrame(tick);
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const hP=H*0.42,hQ=H*0.33,hV=H-hP-hQ,pmax=pmaxOf();
+    const qmax=Math.max(60,A.Q*1.15,((M.Vt+M.Vtrap)/M.tau*60)*1.1),vmax=Math.max(0.6,M.Vt*1.25);
+    ctx.font='12px Barlow,sans-serif';ctx.lineWidth=1;
+    const band=(y0,label,col,ticks)=>{ctx.strokeStyle='rgba(147,168,175,.12)';ticks.forEach(([y,l])=>{ctx.beginPath();ctx.moveTo(X0,y);ctx.lineTo(W,y);ctx.stroke();if(l!==null){ctx.fillStyle='#93a8af';ctx.fillText(l,2,y+4);}});ctx.fillStyle=col;ctx.fillText(label,X0+4,y0+13);};
+    const yP=p=>hP-6-(p/pmax)*(hP-22),yQ=q=>hP+hQ/2-(q*60/qmax)*(hQ/2-8),yV=v=>hP+hQ+hV-6-(v/vmax)*(hV-22);
+    band(0,'Paw (cmH₂O)','#ffc53d',[0,10,20,30,40,50,60,70].filter(p=>p<=pmax).map(p=>[yP(p),p%20===0?p:null]));
+    band(hP,'Débit (L/min)','#4fd8ea',[[yQ(0),'0']]);
+    band(hP+hQ,'Volume (mL)','#b4a0ff',[[yV(0),'0']]);
+    const lim=yP(ALARM);ctx.strokeStyle='rgba(255,90,78,.55)';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(X0,lim);ctx.lineTo(W,lim);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,90,78,.8)';ctx.fillText('limite '+ALARM,W-60,lim-4);
+    const tr=(i,f,col)=>{ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();let pen=false;for(let x=0;x<buf.length;x++){const s=buf[x];if(!s){pen=false;continue;}const y=f(s[i]);if(!pen){ctx.moveTo(X0+x,y);pen=true;}else ctx.lineTo(X0+x,y);}ctx.stroke();};
+    tr(0,yP,'#ffc53d');tr(1,yQ,'#4fd8ea');tr(2,yV,'#b4a0ff');
+    const inPause=breath&&(breath.hi||breath.he);
+    if(want.pi||want.pe||inPause){ctx.fillStyle='#e9f1f3';ctx.fillText(inPause?'Pause en cours…':'Pause au prochain cycle',W-210,14);}
+    if(frozen){ctx.fillStyle='#e9f1f3';ctx.fillText('Courbes figées',W-210,14);}
+  }
+  function values(){
+    const cell=(l,v,u,c)=>`<div${c?` class="${c}"`:''}><small>${l}</small>${v}<em>${u}</em></div>`,dash='—';
+    const dp=meas.pplat!=null&&meas.peptot!=null?fmt(meas.pplat-meas.peptot):dash;
+    $('.vvals').innerHTML=cell('Ppic',meas.ppic!=null?fmt(meas.ppic):dash,'cmH₂O','p')+cell('Pplat',meas.pplat!=null?fmt(meas.pplat):dash,'cmH₂O','p')+cell('PEP totale',meas.peptot!=null?fmt(meas.peptot):dash,'cmH₂O','p')
+      +cell('P motrice',dp,'cmH₂O','p')+cell('Vte',meas.vte!=null?fmt(meas.vte):dash,'mL','v')+cell('VE',fmt(M.ve,1),'L/min','q')+cell('FR',fmt(A.FR),'/min','q')+cell('SpO₂',fmt(disp.spo2),'%','s')+cell('EtCO₂',fmt(disp.etco2),'mmHg','s');
+    const al=[];if(meas.ppic!=null&&meas.ppic>ALARM)al.push('Pression haute');if(disp.spo2<89.5)al.push('SpO₂ basse');if(M.Te<0.6)al.push('Temps expiratoire court');
     $('.alarms').innerHTML=al.map(a=>`<span>${a}</span>`).join('');
-    $('.gas').innerHTML=st.gas?`<b>Gaz du sang</b> (20 min après ces réglages) · pH ${fmt(M.ph,2)} · PaCO₂ ${fmt(M.paco2)} mmHg · PaO₂ ${fmt(M.pao2)} mmHg · P/F ${fmt(M.pf)} · HCO₃⁻ ${P.hco3} mmol/L`:'';
-    draw(M);return M;
   }
+  function settingsUI(){
+    root.querySelectorAll('.stp').forEach(d=>{const k=d.dataset.k,v=S[k];d.querySelector('output').textContent=(k==='FiO2'?Math.round(v*100):Math.round(v))+' '+ctl.find(c=>c[0]===k)[2];});
+    root.querySelectorAll('.shape button').forEach(b=>b.classList.toggle('on',b.dataset.s===S.shape));
+    const Mn=model(P,S);
+    $('.derived').innerHTML=`Ti ${fmt(Mn.Ti,2)} s · I:E 1:${fmt(Mn.ie,1)} · ${P.sex==='H'?'homme':'femme'} ${P.h} cm, ${P.w} kg`;
+    $('.pend').textContent=JSON.stringify(A)!==JSON.stringify(S)?'Nouveaux réglages : appliqués au prochain cycle.':'';
+  }
+  const gasTxt=Mn=>`<b>Gaz du sang</b> (20 min après ces réglages) · pH ${fmt(Mn.ph,2)} · PaCO₂ ${fmt(Mn.paco2)} mmHg · PaO₂ ${fmt(Mn.pao2)} mmHg · P/F ${fmt(Mn.pf)} · HCO₃⁻ ${P.hco3} mmol/L`;
   root.querySelectorAll('.stp button').forEach(b=>b.onclick=()=>{if(st.validated&&exam)return;const k=b.closest('.stp').dataset.k,c=ctl.find(x=>x[0]===k);
     let v=+(S[k]+c[3]*b.dataset.d).toFixed(2);v=Math.max(c[4],Math.min(c[5],v));if(k==='FiO2'&&S[k]===0.21&&b.dataset.d>0)v=0.25;if(k==='FiO2'&&v<0.25&&b.dataset.d<0)v=0.21;
-    S[k]=v;st.pi=st.pe=st.gas=false;render();});
-  root.querySelectorAll('.vbtns button').forEach(b=>b.onclick=()=>{st[b.dataset.a]=true;render();});
+    S[k]=v;st.pi=st.pe=st.gas=false;$('.gas').innerHTML='';settingsUI();});
+  root.querySelectorAll('.shape button').forEach(b=>b.onclick=()=>{if(st.validated&&exam)return;S.shape=b.dataset.s;st.pi=st.pe=st.gas=false;$('.gas').innerHTML='';settingsUI();});
+  root.querySelectorAll('.vbtns button').forEach(b=>b.onclick=()=>{const a=b.dataset.a;
+    if(a==='pi'||a==='pe'){want[a]=true;if(frozen){frozen=false;$('.frz').textContent='Figer les courbes';last=performance.now();}}
+    else if(a==='gas'){st.gas=true;$('.gas').innerHTML=gasTxt(model(P,S));}
+    else{frozen=!frozen;b.textContent=frozen?'Reprendre le défilement':'Figer les courbes';last=performance.now();}});
   if(ex.diag){
     const D=ex.diag,box=$('.diag'),ask=(key,okKey,title,opts,after)=>{
       const div=document.createElement('div');div.className='dq';div.innerHTML=`<p class="dqt">${title}</p><div class="choices"></div><div class="fb"></div>`;box.appendChild(div);
@@ -435,19 +492,19 @@ function mountVent(root,ex,opt){
         else if(!exam){div.querySelector('.fb').innerHTML='<span class="ko-t">Non : regardez la Ppic et la Pplat.</span>';delete div.dataset.done;}
         else after&&after();
       };div.querySelector('.choices').appendChild(b);});};
-    ask('dxTried','dxOk','Quel mécanisme ?',D.dx,()=>ask('actTried','actOk','Quelle conduite ?',D.act,()=>{if(st.actOk){Object.assign(P,D.fix);st.pi=st.pe=false;render();
+    ask('dxTried','dxOk','Quel mécanisme ?',D.dx,()=>ask('actTried','actOk','Quelle conduite ?',D.act,()=>{if(st.actOk){Object.assign(P,D.fix);M=model(P,A);meas.pplat=meas.peptot=null;st.pi=st.pe=false;
       const n=document.createElement('p');n.className='mut';n.textContent=D.fixTxt;box.appendChild(n);}}));
   }
   $('.val').onclick=()=>{
     if(exam&&st.validated)return;
-    const M=model(P,S),inp={};root.querySelectorAll('[data-i]').forEach(i=>inp[i.dataset.i]=i.value);
-    const c=ex.check(S,M,st,inp),ok=c.every(x=>x.ok);
+    const Mv=model(P,S),inp={};root.querySelectorAll('[data-i]').forEach(i=>inp[i.dataset.i]=i.value);
+    const c=ex.check(S,Mv,st,inp),ok=c.every(x=>x.ok);
     if(exam){st.validated=true;root.classList.add('done');$('.val').disabled=true;$('.res').innerHTML='<p class="mut">Épreuve enregistrée. Le détail sera affiché à la fin de l\'examen.</p>';opt.onDone(ok,c,ex);return;}
     $('.res').innerHTML=`<ul class="crit">${c.map(x=>`<li class="${x.ok?'ok':'ko'}">${x.ok?'✓':'✗'} ${x.info==='reveal'&&!x.ok?x.label.replace(/\(.*\)/,'').trim():x.label}</li>`).join('')}</ul>`+
       (ok?`<div class="debrief"><b>Objectif atteint.</b> ${ex.debrief}</div>`:'<p class="mut">Ajustez puis vérifiez à nouveau.</p>');
     if(ok)opt.onDone(true,c,ex);
   };
-  render();
+  settingsUI();values();requestAnimationFrame(t=>{last=t;tick(t);});
 }
 
 // ===== Parcours : progression, cours, quiz, examen, attestation =====
